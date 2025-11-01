@@ -5,7 +5,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useNotification } from '../../context/NotificationContext';
-import { FaSave, FaPrint, FaSearch, FaTrash, FaPercent } from 'react-icons/fa';
+import { FaSave, FaPrint, FaSearch, FaTrash, FaPercent, FaMoneyBillWave, FaInfoCircle, FaExclamationTriangle } from 'react-icons/fa';
 import { printInvoiceDirectly } from '../../utils/printUtils';
 
 const NewSalesInvoice = () => {
