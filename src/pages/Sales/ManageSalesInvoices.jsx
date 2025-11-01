@@ -177,13 +177,6 @@ const ManageSalesInvoices = () => {
 
 
 
-  const paymentTypeOptions = [
-    { value: 'all', label: 'كل الأنواع' },
-    { value: 'cash', label: 'نقدي' },
-    { value: 'deferred', label: 'آجل' },
-    { value: 'partial', label: 'جزئي' }
-  ];
-
   return (
     <div className="max-w-7xl mx-auto p-4">
       <h2 className="text-xl font-bold text-gray-800 mb-4">إدارة فواتير المبيعات</h2>
