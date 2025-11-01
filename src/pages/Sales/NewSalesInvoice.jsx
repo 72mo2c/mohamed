@@ -299,19 +299,23 @@ const NewSalesInvoice = () => {
     const item = items[index];
     if (!item.productId) return null;
     
-    const requestedMainQty = item.quantity || 0;
-    const requestedSubQty = item.subQuantity || 0;
-    const requestedTotal = requestedMainQty + requestedSubQty;
+    const requestedMainQty = parseInt(item.quantity) || 0;
+    const requestedSubQty = parseInt(item.subQuantity) || 0;
     
     const availableQuantity = getAvailableQuantity(item.productId);
     const availableMainQty = availableQuantity.mainQuantity;
     const availableSubQty = availableQuantity.subQuantity;
-    const availableTotal = availableQuantity.total;
     
-    if (requestedTotal > availableTotal) {
+    // التحقق من كل نوع كمية منفصل
+    if (requestedMainQty > availableMainQty || requestedSubQty > availableSubQty) {
       return (
         <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
-          ⚠️ الكمية المطلوبة: {requestedMainQty} أساسي + {requestedSubQty} فرعي = {requestedTotal}، المتوفر: {availableMainQty} أساسي + {availableSubQty} فرعي
+          ⚠️ الكمية المطلوبة: أساسي {requestedMainQty}، فرعي {requestedSubQty}
+          <br />
+          المتوفر: أساسي {availableMainQty}، فرعي {availableSubQty}
+          <br />
+          {requestedMainQty > availableMainQty && `الأساسي زائد بـ ${requestedMainQty - availableMainQty}`}
+          {requestedSubQty > availableSubQty && `الفرعي زائد بـ ${requestedSubQty - availableSubQty}`}
         </div>
       );
     }
@@ -398,19 +402,24 @@ const NewSalesInvoice = () => {
         newDiscountErrors[index] = false;
       }
 
-      // التحقق من توفر المخزون
+      // التحقق من توفر المخزون (فصل أساسي وفرعي)
       const product = products.find(p => p.id === parseInt(item.productId));
       if (product) {
-        const requestedMainQty = item.quantity || 0;
-        const requestedSubQty = item.subQuantity || 0;
-        const totalRequested = requestedMainQty + requestedSubQty;
+        const requestedMainQty = parseInt(item.quantity) || 0;
+        const requestedSubQty = parseInt(item.subQuantity) || 0;
         
         const availableMainQty = product.mainQuantity || 0;
         const availableSubQty = product.subQuantity || 0;
-        const totalAvailable = availableMainQty + availableSubQty;
         
-        if (totalRequested > totalAvailable) {
-          errors[`stock_${index}`] = `الكمية المطلوبة غير متوفرة. المتوفر: أساسي ${availableMainQty} + فرعي ${availableSubQty} = ${totalAvailable}`;
+        // التحقق من كل نوع كمية منفصل
+        if (requestedMainQty > availableMainQty) {
+          errors[`stock_${index}`] = `الكمية الأساسية المطلوبة (${requestedMainQty}) تتجاوز المتوفر (${availableMainQty})`;
+          newQuantityErrors[index] = true;
+        } else if (requestedSubQty > availableSubQty) {
+          errors[`stock_${index}`] = `الكمية الفرعية المطلوبة (${requestedSubQty}) تتجاوز المتوفر (${availableSubQty})`;
+          newQuantityErrors[index] = true;
+        } else {
+          newQuantityErrors[index] = false;
         }
       }
     });
