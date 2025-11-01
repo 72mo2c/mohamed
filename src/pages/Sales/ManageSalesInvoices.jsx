@@ -434,6 +434,7 @@ const ManageSalesInvoices = () => {
           onSubmit={handleSalesReturn}
           onClose={closeReturnModal}
           formatCurrency={formatCurrency}
+          showError={showError}
         />
       )}
     </div>
@@ -441,7 +442,7 @@ const ManageSalesInvoices = () => {
 };
 
 // مكون النافذة المنبثقة للإرجاع في المبيعات
-const SalesReturnModal = ({ invoice, products, customers, salesReturns, onSubmit, onClose, formatCurrency }) => {
+const SalesReturnModal = ({ invoice, products, customers, salesReturns, onSubmit, onClose, formatCurrency, showError }) => {
   const [returnItems, setReturnItems] = useState([]);
   const [reason, setReason] = useState('');
   const [notes, setNotes] = useState('');

@@ -441,6 +441,7 @@ const ManagePurchaseInvoices = () => {
           onSubmit={handlePurchaseReturn}
           onClose={closeReturnModal}
           formatCurrency={formatCurrency}
+          showError={showError}
         />
       )}
     </div>
@@ -448,7 +449,7 @@ const ManagePurchaseInvoices = () => {
 };
 
 // مكون النافذة المنبثقة للإرجاع في المشتريات
-const PurchaseReturnModal = ({ invoice, products, suppliers, purchaseReturns, onSubmit, onClose, formatCurrency }) => {
+const PurchaseReturnModal = ({ invoice, products, suppliers, purchaseReturns, onSubmit, onClose, formatCurrency, showError }) => {
   const [returnItems, setReturnItems] = useState([]);
   const [reason, setReason] = useState('');
   const [notes, setNotes] = useState('');
