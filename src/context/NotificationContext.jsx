@@ -1,13 +1,8 @@
-// ======================================
-// Notification Context - إدارة الإشعارات
-// ======================================
-
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import './NotificationStyles.css'; // سننشئ ملف CSS منفصل للتصميم
+// NotificationContext.jsx - محدث
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 const NotificationContext = createContext();
 
-// Hook لاستخدام Notification Context
 export const useNotification = () => {
   const context = useContext(NotificationContext);
   if (!context) {
@@ -16,209 +11,122 @@ export const useNotification = () => {
   return context;
 };
 
-// مكون عرض الإشعارات
-const NotificationContainer = () => {
-  const { notifications, removeNotification, markAsRead } = useNotification();
-
-  return (
-    <div className="notification-wrapper">
-      {notifications.map((notification) => (
-        <NotificationItem
-          key={notification.id}
-          notification={notification}
-          onClose={removeNotification}
-          onMarkAsRead={markAsRead}
-        />
-      ))}
-    </div>
-  );
-};
-
-// مكون الإشعار الفردي
-const NotificationItem = ({ notification, onClose, onMarkAsRead }) => {
-  const [isExiting, setIsExiting] = useState(false);
-
-  const handleClose = () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      onClose(notification.id);
-    }, 300);
-  };
-
-  const handleClick = () => {
-    if (!notification.read) {
-      onMarkAsRead(notification.id);
-    }
-  };
-
-  return (
-    <div
-      className={`
-        notification-item 
-        notification-${notification.type}
-        ${notification.read ? 'read' : 'unread'}
-        ${isExiting ? 'exiting' : ''}
-      `}
-      onClick={handleClick}
-    >
-      <div className="notification-content">
-        <div className="notification-header">
-          <div className="notification-icon">
-            {notification.type === 'success' && (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-              </svg>
-            )}
-            {notification.type === 'error' && (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-              </svg>
-            )}
-            {notification.type === 'warning' && (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
-              </svg>
-            )}
-            {notification.type === 'info' && (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
-              </svg>
-            )}
-          </div>
-          <div className="notification-title">{notification.title}</div>
-          <button className="notification-close" onClick={handleClose}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-            </svg>
-          </button>
-        </div>
-        <div className="notification-message">{notification.message}</div>
-        <div className="notification-time">
-          {new Date(notification.timestamp).toLocaleTimeString('ar-SA', {
-            hour: '2-digit',
-            minute: '2-digit'
-          })}
-        </div>
-      </div>
-      {!notification.read && <div className="notification-indicator"></div>}
-    </div>
-  );
-};
-
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [activeNotification, setActiveNotification] = useState(null);
 
-  // تحميل الإشعارات من LocalStorage عند التهيئة
-  React.useEffect(() => {
+  // تحميل الإشعارات من localStorage عند التهيئة
+  useEffect(() => {
     const stored = localStorage.getItem('bero_notifications');
     if (stored) {
-      const parsedNotifications = JSON.parse(stored);
-      setNotifications(parsedNotifications);
-      setUnreadCount(parsedNotifications.filter(n => !n.read).length);
+      const parsed = JSON.parse(stored);
+      setNotifications(parsed);
+      setUnreadCount(parsed.filter(n => !n.read).length);
     }
   }, []);
 
-  // إضافة إشعار جديد
   const addNotification = useCallback((notification) => {
     const newNotification = {
-      id: Date.now() + Math.random(),
+      id: Date.now(),
       timestamp: new Date().toISOString(),
       read: false,
       ...notification
     };
 
-    setNotifications(prev => {
-      const updated = [newNotification, ...prev].slice(0, 20); // آخر 20 إشعار فقط
-      localStorage.setItem('bero_notifications', JSON.stringify(updated));
-      return updated;
-    });
-    
+    setNotifications(prev => [newNotification, ...prev]);
     setUnreadCount(prev => prev + 1);
+    setActiveNotification(newNotification);
+
+    // إخفاء الإشعار تلقائياً بعد 5 ثوانٍ
+    setTimeout(() => {
+      setActiveNotification(null);
+    }, 5000);
+
+    // حفظ في LocalStorage
+    const stored = localStorage.getItem('bero_notifications');
+    const allNotifications = stored ? JSON.parse(stored) : [];
+    allNotifications.unshift(newNotification);
+    localStorage.setItem('bero_notifications', JSON.stringify(allNotifications.slice(0, 100)));
   }, []);
 
-  // إضافة إشعار نجاح
   const showSuccess = useCallback((message) => {
     addNotification({
       type: 'success',
       title: 'نجاح',
       message,
+      icon: 'success'
     });
   }, [addNotification]);
 
-  // إضافة إشعار خطأ
   const showError = useCallback((message) => {
     addNotification({
       type: 'error',
       title: 'خطأ',
       message,
+      icon: 'error'
     });
   }, [addNotification]);
 
-  // إضافة إشعار تحذير
   const showWarning = useCallback((message) => {
     addNotification({
       type: 'warning',
       title: 'تحذير',
       message,
+      icon: 'warning'
     });
   }, [addNotification]);
 
-  // إضافة إشعار معلومات
   const showInfo = useCallback((message) => {
     addNotification({
       type: 'info',
       title: 'معلومة',
       message,
+      icon: 'info'
     });
   }, [addNotification]);
 
-  // وضع إشعار كمقروء
   const markAsRead = useCallback((id) => {
-    setNotifications(prev => {
-      const updated = prev.map(notif => 
+    setNotifications(prev => 
+      prev.map(notif => 
         notif.id === id ? { ...notif, read: true } : notif
-      );
-      localStorage.setItem('bero_notifications', JSON.stringify(updated));
-      return updated;
-    });
+      )
+    );
     setUnreadCount(prev => Math.max(0, prev - 1));
   }, []);
 
-  // وضع جميع الإشعارات كمقروءة
   const markAllAsRead = useCallback(() => {
-    setNotifications(prev => {
-      const updated = prev.map(notif => ({ ...notif, read: true }));
-      localStorage.setItem('bero_notifications', JSON.stringify(updated));
-      return updated;
-    });
+    setNotifications(prev => 
+      prev.map(notif => ({ ...notif, read: true }))
+    );
     setUnreadCount(0);
   }, []);
 
-  // حذف إشعار
   const removeNotification = useCallback((id) => {
     setNotifications(prev => {
       const notification = prev.find(n => n.id === id);
-      const updated = prev.filter(notif => notif.id !== id);
-      localStorage.setItem('bero_notifications', JSON.stringify(updated));
-      
       if (notification && !notification.read) {
         setUnreadCount(count => Math.max(0, count - 1));
       }
-      return updated;
+      return prev.filter(notif => notif.id !== id);
     });
   }, []);
 
-  // حذف جميع الإشعارات
   const clearAll = useCallback(() => {
     setNotifications([]);
     setUnreadCount(0);
+    setActiveNotification(null);
     localStorage.removeItem('bero_notifications');
+  }, []);
+
+  const hideActiveNotification = useCallback(() => {
+    setActiveNotification(null);
   }, []);
 
   const value = {
     notifications,
     unreadCount,
+    activeNotification,
     addNotification,
     showSuccess,
     showError,
@@ -227,13 +135,87 @@ export const NotificationProvider = ({ children }) => {
     markAsRead,
     markAllAsRead,
     removeNotification,
-    clearAll
+    clearAll,
+    hideActiveNotification
   };
 
   return (
     <NotificationContext.Provider value={value}>
       {children}
-      <NotificationContainer />
+      <OneUINotification 
+        notification={activeNotification}
+        onClose={hideActiveNotification}
+      />
     </NotificationContext.Provider>
   );
 };
+
+// مكون الإشعار الجديد بتصميم One UI
+const OneUINotification = ({ notification, onClose }) => {
+  if (!notification) return null;
+
+  const getIcon = () => {
+    switch (notification.icon) {
+      case 'success':
+        return (
+          <div className="oneui-notification-icon success">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0zm-2 15l-5-5 1.41-1.41L8 12.17l7.59-7.59L17 6l-9 9z"/>
+            </svg>
+          </div>
+        );
+      case 'error':
+        return (
+          <div className="oneui-notification-icon error">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 0C4.47 0 0 4.47 0 10s4.47 10 10 10 10-4.47 10-10S15.53 0 10 0zm5 13.59L13.59 15 10 11.41 6.41 15 5 13.59 8.59 10 5 6.41 6.41 5 10 8.59 13.59 5 15 6.41 11.41 10 15 13.59z"/>
+            </svg>
+          </div>
+        );
+      case 'warning':
+        return (
+          <div className="oneui-notification-icon warning">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0zm1 15H9v-2h2v2zm0-4H9V5h2v6z"/>
+            </svg>
+          </div>
+        );
+      case 'info':
+        return (
+          <div className="oneui-notification-icon info">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0zm1 15H9v-6h2v6zm0-8H9V5h2v2z"/>
+            </svg>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="oneui-notification-container">
+      <div className={`oneui-notification ${notification.type}`}>
+        <div className="oneui-notification-content">
+          {getIcon()}
+          <div className="oneui-notification-text">
+            <div className="oneui-notification-title">{notification.title}</div>
+            <div className="oneui-notification-message">{notification.message}</div>
+          </div>
+          <button 
+            className="oneui-notification-close"
+            onClick={onClose}
+            aria-label="إغلاق"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+              <path d="M14 1.41L12.59 0 7 5.59 1.41 0 0 1.41 5.59 7 0 12.59 1.41 14 7 8.41 12.59 14 14 12.59 8.41 7 14 1.41z"/>
+            </svg>
+          </button>
+        </div>
+        <div className="oneui-notification-progress"></div>
+      </div>
+    </div>
+  );
+};
+
+export default NotificationContext;
