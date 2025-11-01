@@ -111,240 +111,31 @@ const InventoryReport = () => {
   };
 
   return (
-    <>
-      {/* Print Styles */}
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          
-          .printable, .printable * {
-            visibility: visible;
-          }
-          
-          .printable {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            margin: 0;
-            padding: 20px;
-            background: white;
-          }
-          
-          /* Header Styles */
-          .print-header {
-            display: block !important;
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
-          }
-          
-          .print-header .company-name {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 5px;
-          }
-          
-          .print-header .report-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 5px;
-          }
-          
-          .print-header .report-subtitle {
-            font-size: 14px;
-            color: #666;
-          }
-          
-          .print-header .print-date {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-          }
-          
-          /* Hide non-essential elements */
-          .no-print {
-            display: none !important;
-          }
-          
-          /* Statistics Cards */
-          .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-            page-break-inside: avoid;
-          }
-          
-          .print-stats {
-            display: grid !important;
-          }
-          
-          .stats-card {
-            border: 2px solid #333;
-            padding: 15px;
-            text-align: center;
-            background: #f9f9f9 !important;
-          }
-          
-          .stats-card .label {
-            font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 5px;
-          }
-          
-          .stats-card .value {
-            font-size: 18px;
-            font-weight: bold;
-          }
-          
-          /* Table Styles */
-          .print-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-            font-size: 12px;
-          }
-          
-          .print-table th {
-            background: #333 !important;
-            color: white !important;
-            padding: 10px;
-            text-align: center;
-            font-weight: bold;
-            border: 1px solid #333;
-          }
-          
-          .print-table td {
-            padding: 8px;
-            text-align: center;
-            border: 1px solid #ddd;
-            vertical-align: middle;
-          }
-          
-          .print-table tbody tr:nth-child(even) {
-            background: #f9f9f9 !important;
-          }
-          
-          .print-table .stock-low-row {
-            background: #ffebee !important;
-          }
-          
-          .print-table .stock-ok-row {
-            background: #e8f5e8 !important;
-          }
-          
-          .print-table .stock-low {
-            background: #ffebee !important;
-            color: #c62828 !important;
-            font-weight: bold;
-            padding: 4px 8px;
-            border: 1px solid #c62828;
-            border-radius: 4px;
-          }
-          
-          .print-table .stock-ok {
-            background: #e8f5e8 !important;
-            color: #2e7d32 !important;
-            font-weight: bold;
-            padding: 4px 8px;
-            border: 1px solid #2e7d32;
-            border-radius: 4px;
-          }
-          
-          .print-only {
-            display: block !important;
-          }
-          
-          .no-print .print-only {
-            display: none !important;
-          }
-          
-          .screen-only {
-            display: block;
-          }
-          
-          .print-only {
-            display: none;
-          }
-          
-          /* Page Breaks */
-          .page-break {
-            page-break-after: always;
-          }
-          
-          .no-page-break {
-            page-break-inside: avoid;
-          }
-          
-          /* Footer */
-          .print-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 40px;
-            background: #333;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            font-size: 10px;
-          }
-          
-          /* Currency formatting */
-          .currency {
-            font-family: 'Arial', sans-serif;
-          }
+    <div className="p-6 max-w-7xl mx-auto">
+      <PageHeader
+        title="تقرير الجرد"
+        subtitle="عرض جميع الأصناف والكميات المتوفرة في المخازن"
+        icon={
+          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
         }
-        
-        @page {
-          margin: 1in;
-          size: A4;
-        }
-        
-        @page :first {
-          margin-top: 1.5in;
-        }
-      `}</style>
-      
-      <div className="p-6 max-w-7xl mx-auto printable">
-        {/* Print Header */}
-        <div className="print-header no-print">
-          <div className="company-name">شركة بero لإدارة المخازن</div>
-          <div className="report-title">تقرير الجرد</div>
-          <div className="report-subtitle">عرض جميع الأصناف والكميات المتوفرة في المخازن</div>
-          <div className="print-date">تاريخ الطباعة: {new Date().toLocaleDateString('ar-EG')}</div>
-        </div>
-
-        <PageHeader
-          title="تقرير الجرد"
-          subtitle="عرض جميع الأصناف والكميات المتوفرة في المخازن"
-          icon={
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          }
-          actions={[
-            {
-              label: 'طباعة',
-              onClick: printReport,
-              variant: 'secondary',
-            },
-            {
-              label: 'تصدير Excel',
-              onClick: exportToExcel,
-              variant: 'primary',
-            },
-          ]}
-        />
+        actions={[
+          {
+            label: 'طباعة',
+            onClick: printReport,
+            variant: 'secondary',
+          },
+          {
+            label: 'تصدير Excel',
+            onClick: exportToExcel,
+            variant: 'primary',
+          },
+        ]}
+      />
 
       {/* الإحصائيات */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 stats-grid no-print">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
         <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
           <div className="text-center">
             <p className="text-sm opacity-90">إجمالي الأصناف</p>
@@ -371,28 +162,8 @@ const InventoryReport = () => {
         </Card>
       </div>
 
-      {/* إحصائيات للطباعة */}
-      <div className="hidden stats-grid print-stats" style={{display: 'none'}}>
-        <div className="stats-card">
-          <div className="label">إجمالي الأصناف</div>
-          <div className="value">{stats.totalProducts}</div>
-        </div>
-        <div className="stats-card">
-          <div className="label">إجمالي الكميات</div>
-          <div className="value">{stats.totalQuantity}</div>
-        </div>
-        <div className="stats-card">
-          <div className="label">القيمة الإجمالية</div>
-          <div className="value currency">{stats.totalValue.toFixed(2)} ج.م</div>
-        </div>
-        <div className="stats-card">
-          <div className="label">أصناف أقل من الحد</div>
-          <div className="value">{stats.lowStockItems}</div>
-        </div>
-      </div>
-
       {/* الفلاتر */}
-      <Card className="mt-6 no-print">
+      <Card className="mt-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -444,71 +215,69 @@ const InventoryReport = () => {
       </Card>
 
       {/* جدول التقرير */}
-      <Card className="mt-6 overflow-x-auto no-page-break">
-        <table className="min-w-full divide-y divide-gray-200 print-table">
+      <Card className="mt-6 overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 الباركود
               </th>
-              <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 اسم الصنف
               </th>
-              <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 الفئة
               </th>
-              <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 المخزن
               </th>
-              <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 الكمية
               </th>
-              <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 السعر
               </th>
-              <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 القيمة الإجمالية
               </th>
-              <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 الحالة
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {reportData.map((item, idx) => (
-              <tr key={idx} className={`hover:bg-gray-50 ${item.currentStock <= (item.minStock || 0) ? 'stock-low-row' : 'stock-ok-row'}`}>
-                <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+              <tr key={idx} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {item.barcode || '-'}
                 </td>
-                <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {item.name}
                 </td>
-                <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {item.category || '-'}
                 </td>
-                <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {item.warehouse}
                 </td>
-                <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {item.currentStock}
                 </td>
-                <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 currency">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {(item.price || 0).toFixed(2)} ج.م
                 </td>
-                <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 currency">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {(item.value || 0).toFixed(2)} ج.م
                 </td>
-                <td className="px-3 py-2 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-nowrap">
                   {item.currentStock <= (item.minStock || 0) ? (
-                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 no-print">
+                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
                       أقل من الحد
                     </span>
-                    <span className="print-only stock-low">أقل من الحد</span>
                   ) : (
-                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 no-print">
+                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                       متوفر
                     </span>
-                    <span className="print-only stock-ok">متوفر</span>
                   )}
                 </td>
               </tr>
@@ -521,12 +290,6 @@ const InventoryReport = () => {
           </div>
         )}
       </Card>
-
-      {/* Print Footer */}
-      <div className="print-footer no-print">
-        <span>شركة بero لإدارة المخازن</span>
-        <span>صفحة 1 من 1</span>
-      </div>
     </div>
   );
 };

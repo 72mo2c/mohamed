@@ -92,242 +92,30 @@ const ProfitLossReport = () => {
   };
 
   return (
-    <>
-      {/* Print Styles */}
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          
-          .printable, .printable * {
-            visibility: visible;
-          }
-          
-          .printable {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            margin: 0;
-            padding: 20px;
-            background: white;
-          }
-          
-          /* Header Styles */
-          .print-header {
-            display: block !important;
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
-          }
-          
-          .print-header .company-name {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 5px;
-          }
-          
-          .print-header .report-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 5px;
-          }
-          
-          .print-header .report-subtitle {
-            font-size: 14px;
-            color: #666;
-          }
-          
-          .print-header .print-date {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-          }
-          
-          /* Hide non-essential elements */
-          .no-print {
-            display: none !important;
-          }
-          
-          /* Statistics Cards */
-          .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-            page-break-inside: avoid;
-          }
-          
-          .stats-card {
-            border: 2px solid #333;
-            padding: 15px;
-            text-align: center;
-            background: #f9f9f9 !important;
-          }
-          
-          .stats-card .label {
-            font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 5px;
-          }
-          
-          .stats-card .value {
-            font-size: 18px;
-            font-weight: bold;
-          }
-          
-          .stats-card .profit {
-            color: #2e7d32;
-          }
-          
-          .stats-card .loss {
-            color: #c62828;
-          }
-          
-          /* Income Statement */
-          .income-statement {
-            margin-bottom: 20px;
-          }
-          
-          .income-item {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            padding: 10px;
-            border: 1px solid #ddd;
-            margin-bottom: 10px;
-            background: #f9f9f9;
-          }
-          
-          .income-item.revenue {
-            background: #e3f2fd !important;
-            border-color: #1976d2;
-          }
-          
-          .income-item.cost {
-            background: #fff3e0 !important;
-            border-color: #f57c00;
-          }
-          
-          .income-item.gross-profit {
-            background: #e8f5e8 !important;
-            border-color: #2e7d32;
-          }
-          
-          .income-item.net-profit {
-            background: #e8f5e8 !important;
-            border-color: #2e7d32;
-          }
-          
-          .income-item.net-loss {
-            background: #ffebee !important;
-            border-color: #c62828;
-          }
-          
-          .income-label {
-            font-weight: bold;
-          }
-          
-          .income-value {
-            font-weight: bold;
-            font-size: 16px;
-          }
-          
-          .income-subvalue {
-            font-size: 14px;
-            color: #666;
-          }
-          
-          /* Page Breaks */
-          .page-break {
-            page-break-after: always;
-          }
-          
-          .no-page-break {
-            page-break-inside: avoid;
-          }
-          
-          /* Footer */
-          .print-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 40px;
-            background: #333;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            font-size: 10px;
-          }
-          
-          /* Currency formatting */
-          .currency {
-            font-family: 'Arial', sans-serif;
-          }
-          
-          .print-stats {
-            display: grid !important;
-          }
-          
-          .print-only {
-            display: block !important;
-          }
-          
-          .screen-only {
-            display: block;
-          }
-          
-          .print-only {
-            display: none;
-          }
+    <div className="p-6 max-w-7xl mx-auto">
+      <PageHeader
+        title="تقرير الأرباح والخسائر"
+        subtitle="تحليل الأرباح والخسائر خلال فترة زمنية محددة"
+        icon={
+          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
         }
-        
-        @page {
-          margin: 1in;
-          size: A4;
-        }
-        
-        @page :first {
-          margin-top: 1.5in;
-        }
-      `}</style>
-      
-      <div className="p-6 max-w-7xl mx-auto printable">
-        {/* Print Header */}
-        <div className="print-header no-print">
-          <div className="company-name">شركة بero لإدارة المخازن</div>
-          <div className="report-title">تقرير الأرباح والخسائر</div>
-          <div className="report-subtitle">تحليل الأرباح والخسائر خلال فترة زمنية محددة</div>
-          <div className="print-date">تاريخ الطباعة: {new Date().toLocaleDateString('ar-EG')}</div>
-        </div>
+        actions={[
+          {
+            label: 'طباعة',
+            onClick: printReport,
+            variant: 'secondary',
+          },
+          {
+            label: 'تصدير Excel',
+            onClick: exportToExcel,
+            variant: 'primary',
+          },
+        ]}
+      />
 
-        <PageHeader
-          title="تقرير الأرباح والخسائر"
-          subtitle="تحليل الأرباح والخسائر خلال فترة زمنية محددة"
-          icon={
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-          }
-          actions={[
-            {
-              label: 'طباعة',
-              onClick: printReport,
-              variant: 'secondary',
-            },
-            {
-              label: 'تصدير Excel',
-              onClick: exportToExcel,
-              variant: 'primary',
-            },
-          ]}
-        />
-
-      <Card className="mt-6 no-print">
+      <Card className="mt-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -354,7 +142,7 @@ const ProfitLossReport = () => {
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 stats-grid no-print">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
         <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
           <div className="text-center">
             <p className="text-sm opacity-90">إجمالي المبيعات</p>
@@ -379,74 +167,66 @@ const ProfitLossReport = () => {
         </Card>
       </div>
 
-      {/* إحصائيات للطباعة */}
-      <div className="hidden stats-grid print-stats" style={{display: 'none'}}>
-        <div className="stats-card">
-          <div className="label">إجمالي المبيعات</div>
-          <div className="value currency">{reportData.totalRevenue.toFixed(2)} ج.م</div>
-        </div>
-        <div className="stats-card">
-          <div className="label">تكلفة البضاعة</div>
-          <div className="value currency">{reportData.totalCost.toFixed(2)} ج.م</div>
-        </div>
-        <div className={`stats-card ${reportData.netProfit >= 0 ? 'profit' : 'loss'}`}>
-          <div className="label">{reportData.netProfit >= 0 ? 'صافي الربح' : 'صافي الخسارة'}</div>
-          <div className="value currency">
-            {reportData.netProfit >= 0 ? '' : '('}{Math.abs(reportData.netProfit).toFixed(2)} ج.م{reportData.netProfit >= 0 ? '' : ')'}
-          </div>
-        </div>
-      </div>
-
-      <Card className="mt-6 no-page-break">
-        <h3 className="text-lg font-bold mb-4 no-print">قائمة الدخل</h3>
-        <div className="space-y-4 income-statement">
-          <div className="bg-blue-50 p-4 rounded-lg income-item revenue">
-            <div className="income-label">الإيرادات</div>
-            <div></div>
-            <div className="pr-4">إجمالي المبيعات:</div>
-            <div className="income-value currency text-blue-700">
-              {reportData.totalRevenue.toFixed(2)} ج.م
+      <Card className="mt-6">
+        <h3 className="text-lg font-bold mb-4">قائمة الدخل</h3>
+        <div className="space-y-4">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="font-semibold text-blue-800">الإيرادات</div>
+              <div></div>
+              <div className="pr-4">إجمالي المبيعات:</div>
+              <div className="text-right font-bold text-blue-700">
+                {reportData.totalRevenue.toFixed(2)} ج.م
+              </div>
             </div>
           </div>
 
-          <div className="bg-orange-50 p-4 rounded-lg income-item cost">
-            <div className="income-label">تكلفة البضاعة المباعة</div>
-            <div></div>
-            <div className="pr-4">تكلفة البضاعة:</div>
-            <div className="income-value currency text-orange-700">
-              ({reportData.totalCost.toFixed(2)}) ج.م
+          <div className="bg-orange-50 p-4 rounded-lg">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="font-semibold text-orange-800">تكلفة البضاعة المباعة</div>
+              <div></div>
+              <div className="pr-4">تكلفة البضاعة:</div>
+              <div className="text-right font-bold text-orange-700">
+                ({reportData.totalCost.toFixed(2)}) ج.م
+              </div>
             </div>
           </div>
 
-          <div className="bg-green-50 p-4 rounded-lg income-item gross-profit">
-            <div className="income-label">مجمل الربح</div>
-            <div className="income-value currency text-green-700">
-              {reportData.grossProfit.toFixed(2)} ج.م
-            </div>
-            <div className="income-subvalue">هامش الربح الإجمالي:</div>
-            <div className="income-subvalue currency">
-              {reportData.grossProfitMargin.toFixed(2)}%
+          <div className="bg-green-50 p-4 rounded-lg">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="font-bold text-green-800">مجمل الربح</div>
+              <div className="text-right font-bold text-green-700 text-lg">
+                {reportData.grossProfit.toFixed(2)} ج.م
+              </div>
+              <div className="text-sm text-gray-600">هامش الربح الإجمالي:</div>
+              <div className="text-right font-semibold text-green-700">
+                {reportData.grossProfitMargin.toFixed(2)}%
+              </div>
             </div>
           </div>
 
-          <div className={`p-4 rounded-lg income-item ${
-            reportData.netProfit >= 0 ? 'net-profit' : 'net-loss'
+          <div className={`p-4 rounded-lg ${
+            reportData.netProfit >= 0 ? 'bg-green-100' : 'bg-red-100'
           }`}>
-            <div className="income-label">
-              صافي {reportData.netProfit >= 0 ? 'الربح' : 'الخسارة'}
-            </div>
-            <div className={`income-value currency ${
-              reportData.netProfit >= 0 ? 'text-green-700' : 'text-red-700'
-            }`}>
-              {reportData.netProfit >= 0 ? '' : '('}
-              {Math.abs(reportData.netProfit).toFixed(2)} ج.م
-              {reportData.netProfit >= 0 ? '' : ')'}
+            <div className="grid grid-cols-2 gap-2">
+              <div className={`font-bold text-xl ${
+                reportData.netProfit >= 0 ? 'text-green-800' : 'text-red-800'
+              }`}>
+                صافي الربح / (الخسارة)
+              </div>
+              <div className={`text-right font-bold text-2xl ${
+                reportData.netProfit >= 0 ? 'text-green-700' : 'text-red-700'
+              }`}>
+                {reportData.netProfit >= 0 ? '' : '('}
+                {Math.abs(reportData.netProfit).toFixed(2)} ج.م
+                {reportData.netProfit >= 0 ? '' : ')'}
+              </div>
             </div>
           </div>
         </div>
       </Card>
 
-      <Card className="mt-6 no-print">
+      <Card className="mt-6">
         <h3 className="text-lg font-bold mb-4">ملاحظات</h3>
         <div className="bg-gray-50 p-4 rounded-lg">
           <ul className="list-disc list-inside space-y-2 text-sm text-gray-700">
@@ -457,12 +237,6 @@ const ProfitLossReport = () => {
           </ul>
         </div>
       </Card>
-
-      {/* Print Footer */}
-      <div className="print-footer no-print">
-        <span>شركة بero لإدارة المخازن</span>
-        <span>صفحة 1 من 1</span>
-      </div>
     </div>
   );
 };

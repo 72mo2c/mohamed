@@ -15,7 +15,6 @@ const ReportsHome = () => {
       reports: [
         { name: 'تقرير الجرد', path: '/reports/inventory', description: 'عرض جميع الأصناف والكميات المتوفرة في جميع المخازن' },
         { name: 'تقرير حركة الأصناف', path: '/reports/product-movement', description: 'تتبع حركة دخول وخروج الأصناف خلال فترة محددة' },
-        { name: 'الحوالات بين المخازن', path: '/reports/warehouse-transfers', description: 'تقرير شامل لحركة التحويلات بين المخازن' },
         { name: 'الأصناف الأقل من حد الطلب', path: '/reports/low-stock', description: 'عرض الأصناف التي وصلت لحد الطلب أو أقل' },
       ],
     },
@@ -60,30 +59,15 @@ const ReportsHome = () => {
       ],
     },
     {
-      title: 'تقارير المرتجعات',
-      icon: (
-        <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-      ),
-      color: 'from-orange-500 to-orange-600',
-      reports: [
-        { name: 'تقرير المرتجعات الشامل', path: '/reports/returns', description: 'تقرير شامل لجميع مرتجعات المبيعات والمشتريات مع الإحصائيات والتحليلات' },
-      ],
-    },
-    {
-      title: 'التحليلات والتقارير المتقدمة',
+      title: 'تقارير مالية',
       icon: (
         <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
       ),
-      color: 'from-indigo-500 to-purple-600',
+      color: 'from-red-500 to-red-600',
       reports: [
-        { name: 'تقرير كشف الحساب', path: '/reports/account-statement', description: 'كشف حساب شامل يربط بين المبيعات والمصروفات والدفعات مع الرصيد التراكمي' },
-        { name: 'تقرير التحليلات المتقدم', path: '/reports/analytics', description: 'تحليلات متقدمة ورسوم بيانية شاملة لمؤشرات الأداء الرئيسية' },
         { name: 'تقرير الأرباح والخسائر', path: '/reports/profit-loss', description: 'تحليل الأرباح والخسائر خلال فترة زمنية محددة' },
-        { name: 'تقرير العملاء المتأخرين', path: '/reports/outstanding-customers', description: 'عرض العملاء المتأخرين في السداد والأرصدة المدينة' },
       ],
     },
   ];
@@ -108,7 +92,7 @@ const ReportsHome = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-blue-100 text-sm">تقارير المخزون</p>
-                  <p className="text-2xl font-bold">4</p>
+                  <p className="text-2xl font-bold">3</p>
                 </div>
                 <svg className="w-8 h-8 opacity-80" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
@@ -140,14 +124,15 @@ const ReportsHome = () => {
               </div>
             </div>
             
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 rounded-xl">
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-indigo-100 text-sm">التحليلات المتقدمة</p>
-                  <p className="text-2xl font-bold">4</p>
+                  <p className="text-orange-100 text-sm">تقارير مالية</p>
+                  <p className="text-2xl font-bold">2</p>
                 </div>
                 <svg className="w-8 h-8 opacity-80" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
                 </svg>
               </div>
             </div>

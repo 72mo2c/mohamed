@@ -13,6 +13,7 @@ import Table from '../../components/Common/Table';
 import Input from '../../components/Common/Input';
 import Select from '../../components/Common/Select';
 import { FaFileInvoice, FaSearch, FaExclamationTriangle, FaTimes, FaUndo, FaEye, FaTrash, FaPrint } from 'react-icons/fa';
+import InvoicePrint from '../../components/Common/InvoicePrint';
 
 const ManageSalesInvoices = () => {
   const navigate = useNavigate();
@@ -25,7 +26,9 @@ const ManageSalesInvoices = () => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState(null);
+  const [invoiceToPrint, setInvoiceToPrint] = useState(null);
 
   // دالة تنسيق العملة باستخدام إعدادات النظام
   const formatCurrency = (amount) => {
@@ -38,6 +41,46 @@ const ManageSalesInvoices = () => {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(amount);
+  };
+
+  // دالة حساب المعلومات المالية للفواتير
+  const calculateFinancialInfo = (invoice) => {
+    const total = invoice.total || 0;
+    
+    switch (invoice.paymentType) {
+      case 'cash':
+        return {
+          status: 'مدفوعة بالكامل',
+          statusColor: 'bg-green-100 text-green-700',
+          amountPaid: total,
+          remainingAmount: 0,
+          paymentStatus: 'complete'
+        };
+      case 'deferred':
+        return {
+          status: 'مطلوبة الدفع',
+          statusColor: 'bg-red-100 text-red-700',
+          amountPaid: 0,
+          remainingAmount: total,
+          paymentStatus: 'pending'
+        };
+      case 'partial':
+        return {
+          status: 'دفع جزئي',
+          statusColor: 'bg-yellow-100 text-yellow-700',
+          amountPaid: null,
+          remainingAmount: null,
+          paymentStatus: 'partial'
+        };
+      default:
+        return {
+          status: 'غير محدد',
+          statusColor: 'bg-gray-100 text-gray-700',
+          amountPaid: 0,
+          remainingAmount: total,
+          paymentStatus: 'unknown'
+        };
+    }
   };
 
   // فحص الصلاحيات
@@ -93,6 +136,15 @@ const ManageSalesInvoices = () => {
     }
     setInvoiceToDelete(invoice);
     setShowDeleteModal(true);
+  };
+
+  const handlePrintClick = (invoice) => {
+    if (!canPrintInvoice) {
+      showError('ليس لديك صلاحية لطباعة فواتير المبيعات');
+      return;
+    }
+    setInvoiceToPrint(invoice);
+    setShowPrintModal(true);
   };
 
   const confirmDelete = () => {
@@ -184,10 +236,52 @@ const ManageSalesInvoices = () => {
       }
     },
     {
+      header: 'حالة الدفع',
+      accessor: 'paymentStatus',
+      render: (row) => {
+        const financialInfo = calculateFinancialInfo(row);
+        return (
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${financialInfo.statusColor}`}>
+            {financialInfo.status}
+          </span>
+        );
+      }
+    },
+    {
+      header: 'المبلغ المدفوع',
+      accessor: 'amountPaid',
+      render: (row) => {
+        const financialInfo = calculateFinancialInfo(row);
+        if (financialInfo.amountPaid === null) {
+          return <span className="text-gray-400">غير محدد</span>;
+        }
+        return (
+          <span className="font-bold text-green-600">
+            {formatCurrency(financialInfo.amountPaid || 0)}
+          </span>
+        );
+      }
+    },
+    {
+      header: 'المبلغ المتبقي',
+      accessor: 'remainingAmount',
+      render: (row) => {
+        const financialInfo = calculateFinancialInfo(row);
+        if (financialInfo.remainingAmount === null) {
+          return <span className="text-gray-400">غير محدد</span>;
+        }
+        return (
+          <span className={`font-bold ${financialInfo.remainingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+            {formatCurrency(financialInfo.remainingAmount || 0)}
+          </span>
+        );
+      }
+    },
+    {
       header: 'المجموع',
       accessor: 'total',
       render: (row) => (
-        <span className="font-bold text-green-600">{formatCurrency(row.total || 0)}</span>
+        <span className="font-bold text-blue-600">{formatCurrency(row.total || 0)}</span>
       )
     },
   ];
@@ -229,6 +323,7 @@ const ManageSalesInvoices = () => {
           onReturn={handleReturn}
           onEdit={handleEdit}
           onDelete={handleDeleteClick}
+          onPrint={handlePrintClick}
         />
       </Card>
 
@@ -276,10 +371,15 @@ const ManageSalesInvoices = () => {
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-600">الحالة: </span>
-                  <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold">
-                    مكتملة
-                  </span>
+                  <span className="text-gray-600">حالة الدفع: </span>
+                  {(() => {
+                    const financialInfo = calculateFinancialInfo(selectedInvoice);
+                    return (
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${financialInfo.statusColor}`}>
+                        {financialInfo.status}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -325,6 +425,44 @@ const ManageSalesInvoices = () => {
                 <p className="text-gray-700 text-sm">{selectedInvoice.notes}</p>
               </div>
             )}
+
+            {/* المعلومات المالية المتقدمة */}
+            <div className="bg-blue-50 p-4 rounded-lg mb-4">
+              <h3 className="font-semibold text-gray-800 mb-3">المعلومات المالية:</h3>
+              {(() => {
+                const financialInfo = calculateFinancialInfo(selectedInvoice);
+                return (
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">المبلغ المدفوع:</span>
+                        <span className="font-semibold text-green-600">
+                          {financialInfo.amountPaid === null ? 'غير محدد' : formatCurrency(financialInfo.amountPaid)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">المبلغ المتبقي:</span>
+                        <span className={`font-semibold ${financialInfo.remainingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {financialInfo.remainingAmount === null ? 'غير محدد' : formatCurrency(financialInfo.remainingAmount)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">حالة الدفع:</span>
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${financialInfo.statusColor}`}>
+                          {financialInfo.status}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">رقم الفاتورة:</span>
+                        <span className="font-semibold text-blue-600">#{selectedInvoice.id}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
 
             {/* المجموع */}
             <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200">
@@ -411,6 +549,32 @@ const ManageSalesInvoices = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* نافذة طباعة الفاتورة */}
+      {showPrintModal && invoiceToPrint && (
+        <InvoicePrint
+          invoiceData={{
+            formData: invoiceToPrint,
+            items: invoiceToPrint.items || [],
+            total: invoiceToPrint.total || 0,
+            subtotal: invoiceToPrint.subtotal || invoiceToPrint.total || 0,
+            discountAmount: invoiceToPrint.discountAmount || 0,
+            customers,
+            products,
+            warehouses,
+            paymentTypes: [
+              { value: 'cash', label: 'نقدي' },
+              { value: 'deferred', label: 'آجل' },
+              { value: 'partial', label: 'جزئي' }
+            ]
+          }}
+          type="sales"
+          onClose={() => {
+            setShowPrintModal(false);
+            setInvoiceToPrint(null);
+          }}
+        />
       )}
     </div>
   );

@@ -7,7 +7,7 @@ import { FaPrint, FaTimes } from 'react-icons/fa';
 import './InvoicePrint.css';
 
 const InvoicePrint = ({ invoiceData, type = 'purchase', onClose }) => {
-  const { formData, items, total, suppliers, customers, products, warehouses, paymentTypes } = invoiceData;
+  const { formData, items, total, subtotal, discountAmount, suppliers, customers, products, warehouses, paymentTypes } = invoiceData;
   
   // معلومات الشركة
   const companyInfo = {
@@ -23,6 +23,45 @@ const InvoicePrint = ({ invoiceData, type = 'purchase', onClose }) => {
     : customers.find(c => c.id === parseInt(formData.customerId))?.name || '-';
 
   const paymentTypeLabel = paymentTypes.find(p => p.value === formData.paymentType)?.label || '-';
+
+  // حساب المعلومات المالية المتقدمة
+  const calculateFinancialInfo = () => {
+    const invoiceTotal = total || 0;
+    const subtotalAmount = subtotal || invoiceTotal;
+    const taxRate = 0.14; // 14% ضريبة القيمة المضافة
+    const taxAmount = subtotalAmount * taxRate;
+    
+    let amountPaid = 0;
+    let remainingAmount = invoiceTotal;
+    
+    switch (formData.paymentType) {
+      case 'cash':
+        amountPaid = invoiceTotal;
+        remainingAmount = 0;
+        break;
+      case 'deferred':
+        amountPaid = 0;
+        remainingAmount = invoiceTotal;
+        break;
+      case 'partial':
+        // في حالة الدفع الجزئي، نعرض المبلغ كغير محدد
+        amountPaid = null;
+        remainingAmount = null;
+        break;
+      default:
+        amountPaid = invoiceTotal;
+        remainingAmount = 0;
+    }
+    
+    return {
+      amountPaid,
+      remainingAmount,
+      taxAmount,
+      taxRate: taxRate * 100
+    };
+  };
+
+  const financialInfo = calculateFinancialInfo();
 
   // رقم الفاتورة (timestamp)
   const invoiceNumber = Date.now();
@@ -123,8 +162,41 @@ const InvoicePrint = ({ invoiceData, type = 'purchase', onClose }) => {
           <div className="invoice-totals">
             <div className="totals-row">
               <span>المجموع الفرعي:</span>
-              <span>{total.toFixed(2)} ج.م</span>
+              <span>{(subtotal || total).toFixed(2)} ج.م</span>
             </div>
+            
+            {/* معلومات الضرائب */}
+            <div className="totals-row">
+              <span>ضريبة القيمة المضافة ({financialInfo.taxRate}%):</span>
+              <span>{financialInfo.taxAmount.toFixed(2)} ج.م</span>
+            </div>
+
+            {/* الخصم */}
+            {discountAmount > 0 && (
+              <div className="totals-row discount-row">
+                <span>الخصم:</span>
+                <span>-{discountAmount.toFixed(2)} ج.م</span>
+              </div>
+            )}
+
+            {/* المبلغ المدفوع والمتبقي */}
+            <div className="totals-row payment-info">
+              <div className="payment-breakdown">
+                <div className="payment-row">
+                  <span>المبلغ المدفوع:</span>
+                  <span className="amount-paid">
+                    {financialInfo.amountPaid === null ? 'غير محدد' : `${(financialInfo.amountPaid || 0).toFixed(2)} ج.م`}
+                  </span>
+                </div>
+                <div className="payment-row">
+                  <span>المبلغ المتبقي:</span>
+                  <span className="amount-remaining">
+                    {financialInfo.remainingAmount === null ? 'غير محدد' : `${(financialInfo.remainingAmount || 0).toFixed(2)} ج.م`}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
             <div className="totals-row total-row">
               <span>الإجمالي النهائي:</span>
               <span>{total.toFixed(2)} ج.م</span>

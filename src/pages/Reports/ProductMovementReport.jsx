@@ -30,17 +30,12 @@ const ProductMovementReport = () => {
 
         const product = products.find((p) => p.id === item.productId);
         const warehouse = warehouses.find((w) => w.id === invoice.warehouseId);
-        
-        // حساب الكمية الإجمالية (الكمية الأساسية + الكمية الفرعية)
-        const totalQuantity = (item.quantity || 0) + (item.subQuantity || 0);
 
         data.push({
           date: invoice.date,
           productName: product?.name || 'غير معروف',
           type: 'خروج',
-          quantity: -totalQuantity,
-          baseQuantity: item.quantity || 0,
-          subQuantity: item.subQuantity || 0,
+          quantity: -item.quantity,
           warehouse: warehouse?.name || 'غير معروف',
           reference: `فاتورة مبيعات #${invoice.id}`,
           notes: invoice.notes || '-',
@@ -60,17 +55,12 @@ const ProductMovementReport = () => {
 
         const product = products.find((p) => p.id === item.productId);
         const warehouse = warehouses.find((w) => w.id === invoice.warehouseId);
-        
-        // حساب الكمية الإجمالية (الكمية الأساسية + الكمية الفرعية)
-        const totalQuantity = (item.quantity || 0) + (item.subQuantity || 0);
 
         data.push({
           date: invoice.date,
           productName: product?.name || 'غير معروف',
           type: 'دخول',
-          quantity: totalQuantity,
-          baseQuantity: item.quantity || 0,
-          subQuantity: item.subQuantity || 0,
+          quantity: item.quantity,
           warehouse: warehouse?.name || 'غير معروف',
           reference: `فاتورة مشتريات #${invoice.id}`,
           notes: invoice.notes || '-',
@@ -87,14 +77,12 @@ const ProductMovementReport = () => {
   };
 
   const exportToExcel = () => {
-    const headers = ['التاريخ', 'الصنف', 'النوع', 'الكمية الإجمالية', 'الكمية الأساسية', 'الكمية الفرعية', 'المخزن', 'المرجع', 'ملاحظات'];
+    const headers = ['التاريخ', 'الصنف', 'النوع', 'الكمية', 'المخزن', 'المرجع', 'ملاحظات'];
     const csvData = reportData.map((item) => [
       item.date,
       item.productName,
       item.type,
-      Math.abs(item.quantity),
-      item.baseQuantity || 0,
-      item.subQuantity || 0,
+      item.quantity,
       item.warehouse,
       item.reference,
       item.notes,
@@ -197,47 +185,6 @@ const ProductMovementReport = () => {
         </div>
       </Card>
 
-      {/* إحصائيات التقرير */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-        <Card>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {reportData.filter(item => item.type === 'دخول').reduce((sum, item) => sum + Math.abs(item.quantity), 0)}
-            </div>
-            <div className="text-sm text-gray-500">إجمالي الدخول</div>
-          </div>
-        </Card>
-        
-        <Card>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-red-600">
-              {reportData.filter(item => item.type === 'خروج').reduce((sum, item) => sum + Math.abs(item.quantity), 0)}
-            </div>
-            <div className="text-sm text-gray-500">إجمالي الخروج</div>
-          </div>
-        </Card>
-        
-        <Card>
-          <div className="text-center">
-            <div className={`text-2xl font-bold ${
-              reportData.reduce((sum, item) => sum + item.quantity, 0) >= 0 ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {reportData.reduce((sum, item) => sum + item.quantity, 0)}
-            </div>
-            <div className="text-sm text-gray-500">صافي الحركة</div>
-          </div>
-        </Card>
-        
-        <Card>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              {reportData.length}
-            </div>
-            <div className="text-sm text-gray-500">عدد العمليات</div>
-          </div>
-        </Card>
-      </div>
-
       <Card className="mt-6 overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -252,13 +199,7 @@ const ProductMovementReport = () => {
                 النوع
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                الكمية الإجمالية
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                الكمية الأساسية
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                الكمية الفرعية
+                الكمية
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 المخزن
@@ -295,12 +236,6 @@ const ProductMovementReport = () => {
                   item.quantity > 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
                   {Math.abs(item.quantity)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {item.baseQuantity || 0}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {item.subQuantity || 0}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {item.warehouse}

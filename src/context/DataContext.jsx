@@ -213,8 +213,37 @@ export const DataProvider = ({ children }) => {
       date: new Date().toISOString(), 
       ...invoice,
       items: enrichedItems,
-      supplierId: parseInt(invoice.supplierId) // تحويل إلى رقم
+      supplierId: parseInt(invoice.supplierId), // تحويل إلى رقم
+      paid: invoice.paymentType === 'cash' ? invoice.total : 0, // إضافة حقل المدفوع
+      remaining: invoice.paymentType === 'cash' ? 0 : invoice.total // إضافة حقل المتبقي
     };
+    
+    // === الكود الجديد: ربط المشتريات بالخزينة ===
+    if (invoice.paymentType === 'cash') {
+      // التحقق من الرصيد الكافي
+      if (treasuryBalance < invoice.total) {
+        throw new Error(`الرصيد المتوفر في الخزينة (${treasuryBalance.toFixed(2)}) غير كافٍ للفاتورة (${invoice.total.toFixed(2)})`);
+      }
+      
+      // خصم من رصيد الخزينة
+      const newBalance = treasuryBalance - invoice.total;
+      setTreasuryBalance(newBalance);
+      saveData('bero_treasury_balance', newBalance);
+      
+      // تسجيل حركة صرف نقدي
+      const disbursementData = {
+        amount: invoice.total,
+        toType: 'supplier',
+        toId: invoice.supplierId,
+        description: `شراء نقدي من المورد - فاتورة رقم ${newInvoice.id}`,
+        reference: `فاتورة مشتريات #${newInvoice.id}`,
+        type: 'purchase_payment'
+      };
+      
+      addCashDisbursement(disbursementData);
+    }
+    // === نهاية الكود الجديد ===
+    
     const updated = [...purchaseInvoices, newInvoice];
     setPurchaseInvoices(updated);
     saveData('bero_purchase_invoices', updated);
@@ -247,6 +276,10 @@ export const DataProvider = ({ children }) => {
       setProducts(updatedProducts);
       saveData('bero_products', updatedProducts);
     }
+    
+    // === الكود الجديد: تحديث رصيد المورد ===
+    updateSupplierBalance(newInvoice.supplierId, newInvoice.total, 'debit');
+    // === نهاية الكود الجديد ===
     
     return newInvoice;
   };
@@ -333,6 +366,26 @@ export const DataProvider = ({ children }) => {
       throw new Error('لا يمكن حذف الفاتورة: توجد مرتجعات مرتبطة بها');
     }
     
+    // === الكود الجديد: إرجاع المبلغ للخزينة ===
+    if (invoice.paymentType === 'cash') {
+      // إرجاع المبلغ للخزينة
+      const newBalance = treasuryBalance + invoice.total;
+      setTreasuryBalance(newBalance);
+      saveData('bero_treasury_balance', newBalance);
+      
+      // حذف حركة الصرف المرتبطة
+      const disbursementToDelete = cashDisbursements.find(d => 
+        d.description?.includes(`فاتورة مشتريات #${invoiceId}`)
+      );
+      if (disbursementToDelete) {
+        deleteCashDisbursement(disbursementToDelete.id);
+      }
+    }
+    
+    // تحديث رصيد المورد (إلغاء الدين)
+    updateSupplierBalance(invoice.supplierId, invoice.total, 'credit');
+    // === نهاية الكود الجديد ===
+    
     // إعادة الكميات من المخزون (عكس عملية الشراء) - مع الكمية الفرعية
     if (invoice.items && Array.isArray(invoice.items)) {
       const updatedProducts = [...products];
@@ -388,6 +441,12 @@ export const DataProvider = ({ children }) => {
     const updatedProducts = [...products];
     
     items.forEach(item => {
+      // إضافة التحقق من وجود المنتج في النظام
+      const product = products.find(p => p.id === parseInt(item.productId));
+      if (!product) {
+        throw new Error(`المنتج برقم ${item.productId} غير موجود في النظام`);
+      }
+      
       // البحث عن المنتج في الفاتورة الأصلية
       const originalItem = invoice.items.find(i => i.productId === item.productId);
       if (!originalItem) {
@@ -413,7 +472,7 @@ export const DataProvider = ({ children }) => {
       const availableQty = originalQty - totalReturnedQty;
       
       if (returnQty > availableQty) {
-        throw new Error(`الكمية المرتجعة تتجاوز الكمية المتاحة للمنتج`);
+        throw new Error(`الكمية المرتجعة تتجاوز الكمية المتاحة للمنتج: ${product.name}`);
       }
       
       // خصم الكميات المرتجعة من المخزون
@@ -422,7 +481,7 @@ export const DataProvider = ({ children }) => {
         const newQuantity = (updatedProducts[productIndex].mainQuantity || 0) - returnQty;
         
         if (newQuantity < 0) {
-          throw new Error(`الكمية المتوفرة في المخزون غير كافية`);
+          throw new Error(`الكمية المتوفرة في المخزون غير كافية للمنتج: ${product.name}`);
         }
         
         updatedProducts[productIndex] = {
@@ -431,8 +490,8 @@ export const DataProvider = ({ children }) => {
         };
       }
       
-      // حساب المبلغ المرتجع
-      const itemAmount = (item.quantity || 0) * (originalItem.price || 0) +
+      // حساب المبلغ المرتجع لهذا العنصر
+      const itemAmount = (item.quantity || 0) * (originalItem.price || 0) + 
                         (item.subQuantity || 0) * (originalItem.subPrice || 0);
       totalAmount += itemAmount;
     });
@@ -448,6 +507,30 @@ export const DataProvider = ({ children }) => {
       totalAmount,
       status: 'completed' // completed, pending, cancelled
     };
+    
+    // === الكود الجديد: ربط المرتجع بالخزينة ===
+    if (invoice.paymentType === 'cash') {
+      // إضافة للرصيد
+      const newBalance = treasuryBalance + totalAmount;
+      setTreasuryBalance(newBalance);
+      saveData('bero_treasury_balance', newBalance);
+      
+      // تسجيل إيصال استلام نقدي
+      const receiptData = {
+        amount: totalAmount,
+        fromType: 'supplier',
+        fromId: invoice.supplierId,
+        description: `مرتجع مشتريات نقدية - فاتورة رقم ${invoiceId}`,
+        reference: `مرتجع مشتريات #${newReturn.id}`,
+        type: 'purchase_return'
+      };
+      
+      addCashReceipt(receiptData);
+    }
+    
+    // تحديث رصيد المورد (تخفيض الدين)
+    updateSupplierBalance(invoice.supplierId, totalAmount, 'credit');
+    // === نهاية الكود الجديد ===
     
     // حفظ المرتجع
     const updatedReturns = [newReturn, ...purchaseReturns];
@@ -477,6 +560,36 @@ export const DataProvider = ({ children }) => {
     if (!returnRecord) {
       throw new Error('المرتجع غير موجود');
     }
+    
+    // الحصول على الفاتورة الأصلية
+    const invoice = purchaseInvoices.find(inv => inv.id === returnRecord.invoiceId);
+    if (!invoice) {
+      throw new Error('الفاتورة الأصلية غير موجودة');
+    }
+    
+    // === الكود الجديد: خصم المبلغ من الخزينة ===
+    if (invoice.paymentType === 'cash') {
+      // خصم المبلغ المرتجع من الخزينة
+      const newBalance = treasuryBalance - returnRecord.totalAmount;
+      if (newBalance < 0) {
+        throw new Error('لا يمكن حذف المرتجع: سيؤدي إلى رصيد سالب في الخزينة');
+      }
+      
+      setTreasuryBalance(newBalance);
+      saveData('bero_treasury_balance', newBalance);
+      
+      // حذف إيصال الاستلام المرتبط
+      const receiptToDelete = cashReceipts.find(r => 
+        r.description?.includes(`مرتجع مشتريات #${returnId}`)
+      );
+      if (receiptToDelete) {
+        deleteCashReceipt(receiptToDelete.id);
+      }
+    }
+    
+    // تحديث رصيد المورد (إعادة الدين)
+    updateSupplierBalance(invoice.supplierId, returnRecord.totalAmount, 'debit');
+    // === نهاية الكود الجديد ===
     
     // إعادة الكميات المرتجعة للمخزون
     const updatedProducts = [...products];
@@ -512,13 +625,16 @@ export const DataProvider = ({ children }) => {
           throw new Error(`المنتج غير موجود`);
         }
         
-        const requestedQty = parseInt(item.quantity) || 0;
+        // حساب الكمية الإجمالية (الرئيسية + الفرعية)
+        const mainQty = parseInt(item.quantity) || 0;
+        const subQty = parseInt(item.subQuantity) || 0;
+        const totalQty = mainQty + subQty;
         const availableQty = product.mainQuantity || 0;
         
-        if (requestedQty > availableQty) {
+        if (totalQty > availableQty) {
           throw new Error(
             `الكمية المتوفرة غير كافية للمنتج "${product.name}".\n` +
-            `المتوفر: ${availableQty}، المطلوب: ${requestedQty}`
+            `المتوفر: ${availableQty}، المطلوب: ${totalQty}`
           );
         }
       }
@@ -541,8 +657,6 @@ export const DataProvider = ({ children }) => {
       customerId: parseInt(invoice.customerId) // تحويل إلى رقم
     };
     const updated = [...salesInvoices, newInvoice];
-    setSalesInvoices(updated);
-    saveData('bero_sales_invoices', updated);
     
     // تحديث كميات المنتجات (خصم الكميات المباعة من المخزون)
     if (invoice.items && Array.isArray(invoice.items)) {
@@ -551,7 +665,12 @@ export const DataProvider = ({ children }) => {
       invoice.items.forEach(item => {
         const productIndex = updatedProducts.findIndex(p => p.id === parseInt(item.productId));
         if (productIndex !== -1) {
-          const newQuantity = (updatedProducts[productIndex].mainQuantity || 0) - parseInt(item.quantity);
+          // حساب الكمية الإجمالية (الرئيسية + الفرعية)
+          const mainQty = parseInt(item.quantity) || 0;
+          const subQty = parseInt(item.subQuantity) || 0;
+          const totalQty = mainQty + subQty;
+          
+          const newQuantity = (updatedProducts[productIndex].mainQuantity || 0) - totalQty;
           
           // تأكيد نهائي لمنع الكميات السالبة
           if (newQuantity < 0) {
@@ -571,7 +690,48 @@ export const DataProvider = ({ children }) => {
       saveData('bero_products', updatedProducts);
     }
     
-    return newInvoice;
+    // ==================== إضافة: التكامل المالي الكامل ====================
+    
+    // 1. تسجيل Cash Receipt للدفع النقدي
+    if (invoice.paymentType === 'cash') {
+      const receiptData = {
+        amount: newInvoice.total,
+        fromType: 'customer',
+        fromId: newInvoice.customerId,
+        description: `مبيعات نقدية - فاتورة رقم ${newInvoice.id}`,
+        reference: `فاتورة مبيعات #${newInvoice.id}`,
+        type: 'sales_payment'
+      };
+      
+      try {
+        const receipt = addCashReceipt(receiptData);
+        console.log('تم تسجيل إيصال استلام نقدي:', receipt);
+      } catch (error) {
+        console.error('خطأ في تسجيل الإيصال النقدي:', error);
+        // يجب أن تفشل العملية إذا فشل تسجيل الإيصال
+        throw new Error(`فشل في تسجيل المعاملة المالية: ${error.message}`);
+      }
+    }
+    
+    // 2. تسجيل دين العميل للدفع الآجل والجزئي
+    if (invoice.paymentType === 'deferred' || invoice.paymentType === 'partial') {
+      // سيتم حساب الرصيد تلقائياً بواسطة getCustomerBalance
+    }
+    
+    // تحديث حالة الفاتورة
+    const invoiceWithStatus = {
+      ...newInvoice,
+      paymentStatus: invoice.paymentType === 'cash' ? 'paid' : 'pending',
+      paid: invoice.paymentType === 'cash' ? newInvoice.total : 0,
+      remaining: invoice.paymentType === 'cash' ? 0 : newInvoice.total
+    };
+    
+    // تحديث قاعدة البيانات
+    const updatedInvoices = [...salesInvoices, invoiceWithStatus];
+    setSalesInvoices(updatedInvoices);
+    saveData('bero_sales_invoices', updatedInvoices);
+    
+    return invoiceWithStatus;
   };
   
   const deleteSalesInvoice = (invoiceId) => {
@@ -587,6 +747,76 @@ export const DataProvider = ({ children }) => {
       throw new Error('لا يمكن حذف الفاتورة: توجد مرتجعات مرتبطة بها');
     }
     
+    // ==================== إضافة: عكس المعاملات المالية ====================
+    
+    // 1. عكس تسجيل Cash Receipt للدفع النقدي
+    if (invoice.paymentType === 'cash') {
+      // البحث عن الإيصال المرتبط مع تحسين منطق البحث
+      const invoiceIdStr = invoiceId.toString();
+      const customerIdNum = parseInt(invoice.customerId);
+      
+      console.log('البحث عن الإيصال المرتبط للفاتورة:', {
+        invoiceId: invoiceId,
+        invoiceIdStr: invoiceIdStr,
+        customerId: invoice.customerId,
+        customerIdNum: customerIdNum,
+        paymentType: invoice.paymentType
+      });
+      
+      // البحث المحسن: البحث عن جميع الإيصالات المتعلقة بهذا العميل
+      const possibleReceipts = cashReceipts.filter(r => 
+        r.fromType === 'customer' && 
+        r.type === 'sales_payment' &&
+        (r.fromId === customerIdNum || r.fromId === invoice.customerId)
+      );
+      
+      console.log('الإيصالات المحتملة:', possibleReceipts);
+      
+      // البحث عن الإيصال المحدد للفاتورة
+      const relatedReceipt = possibleReceipts.find(r => 
+        r.reference === `فاتورة مبيعات #${invoiceIdStr}` ||
+        r.reference === `فاتورة مبيعات #${invoiceId}` ||
+        r.description.includes(`فاتورة رقم ${invoiceIdStr}`) ||
+        r.description.includes(`فاتورة رقم ${invoiceId}`)
+      );
+      
+      console.log('الإيصال المرتبط الموجود:', relatedReceipt);
+      
+      if (relatedReceipt) {
+        try {
+          console.log('حذف الإيصال المرتبط:', relatedReceipt.id);
+          
+          // حذف الإيصال
+          const updatedReceipts = cashReceipts.filter(r => r.id !== relatedReceipt.id);
+          setCashReceipts(updatedReceipts);
+          saveData('bero_cash_receipts', updatedReceipts);
+          
+          // خصم من رصيد الخزينة
+          const receiptAmount = parseFloat(relatedReceipt.amount) || 0;
+          const newBalance = treasuryBalance - receiptAmount;
+          setTreasuryBalance(newBalance);
+          saveData('bero_treasury_balance', newBalance);
+          
+          console.log('✅ تم حذف الإيصال المرتبط وعكس المبلغ من الخزينة:', {
+            receiptId: relatedReceipt.id,
+            amount: receiptAmount,
+            oldBalance: treasuryBalance,
+            newBalance: newBalance
+          });
+        } catch (error) {
+          console.error('خطأ في حذف الإيصال المرتبط:', error);
+          throw new Error(`فشل في حذف المعاملة المالية: ${error.message}`);
+        }
+      } else {
+        console.warn('⚠️ لم يتم العثور على إيصال مرتبط للفاتورة:', invoiceId);
+      }
+    }
+    
+    // 2. عكس دين العميل للدفع الآجل والجزئي
+    if (invoice.paymentType === 'deferred' || invoice.paymentType === 'partial') {
+      // سيتم تحديث رصيد العميل تلقائياً بعد حذف الفاتورة
+    }
+    
     // إعادة الكميات إلى المخزون (عكس عملية البيع)
     if (invoice.items && Array.isArray(invoice.items)) {
       const updatedProducts = [...products];
@@ -594,9 +824,14 @@ export const DataProvider = ({ children }) => {
       invoice.items.forEach(item => {
         const productIndex = updatedProducts.findIndex(p => p.id === parseInt(item.productId));
         if (productIndex !== -1) {
+          // حساب الكمية الإجمالية (الرئيسية + الفرعية)
+          const mainQty = parseInt(item.quantity) || 0;
+          const subQty = parseInt(item.subQuantity) || 0;
+          const totalQty = mainQty + subQty;
+          
           updatedProducts[productIndex] = {
             ...updatedProducts[productIndex],
-            mainQuantity: (updatedProducts[productIndex].mainQuantity || 0) + parseInt(item.quantity)
+            mainQuantity: (updatedProducts[productIndex].mainQuantity || 0) + totalQty
           };
         }
       });
@@ -682,6 +917,72 @@ export const DataProvider = ({ children }) => {
       totalAmount,
       status: 'completed' // completed, pending, cancelled
     };
+    
+    // ==================== إضافة: معالجة المعاملات المالية للمرتجع ====================
+    
+    // 1. إذا كان الإرجاع نقدي، حذف Cash Receipt وخصم من الخزينة
+    if (invoice.paymentType === 'cash') {
+      // البحث المحسن عن الإيصال المرتبط
+      const invoiceIdStr = invoiceId.toString();
+      const customerIdNum = parseInt(invoice.customerId);
+      
+      console.log('البحث عن الإيصال المرتبط في المرتجعات:', {
+        invoiceId: invoiceId,
+        customerId: invoice.customerId
+      });
+      
+      // البحث عن جميع الإيصالات المتعلقة بهذا العميل
+      const possibleReceipts = cashReceipts.filter(r => 
+        r.fromType === 'customer' && 
+        r.type === 'sales_payment' &&
+        (r.fromId === customerIdNum || r.fromId === invoice.customerId)
+      );
+      
+      // البحث عن الإيصال المحدد للفاتورة
+      const relatedReceipt = possibleReceipts.find(r => 
+        r.reference === `فاتورة مبيعات #${invoiceIdStr}` ||
+        r.reference === `فاتورة مبيعات #${invoiceId}` ||
+        r.description.includes(`فاتورة رقم ${invoiceIdStr}`) ||
+        r.description.includes(`فاتورة رقم ${invoiceId}`)
+      );
+      
+      if (relatedReceipt) {
+        try {
+          console.log('حذف الإيصال المرتبط في المرتجعات:', relatedReceipt.id);
+          
+          // حذف الإيصال
+          const updatedReceipts = cashReceipts.filter(r => r.id !== relatedReceipt.id);
+          setCashReceipts(updatedReceipts);
+          saveData('bero_cash_receipts', updatedReceipts);
+          
+          // خصم من رصيد الخزينة
+          const newBalance = treasuryBalance - totalAmount;
+          setTreasuryBalance(newBalance);
+          saveData('bero_treasury_balance', newBalance);
+          
+          console.log('تم حذف الإيصال المرتبط وعكس المبلغ من الخزينة');
+        } catch (error) {
+          console.error('خطأ في حذف الإيصال المرتبط:', error);
+          throw new Error(`فشل في معالجة المرتجع المالي: ${error.message}`);
+        }
+      }
+    }
+    
+    // 2. إذا كان الإرجاع آجل، تقليل دين العميل
+    if (invoice.paymentType === 'deferred' || invoice.paymentType === 'partial') {
+      const updatedSalesInvoices = salesInvoices.map(inv => {
+        if (inv.id === invoiceId) {
+          const currentRemaining = inv.remaining || inv.total || 0;
+          return {
+            ...inv,
+            remaining: Math.max(0, currentRemaining - totalAmount)
+          };
+        }
+        return inv;
+      });
+      setSalesInvoices(updatedSalesInvoices);
+      saveData('bero_sales_invoices', updatedSalesInvoices);
+    }
     
     // حفظ المرتجع
     const updatedReturns = [newReturn, ...salesReturns];
@@ -932,6 +1233,26 @@ export const DataProvider = ({ children }) => {
     return balance;
   };
   
+  // دالة مساعدة لتحديث رصيد المورد
+  const updateSupplierBalance = (supplierId, amount, type = 'debit') => {
+    const supplierIndex = suppliers.findIndex(s => s.id === supplierId);
+    if (supplierIndex !== -1) {
+      const currentBalance = suppliers[supplierIndex].balance || 0;
+      const newBalance = type === 'debit' 
+        ? currentBalance + amount  // زيادة الدين على المورد
+        : currentBalance - amount; // تخفيض الدين على المورد
+      
+      const updatedSuppliers = [...suppliers];
+      updatedSuppliers[supplierIndex] = {
+        ...updatedSuppliers[supplierIndex],
+        balance: newBalance
+      };
+      
+      setSuppliers(updatedSuppliers);
+      saveData('bero_suppliers', updatedSuppliers);
+    }
+  };
+  
   // الحصول على جميع أرصدة العملاء
   const getAllCustomerBalances = () => {
     return customers.map(customer => ({
@@ -1077,6 +1398,7 @@ export const DataProvider = ({ children }) => {
     deleteCashDisbursement,
     getCustomerBalance,
     getSupplierBalance,
+    updateSupplierBalance,
     getAllCustomerBalances,
     getAllSupplierBalances,
     transferProduct

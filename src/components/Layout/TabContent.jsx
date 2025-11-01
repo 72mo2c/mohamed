@@ -64,10 +64,8 @@ import WhatsAppBusiness from '../../pages/Integrations/WhatsAppBusiness';
 
 // Reports
 import ReportsHome from '../../pages/Reports/ReportsHome';
-import ReturnsReport from '../../pages/Reports/ReturnsReport';
 import InventoryReport from '../../pages/Reports/InventoryReport';
 import ProductMovementReport from '../../pages/Reports/ProductMovementReport';
-import WarehouseTransfersReport from '../../pages/Reports/WarehouseTransfersReport';
 import LowStockReport from '../../pages/Reports/LowStockReport';
 import SalesReport from '../../pages/Reports/SalesReport';
 import SalesByCustomer from '../../pages/Reports/SalesByCustomer';
@@ -76,9 +74,7 @@ import PurchasesReport from '../../pages/Reports/PurchasesReport';
 import PurchasesBySupplier from '../../pages/Reports/PurchasesBySupplier';
 import TreasuryReport from '../../pages/Reports/TreasuryReport';
 import CashFlowReport from '../../pages/Reports/CashFlowReport';
-import AccountStatementReport from '../../pages/Reports/AccountStatementReport';
 import ProfitLossReport from '../../pages/Reports/ProfitLossReport';
-import OutstandingCustomersReport from '../../pages/Reports/OutstandingCustomersReport';
 
 // Adjustments
 import QuantityAdjustment from '../../pages/Adjustments/QuantityAdjustment';
@@ -162,10 +158,8 @@ const getComponentForPath = (path) => {
     
     // Reports
     '/reports': ReportsHome,
-    '/reports/returns': ReturnsReport,
     '/reports/inventory': InventoryReport,
     '/reports/product-movement': ProductMovementReport,
-    '/reports/warehouse-transfers': WarehouseTransfersReport,
     '/reports/low-stock': LowStockReport,
     '/reports/sales': SalesReport,
     '/reports/sales-by-customer': SalesByCustomer,
@@ -174,9 +168,7 @@ const getComponentForPath = (path) => {
     '/reports/purchases-by-supplier': PurchasesBySupplier,
     '/reports/treasury': TreasuryReport,
     '/reports/cash-flow': CashFlowReport,
-    '/reports/account-statement': AccountStatementReport,
     '/reports/profit-loss': ProfitLossReport,
-    '/reports/outstanding-customers': OutstandingCustomersReport,
   };
   
   // للمسارات الديناميكية (مثل /purchases/return/:id)

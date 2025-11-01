@@ -9,7 +9,7 @@ import { FaSave, FaPrint, FaSearch, FaTrash, FaPercent } from 'react-icons/fa';
 import { printInvoiceDirectly } from '../../utils/printUtils';
 
 const NewSalesInvoice = () => {
-  const { customers, products, warehouses, addSalesInvoice } = useData();
+  const { customers, products, warehouses, treasuryBalance, addSalesInvoice, getCustomerBalance } = useData();
   const { showSuccess, showError } = useNotification();
   
   const [formData, setFormData] = useState({
@@ -26,9 +26,9 @@ const NewSalesInvoice = () => {
   const [items, setItems] = useState([{
     productId: '',
     productName: '',
-    mainQuantity: 0,
+    quantity: 0,
     subQuantity: 0,
-    mainPrice: 0,
+    price: 0,
     subPrice: 0,
     discount: 0
   }]);
@@ -52,6 +52,30 @@ const NewSalesInvoice = () => {
   const productInputRefs = useRef([]);
   const quantityInputRefs = useRef([]);
 
+  // الحصول على رصيد العميل المحدد
+  const getSelectedCustomerBalance = () => {
+    if (!formData.customerId) return null;
+    return getCustomerBalance(parseInt(formData.customerId));
+  };
+
+  // الحصول على تحذيرات نوع الدفع
+  const getPaymentTypeWarning = () => {
+    const total = calculateTotal();
+    const customerBalance = getSelectedCustomerBalance();
+    
+    if (formData.paymentType === 'deferred' && customerBalance !== null) {
+      const newBalance = customerBalance + total;
+      return {
+        type: 'info',
+        message: `رصيد العميل الحالي: ${customerBalance.toFixed(2)} ج.م\nسيصبح بعد الفاتورة: ${newBalance.toFixed(2)} ج.م`
+      };
+    }
+    
+    return null;
+  };
+
+  const paymentWarning = getPaymentTypeWarning();
+
   // التركيز التلقائي عند التحميل
   useEffect(() => {
     customerInputRef.current?.focus();
@@ -66,7 +90,7 @@ const NewSalesInvoice = () => {
         handleSubmit(e);
       }
       // Enter لإضافة صف جديد (عند التركيز في حقل الكمية الأخير)
-      if (e.key === 'Enter' && e.target.name?.startsWith('mainQuantity-')) {
+      if (e.key === 'Enter' && e.target.name?.startsWith('quantity-')) {
         const index = parseInt(e.target.name.split('-')[1]);
         if (index === items.length - 1) {
           e.preventDefault();
@@ -132,7 +156,7 @@ const NewSalesInvoice = () => {
       ...newItems[index],
       productId: product.id,
       productName: product.name,
-      mainPrice: parseFloat(product.mainPrice) || 0,
+      mainPrice: parseFloat(product.price) || 0,
       subPrice: parseFloat(product.subPrice) || 0,
       discount: 0
     };
@@ -174,17 +198,17 @@ const NewSalesInvoice = () => {
     setItems(newItems);
     
     // التحقق الفوري من الكميات والأسعار والخصم
-    if (field === 'mainQuantity' || field === 'subQuantity') {
+    if (field === 'quantity' || field === 'subQuantity') {
       const newQuantityErrors = [...quantityErrors];
-      if (field === 'mainQuantity') {
+      if (field === 'quantity') {
         newQuantityErrors[index] = value < 0;
       }
       setQuantityErrors(newQuantityErrors);
     }
     
-    if (field === 'mainPrice' || field === 'subPrice') {
+    if (field === 'price' || field === 'subPrice') {
       const newPriceErrors = [...priceErrors];
-      if (field === 'mainPrice') {
+      if (field === 'price') {
         newPriceErrors[index] = value < 0;
       }
       setPriceErrors(newPriceErrors);
@@ -201,7 +225,7 @@ const NewSalesInvoice = () => {
     setItems([...items, { 
       productId: '', 
       productName: '',
-      mainQuantity: 0, 
+      quantity: 0, 
       subQuantity: 0,
       mainPrice: 0,
       subPrice: 0,
@@ -244,7 +268,7 @@ const NewSalesInvoice = () => {
     const item = items[index];
     if (!item.productId) return null;
     
-    const requestedQty = (item.mainQuantity || 0) + (item.subQuantity || 0);
+    const requestedQty = (item.quantity || 0) + (item.subQuantity || 0);
     const availableQty = getAvailableQuantity(item.productId);
     
     if (requestedQty > availableQty) {
@@ -260,7 +284,7 @@ const NewSalesInvoice = () => {
 
   // حساب الإجمالي قبل خصم العنصر
   const calculateItemTotalWithoutDiscount = (item) => {
-    const mainTotal = (item.mainQuantity || 0) * (item.mainPrice || 0);
+    const mainTotal = (item.quantity || 0) * (item.price || 0);
     const subTotal = (item.subQuantity || 0) * (item.subPrice || 0);
     return mainTotal + subTotal;
   };
@@ -333,10 +357,10 @@ const NewSalesInvoice = () => {
       }
       
       // التحقق من الكمية
-      if (item.mainQuantity < 0) {
-        errors[`mainQuantity_${index}`] = 'الكمية الأساسية لا يمكن أن تكون سالبة';
+      if (item.quantity < 0) {
+        errors[`quantity_${index}`] = 'الكمية الأساسية لا يمكن أن تكون سالبة';
         newQuantityErrors[index] = true;
-      } else if (item.mainQuantity === 0 && item.subQuantity === 0) {
+      } else if (item.quantity === 0 && item.subQuantity === 0) {
         errors[`quantity_${index}`] = 'يجب إدخال كمية أساسية أو فرعية';
         newQuantityErrors[index] = true;
       } else {
@@ -344,11 +368,11 @@ const NewSalesInvoice = () => {
       }
       
       // التحقق من السعر
-      if (item.mainPrice < 0) {
-        errors[`mainPrice_${index}`] = 'السعر الأساسي لا يمكن أن يكون سالباً';
+      if (item.price < 0) {
+        errors[`price_${index}`] = 'السعر الأساسي لا يمكن أن يكون سالباً';
         newPriceErrors[index] = true;
-      } else if (item.mainPrice === 0 && item.mainQuantity > 0) {
-        errors[`mainPrice_${index}`] = 'يجب إدخال سعر أساسي للمنتج';
+      } else if (item.price === 0 && item.quantity > 0) {
+        errors[`price_${index}`] = 'يجب إدخال سعر أساسي للمنتج';
         newPriceErrors[index] = true;
       } else {
         newPriceErrors[index] = false;
@@ -375,7 +399,7 @@ const NewSalesInvoice = () => {
       // التحقق من توفر المخزون
       const product = products.find(p => p.id === parseInt(item.productId));
       if (product) {
-        const totalRequested = (item.mainQuantity || 0) + (item.subQuantity || 0);
+        const totalRequested = (item.quantity || 0) + (item.subQuantity || 0);
         const totalAvailable = product.mainQuantity || 0;
         
         if (totalRequested > totalAvailable) {
@@ -418,9 +442,9 @@ const NewSalesInvoice = () => {
       const convertedItems = items.map(item => ({
         productId: item.productId,
         productName: item.productName,
-        mainQuantity: item.mainQuantity || 0,
+        quantity: item.quantity || 0,
         subQuantity: item.subQuantity || 0,
-        mainPrice: item.mainPrice || 0,
+        mainPrice: item.price || 0,
         subPrice: item.subPrice || 0,
         discount: item.discount || 0,
         total: calculateItemTotal(item)
@@ -477,7 +501,7 @@ const NewSalesInvoice = () => {
     setItems([{ 
       productId: '', 
       productName: '',
-      mainQuantity: 0, 
+      quantity: 0, 
       subQuantity: 0,
       mainPrice: 0,
       subPrice: 0,
@@ -548,6 +572,48 @@ const NewSalesInvoice = () => {
               <option value="partial">جزئي</option>
             </select>
           </div>
+
+          {/* عرض رصيد الخزينة */}
+          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg mb-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm opacity-90">رصيد الخزينة الحالي</p>
+                <p className="text-2xl font-bold">{(treasuryBalance || 0).toFixed(2)} ج.م</p>
+              </div>
+              <FaMoneyBillWave className="text-3xl opacity-50" />
+            </div>
+          </div>
+
+          {/* عرض رصيد العميل */}
+          {formData.customerId && (
+            <div className="bg-blue-50 p-4 rounded-lg mb-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm text-gray-600">رصيد العميل المحدد</p>
+                  <p className="text-xl font-bold text-blue-600">
+                    {getSelectedCustomerBalance()?.toFixed(2) || '0.00'} ج.م
+                  </p>
+                </div>
+                <FaInfoCircle className="text-blue-500 text-2xl" />
+              </div>
+            </div>
+          )}
+
+          {/* تحذيرات نوع الدفع */}
+          {paymentWarning && (
+            <div className={`p-4 rounded-lg mb-4 ${
+              paymentWarning.type === 'error' ? 'bg-red-100 border border-red-300 text-red-700' :
+              paymentWarning.type === 'warning' ? 'bg-yellow-100 border border-yellow-300 text-yellow-700' :
+              'bg-blue-100 border border-blue-300 text-blue-700'
+            }`}>
+              <div className="flex items-center gap-2">
+                {paymentWarning.type === 'error' && <FaExclamationTriangle />}
+                {paymentWarning.type === 'warning' && <FaExclamationTriangle />}
+                {paymentWarning.type === 'info' && <FaInfoCircle />}
+                <span className="text-sm font-medium">{paymentWarning.message}</span>
+              </div>
+            </div>
+          )}
 
           {/* الوكيل */}
           <div>
@@ -647,9 +713,9 @@ const NewSalesInvoice = () => {
                       <input
                         ref={(el) => (quantityInputRefs.current[index] = el)}
                         type="number"
-                        name={`mainQuantity-${index}`}
-                        value={item.mainQuantity}
-                        onChange={(e) => handleItemChange(index, 'mainQuantity', parseInt(e.target.value) || 0)}
+                        name={`quantity-${index}`}
+                        value={item.quantity}
+                        onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
                         className={`w-full px-2 py-1.5 text-sm text-center border rounded-md focus:ring-2 focus:ring-blue-500 ${
                           quantityErrors[index] ? 'border-red-500 bg-red-50' : 'border-gray-300'
                         }`}
@@ -673,8 +739,8 @@ const NewSalesInvoice = () => {
                       <input
                         type="number"
                         step="0.01"
-                        value={item.mainPrice}
-                        onChange={(e) => handleItemChange(index, 'mainPrice', parseFloat(e.target.value) || 0)}
+                        value={item.price}
+                        onChange={(e) => handleItemChange(index, 'price', parseFloat(e.target.value) || 0)}
                         className={`w-full px-2 py-1.5 text-sm text-center border rounded-md focus:ring-2 focus:ring-blue-500 ${
                           priceErrors[index] ? 'border-red-500 bg-red-50' : 'border-gray-300'
                         }`}

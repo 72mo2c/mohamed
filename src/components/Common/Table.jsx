@@ -5,7 +5,7 @@
 import React from 'react';
 import Button from './Button';
 
-const Table = ({ columns, data, onEdit, onDelete, onView, onReturn, actions = true }) => {
+const Table = ({ columns, data, onEdit, onDelete, onView, onReturn, onPrint, actions = true }) => {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full bg-white border border-gray-200 rounded-lg">
@@ -54,6 +54,15 @@ const Table = ({ columns, data, onEdit, onDelete, onView, onReturn, actions = tr
                           onClick={() => onReturn(row)}
                         >
                           إرجاع
+                        </Button>
+                      )}
+                      {onPrint && (
+                        <Button 
+                          variant="info" 
+                          size="sm" 
+                          onClick={() => onPrint(row)}
+                        >
+                          طباعة
                         </Button>
                       )}
                       {onEdit && (

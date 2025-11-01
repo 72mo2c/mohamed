@@ -6,11 +6,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useNotification } from '../../context/NotificationContext';
-import { FaSave, FaPrint, FaSearch, FaTrash, FaPercent } from 'react-icons/fa';
+import { FaSave, FaPrint, FaSearch, FaTrash, FaPercent, FaMoneyBillWave, FaExclamationTriangle, FaInfoCircle } from 'react-icons/fa';
 import { printInvoiceDirectly } from '../../utils/printUtils';
 
 const NewPurchaseInvoice = () => {
-  const { suppliers, products, warehouses, addPurchaseInvoice } = useData();
+  const { suppliers, products, warehouses, treasuryBalance, addPurchaseInvoice, getSupplierBalance } = useData();
   const { showSuccess, showError } = useNotification();
   
   const [formData, setFormData] = useState({
@@ -56,6 +56,33 @@ const NewPurchaseInvoice = () => {
   useEffect(() => {
     supplierInputRef.current?.focus();
   }, []);
+
+  // عرض رصيد المورد المحدد
+  const getSelectedSupplierBalance = () => {
+    if (!formData.supplierId) return null;
+    return getSupplierBalance(parseInt(formData.supplierId));
+  };
+
+  // تحذير عند عدم كفاية الرصيد
+  const getPaymentTypeWarning = () => {
+    if (formData.paymentType === 'cash') {
+      const total = calculateTotal();
+      if (total > treasuryBalance) {
+        return {
+          type: 'error',
+          message: `الرصيد المتوفر في الخزينة (${treasuryBalance.toFixed(2)}) غير كافٍ للمبلغ المطلوب (${total.toFixed(2)})`
+        };
+      }
+      return {
+        type: 'warning',
+        message: `سيتم خصم ${total.toFixed(2)} من رصيد الخزينة الحالي (${treasuryBalance.toFixed(2)})`
+      };
+    }
+    return null;
+  };
+
+  const paymentWarning = getPaymentTypeWarning();
+  const supplierBalance = getSelectedSupplierBalance();
 
   // معالجة اختصارات الكيبورد
   useEffect(() => {
@@ -447,6 +474,52 @@ const NewPurchaseInvoice = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-4">
+      {/* عرض رصيد الخزينة */}
+      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg mb-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-sm opacity-90">رصيد الخزينة الحالي</p>
+            <p className="text-2xl font-bold">{treasuryBalance.toFixed(2)} ج.م</p>
+          </div>
+          <FaMoneyBillWave className="text-3xl opacity-50" />
+        </div>
+      </div>
+      
+      {/* تحذير نوع الدفع */}
+      {paymentWarning && (
+        <div className={`p-4 rounded-lg mb-4 ${
+          paymentWarning.type === 'error' ? 'bg-red-100 border border-red-300 text-red-700' :
+          'bg-yellow-100 border border-yellow-300 text-yellow-700'
+        }`}>
+          <div className="flex items-center gap-2">
+            {paymentWarning.type === 'error' ? <FaExclamationTriangle /> : <FaInfoCircle />}
+            <span className="font-semibold">{paymentWarning.message}</span>
+          </div>
+        </div>
+      )}
+      
+      {/* معلومات المورد ورصيده */}
+      {supplierBalance !== null && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-gray-600">رصيد المورد الحالي</p>
+              <p className={`text-lg font-bold ${supplierBalance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                {supplierBalance >= 0 ? 'دين على الشركة: ' : 'رصيد للمورد: '}
+                {Math.abs(supplierBalance).toFixed(2)} ج.م
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">سيصبح الرصيد بعد الفاتورة</p>
+              <p className={`text-lg font-bold ${(supplierBalance + calculateTotal()) >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                {(supplierBalance + calculateTotal()) >= 0 ? 'دين على الشركة: ' : 'رصيد للمورد: '}
+                {Math.abs(supplierBalance + calculateTotal()).toFixed(2)} ج.م
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* البطاقة الرئيسية */}
       <div className="bg-white rounded-lg shadow-md p-4">
         {/* الصف العلوي: معلومات الفاتورة */}
