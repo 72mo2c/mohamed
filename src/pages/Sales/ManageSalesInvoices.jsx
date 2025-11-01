@@ -12,7 +12,8 @@ import Card from '../../components/Common/Card';
 import Table from '../../components/Common/Table';
 import Input from '../../components/Common/Input';
 import Select from '../../components/Common/Select';
-import { FaFileInvoice, FaSearch, FaExclamationTriangle, FaTimes, FaUndo, FaEye, FaTrash, FaPrint } from 'react-icons/fa';
+import { FaFileInvoice, FaSearch, FaExclamationTriangle, FaTimes, FaUndo, FaEye, FaTrash, FaPrint, FaEdit } from 'react-icons/fa';
+import { printInvoiceDirectly } from '../../utils/printUtils';
 
 const ManageSalesInvoices = () => {
   const navigate = useNavigate();
@@ -79,6 +80,26 @@ const ManageSalesInvoices = () => {
     }
     setReturnInvoice(invoice);
     setShowReturnModal(true);
+  };
+
+  const handlePrint = (invoice) => {
+    if (!canPrintInvoice) {
+      showError('ليس لديك صلاحية لطباعة فواتير المبيعات');
+      return;
+    }
+    try {
+      const invoiceData = {
+        ...invoice,
+        customer: customers.find(c => c.id === parseInt(invoice.customerId)),
+        items: invoice.items?.map(item => ({
+          ...item,
+          product: products.find(p => p.id === parseInt(item.productId))
+        }))
+      };
+      printInvoiceDirectly(invoiceData, 'sales');
+    } catch (error) {
+      showError(error.message || 'حدث خطأ في طباعة الفاتورة');
+    }
   };
 
   const handleEdit = (invoice) => {
@@ -160,57 +181,7 @@ const ManageSalesInvoices = () => {
     );
   }
 
-  const columns = [
-    {
-      header: 'رقم الفاتورة',
-      accessor: 'id',
-      render: (row) => (
-        <span className="font-semibold text-blue-600">#{row.id}</span>
-      )
-    },
-    {
-      header: 'العميل',
-      accessor: 'customerId',
-      render: (row) => {
-        const customer = customers.find(c => c.id === parseInt(row.customerId));
-        return customer ? customer.name : '-';
-      }
-    },
-    {
-      header: 'التاريخ',
-      accessor: 'date',
-      render: (row) => new Date(row.date).toLocaleDateString('ar-EG')
-    },
-    {
-      header: 'عدد المنتجات',
-      accessor: 'items',
-      render: (row) => row.items?.length || 0
-    },
-    {
-      header: 'نوع الدفع',
-      accessor: 'paymentType',
-      render: (row) => {
-        const types = {
-          'cash': { label: 'نقدي', color: 'bg-green-100 text-green-700' },
-          'deferred': { label: 'آجل', color: 'bg-yellow-100 text-yellow-700' },
-          'partial': { label: 'جزئي', color: 'bg-blue-100 text-blue-700' }
-        };
-        const type = types[row.paymentType] || { label: row.paymentType, color: 'bg-gray-100 text-gray-700' };
-        return (
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${type.color}`}>
-            {type.label}
-          </span>
-        );
-      }
-    },
-    {
-      header: 'المجموع',
-      accessor: 'total',
-      render: (row) => (
-        <span className="font-bold text-green-600">{formatCurrency(row.total || 0)}</span>
-      )
-    },
-  ];
+
 
   return (
     <div>
@@ -242,14 +213,134 @@ const ManageSalesInvoices = () => {
           عدد النتائج: <span className="font-semibold text-gray-800">{filteredInvoices.length}</span> من {salesInvoices.length}
         </div>
 
-        <Table
-          columns={columns}
-          data={filteredInvoices}
-          onView={handleView}
-          onReturn={handleReturn}
-          onEdit={handleEdit}
-          onDelete={handleDeleteClick}
-        />
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border border-gray-200 rounded-lg">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider border-b">
+                  رقم الفاتورة
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider border-b">
+                  العميل
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider border-b">
+                  التاريخ
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider border-b">
+                  عدد المنتجات
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider border-b">
+                  نوع الدفع
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider border-b">
+                  المجموع
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider border-b">
+                  الإجراءات
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {filteredInvoices && filteredInvoices.length > 0 ? (
+                filteredInvoices.map((invoice) => {
+                  const customer = customers.find(c => c.id === parseInt(invoice.customerId));
+                  const customerName = customer ? customer.name : '-';
+                  
+                  // تنسيق نوع الدفع
+                  const paymentTypes = {
+                    'cash': { label: 'نقدي', color: 'bg-green-100 text-green-700' },
+                    'deferred': { label: 'آجل', color: 'bg-yellow-100 text-yellow-700' },
+                    'partial': { label: 'جزئي', color: 'bg-blue-100 text-blue-700' }
+                  };
+                  const paymentType = paymentTypes[invoice.paymentType] || { 
+                    label: invoice.paymentType, 
+                    color: 'bg-gray-100 text-gray-700' 
+                  };
+                  
+                  return (
+                    <tr key={invoice.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span className="font-semibold text-blue-600">#{invoice.id}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="font-medium text-gray-900">{customerName}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="text-sm text-gray-900">
+                          {new Date(invoice.date).toLocaleDateString('ar-EG')}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span className="text-sm font-medium text-gray-900">
+                          {invoice.items?.length || 0}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${paymentType.color}`}>
+                          {paymentType.label}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span className="font-bold text-green-600">
+                          {formatCurrency(invoice.total || 0)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex justify-center gap-2">
+                          {canViewInvoice && (
+                            <button
+                              onClick={() => handleView(invoice)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                              title="عرض"
+                            >
+                              <FaFileInvoice />
+                            </button>
+                          )}
+                          {canReturnInvoice && (
+                            <button
+                              onClick={() => handleReturn(invoice)}
+                              className="p-2 text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                              title="إرجاع"
+                            >
+                              <FaUndo />
+                            </button>
+                          )}
+                          {canPrintInvoice && (
+                            <button
+                              onClick={() => handlePrint(invoice)}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors"
+                              title="طباعة"
+                            >
+                              <FaPrint />
+                            </button>
+                          )}
+                          {canDeleteInvoice && (
+                            <button
+                              onClick={() => handleDeleteClick(invoice)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                              title="حذف"
+                            >
+                              <FaTrash />
+                            </button>
+                          )}
+                          {!canViewInvoice && !canReturnInvoice && !canPrintInvoice && !canDeleteInvoice && (
+                            <span className="text-xs text-gray-400">غير متوفر</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    لا توجد فواتير مبيعات للعرض
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </Card>
 
       {/* نافذة عرض التفاصيل */}
