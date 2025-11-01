@@ -7,7 +7,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { useNotification } from '../../context/NotificationContext';
 import { FaSave, FaArrowLeft, FaUndo } from 'react-icons/fa';
-import { findBySafeId, logIdInfo, logArrayIdsInfo } from '../../utils/idUtils';
 
 const NewSalesReturn = () => {
   const { invoiceId } = useParams();
@@ -21,46 +20,10 @@ const NewSalesReturn = () => {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
-    console.log('🔍 تحليل معرف الفاتورة من URL:', {
-      invoiceId,
-      invoiceIdType: typeof invoiceId,
-      invoiceIdValue: invoiceId,
-      isUndefined: invoiceId === undefined,
-      isNull: invoiceId === null,
-      isEmptyString: invoiceId === '',
-      isUndefinedString: invoiceId === 'undefined',
-      hasInvoiceId: !!invoiceId
-    });
-    
-    // التأكد من وجود المعرف
-    if (!invoiceId || invoiceId === 'undefined' || invoiceId === '') {
-      console.error('معرف الفاتورة غير صحيح:', {
-        invoiceId,
-        invoiceIdType: typeof invoiceId,
-        invoiceIdValue: invoiceId
-      });
-      showError(`خطأ في رابط الإرجاع - معرف الفاتورة غير محدد. القيمة المستلمة: ${invoiceId} (نوع: ${typeof invoiceId})`);
-      navigate('/sales/manage');
-      return;
-    }
-
-    // التأكد من تحميل البيانات
-    if (!salesInvoices || salesInvoices.length === 0) {
-      console.log('جاري تحميل فواتير المبيعات...');
-      return;
-    }
-
-    // تسجيل معلومات تشخيصية
-    logIdInfo(invoiceId, 'URL Parameter -');
-    logArrayIdsInfo(salesInvoices, 'id', 'Sales Invoices -');
-
-    // البحث عن الفاتورة باستخدام الدالة المساعدة الآمنة
-    const foundInvoice = findBySafeId(salesInvoices, invoiceId, 'id');
-    
+    // تحميل الفاتورة
+    const foundInvoice = salesInvoices.find(inv => inv.id === parseInt(invoiceId));
     if (!foundInvoice) {
-      console.error('لم يتم العثور على الفاتورة:', invoiceId);
-      console.error('المعرفات المتاحة:', salesInvoices.map(inv => inv.id));
-      showError(`الفاتورة رقم ${invoiceId} غير موجودة`);
+      showError('الفاتورة غير موجودة');
       navigate('/sales/manage');
       return;
     }

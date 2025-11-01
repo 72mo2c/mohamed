@@ -1,5 +1,5 @@
 // ======================================
-// Manage Purchase Invoices - إدارة فواتير المشتريات (محسنة)
+// Manage Purchase Invoices - إدارة فواتير المشتريات (محسّنة)
 // ======================================
 
 import React, { useState, useEffect } from 'react';
@@ -7,51 +7,16 @@ import { useData } from '../../context/DataContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useSystemSettings } from '../../hooks/useSystemSettings';
 import { useAuth } from '../../context/AuthContext';
-import { FaFileInvoice, FaEdit, FaTrash, FaPrint, FaSearch, FaFilter, FaUndo, FaExclamationTriangle, FaEye, FaClock, FaCheckCircle, FaTimes } from 'react-icons/fa';
+import { FaFileInvoice, FaEdit, FaTrash, FaPrint, FaSearch, FaFilter, FaUndo, FaExclamationTriangle, FaTimes } from 'react-icons/fa';
 import { printInvoiceDirectly } from '../../utils/printUtils';
-import { useNavigate } from 'react-router-dom';
-import Table from '../../components/Common/Table';
 
 const ManagePurchaseInvoices = () => {
-  const navigate = useNavigate();
-  const { purchaseInvoices, suppliers, products, warehouses, deletePurchaseInvoice } = useData();
+  const { purchaseInvoices, suppliers, products, warehouses, deletePurchaseInvoice, addPurchaseReturn, purchaseReturns } = useData();
   const { showSuccess, showError } = useNotification();
   const { settings } = useSystemSettings();
   const { hasPermission } = useAuth();
-  
-  // متغيرات البحث والتصفية
-  const [searchQuery, setSearchQuery] = useState('');
-  const [paymentTypeFilter, setPaymentTypeFilter] = useState('all');
-  const [returnStatusFilter, setReturnStatusFilter] = useState('all');
-  const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [showDeleteModal, setDeleteModal] = useState(false);
-  
-  // إعدادات متقدمة للجدول
-  const [tableConfig, setTableConfig] = useState({
-    loading: false,
-    error: null,
-    sortable: true,
-    filterable: true,
-    pagination: true,
-    currentPage: 1,
-    pageSize: 10,
-    totalPages: 1,
-    sortColumn: null,
-    sortDirection: 'asc'
-  });
 
-  // إعدادات نظام الإرجاع
-  const returnConfig = settings?.returnConfig || {
-    security: {
-      enableSecurityCheck: true,
-      requireManagerApproval: true,
-      maxReturnAmount: 50000,
-      returnTimeLimit: 30
-    }
-  };
-
-  // دالة تنسيق العملة
+  // دالة تنسيق العملة باستخدام إعدادات النظام
   const formatCurrency = (amount) => {
     const currency = settings?.currency || 'EGP';
     const locale = settings?.language === 'ar' ? 'ar-EG' : 'en-US';
@@ -64,220 +29,40 @@ const ManagePurchaseInvoices = () => {
     }).format(amount);
   };
 
-  // دالة حساب المعلومات المالية
-  const calculateFinancialInfo = (invoice) => {
-    const total = invoice.total || 0;
-    
-    switch (invoice.paymentType) {
-      case 'cash':
-        return {
-          status: 'مدفوعة بالكامل',
-          statusColor: 'bg-green-100 text-green-700',
-          amountPaid: total,
-          remainingAmount: 0,
-          paymentStatus: 'complete'
-        };
-      case 'deferred':
-        return {
-          status: 'مطلوبة الدفع',
-          statusColor: 'bg-red-100 text-red-700',
-          amountPaid: 0,
-          remainingAmount: total,
-          paymentStatus: 'pending'
-        };
-      case 'partial':
-        return {
-          status: 'دفع جزئي',
-          statusColor: 'bg-yellow-100 text-yellow-700',
-          amountPaid: null,
-          remainingAmount: null,
-          paymentStatus: 'partial'
-        };
-      default:
-        return {
-          status: 'غير محدد',
-          statusColor: 'bg-gray-100 text-gray-700',
-          amountPaid: 0,
-          remainingAmount: total,
-          paymentStatus: 'unknown'
-        };
-    }
-  };
-
-  // دالة حساب حالة الإرجاع
-  const calculateReturnInfo = (invoice) => {
-    const returnStatus = invoice.returnStatus || 'none';
-    
-    switch (returnStatus) {
-      case 'completed':
-        return {
-          status: 'مُرجع',
-          statusColor: 'bg-green-100 text-green-700',
-          icon: <FaCheckCircle className="text-green-500" />,
-          canReturn: false,
-          canEdit: false,
-          canDelete: false
-        };
-      case 'pending':
-        return {
-          status: 'في انتظار الإرجاع',
-          statusColor: 'bg-yellow-100 text-yellow-700',
-          icon: <FaClock className="text-yellow-500" />,
-          canReturn: false,
-          canEdit: true,
-          canDelete: true
-        };
-      case 'rejected':
-        return {
-          status: 'مرفوض',
-          statusColor: 'bg-red-100 text-red-700',
-          icon: <FaExclamationTriangle className="text-red-500" />,
-          canReturn: true,
-          canEdit: true,
-          canDelete: true
-        };
-      default:
-        return {
-          status: 'لم يتم الإرجاع',
-          statusColor: 'bg-gray-100 text-gray-700',
-          icon: <FaFileInvoice className="text-gray-500" />,
-          canReturn: true,
-          canEdit: true,
-          canDelete: true
-        };
-    }
-  };
-
-  // دالة معالجة طلب الإرجاع
-  const handleReturn = async (invoice) => {
-    if (!hasPermission('create_purchase_returns')) {
-      showError('ليس لديك صلاحية لإنشاء مرتجعات المشتريات');
-      return;
-    }
-
-    const returnInfo = calculateReturnInfo(invoice);
-    if (!returnInfo.canReturn) {
-      showError('لا يمكن إرجاع هذه الفاتورة');
-      return;
-    }
-
-    // فحص الأمان
-    if (returnConfig.security.enableSecurityCheck) {
-      if (invoice.total > returnConfig.security.maxReturnAmount) {
-        showError(`لا يمكن إرجاع فاتورة تزيد قيمتها عن ${formatCurrency(returnConfig.security.maxReturnAmount)} بدون موافقة المدير`);
-        return;
-      }
-    }
-
-    // فحص مهلة الإرجاع
-    const invoiceDate = new Date(invoice.date);
-    const currentDate = new Date();
-    const daysDiff = Math.floor((currentDate - invoiceDate) / (1000 * 60 * 60 * 24));
-    
-    if (daysDiff > returnConfig.security.returnTimeLimit) {
-      showError(`لا يمكن إرجاع فاتورة مضى على إصدارها أكثر من ${returnConfig.security.returnTimeLimit} يوم`);
-      return;
-    }
-
-    navigate(`/purchases/returns/new?invoiceId=${invoice.id}`);
-  };
-
-  // دالة التصفية والترتيب
-  const filteredAndSortedData = React.useMemo(() => {
-    let filtered = purchaseInvoices || [];
-
-    // تطبيق البحث
-    if (searchQuery) {
-      filtered = filtered.filter(invoice => 
-        invoice.id.toString().includes(searchQuery) ||
-        invoice.supplierName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        invoice.notes?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // تطبيق تصفية نوع الدفع
-    if (paymentTypeFilter !== 'all') {
-      filtered = filtered.filter(invoice => invoice.paymentType === paymentTypeFilter);
-    }
-
-    // تطبيق تصفية حالة الإرجاع
-    if (returnStatusFilter !== 'all') {
-      filtered = filtered.filter(invoice => (invoice.returnStatus || 'none') === returnStatusFilter);
-    }
-
-    // تطبيق الترتيب
-    if (tableConfig.sortColumn) {
-      filtered.sort((a, b) => {
-        let aVal = a[tableConfig.sortColumn];
-        let bVal = b[tableConfig.sortColumn];
-        
-        if (tableConfig.sortColumn === 'supplierName') {
-          aVal = suppliers?.find(s => s.id === a.supplierId)?.name || '';
-          bVal = suppliers?.find(s => s.id === b.supplierId)?.name || '';
-        }
-        
-        if (typeof aVal === 'string') {
-          aVal = aVal.toLowerCase();
-          bVal = bVal.toLowerCase();
-        }
-        
-        if (tableConfig.sortDirection === 'asc') {
-          return aVal > bVal ? 1 : -1;
-        } else {
-          return aVal < bVal ? 1 : -1;
-        }
-      });
-    }
-
-    return filtered;
-  }, [purchaseInvoices, searchQuery, paymentTypeFilter, returnStatusFilter, tableConfig.sortColumn, tableConfig.sortDirection, suppliers]);
-
-  // تحديث تعداد الصفحات
-  useEffect(() => {
-    const totalPages = Math.ceil(filteredAndSortedData.length / tableConfig.pageSize);
-    setTableConfig(prev => ({ ...prev, totalPages }));
-  }, [filteredAndSortedData.length]);
-
-  // دوال التحكم في الجدول
-  const handlePageChange = (newPage) => {
-    setTableConfig(prev => ({ ...prev, currentPage: newPage }));
-  };
-
-  const handleSort = (column, direction) => {
-    setTableConfig(prev => ({
-      ...prev,
-      sortColumn: column,
-      sortDirection: direction,
-      currentPage: 1
-    }));
-  };
-
   // فحص الصلاحيات
   const canViewInvoice = hasPermission('view_purchase_invoices');
   const canReturnInvoice = hasPermission('return_purchase');
-  const canEditInvoice = hasPermission('edit_purchase_invoice');
-  const canDeleteInvoice = hasPermission('delete_purchase_invoice');
   const canPrintInvoice = hasPermission('print_invoices');
+  const canDeleteInvoice = hasPermission('delete_purchase_invoice');
   const canManagePurchase = hasPermission('manage_purchases');
 
-  // خيارات الفلاتر
-  const paymentTypeOptions = [
-    { value: 'all', label: 'جميع الأنواع' },
-    { value: 'cash', label: 'نقدي' },
-    { value: 'deferred', label: 'آجل' },
-    { value: 'partial', label: 'جزئي' }
-  ];
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState('all');
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnInvoice, setReturnInvoice] = useState(null);
 
-  const returnStatusOptions = [
-    { value: 'all', label: 'جميع الحالات' },
-    { value: 'none', label: 'لم يتم الإرجاع' },
-    { value: 'pending', label: 'في الانتظار' },
-    { value: 'completed', label: 'مُرجع' },
-    { value: 'rejected', label: 'مرفوض' }
-  ];
+  // تصفية الفواتير
+  const filteredInvoices = purchaseInvoices.filter(invoice => {
+    const supplier = suppliers.find(s => s.id === parseInt(invoice.supplierId));
+    const supplierName = supplier ? supplier.name : '';
+    const matchesSearch = supplierName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          invoice.id.toString().includes(searchQuery);
+    const matchesFilter = paymentTypeFilter === 'all' || invoice.paymentType === paymentTypeFilter;
+    return matchesSearch && matchesFilter;
+  });
 
-  // دوال التفاعل
-  const handleViewClick = (invoice) => {
+  const handleReturn = (invoice) => {
+    if (!canReturnInvoice) {
+      showError('ليس لديك صلاحية لإرجاع فواتير المشتريات');
+      return;
+    }
+    setReturnInvoice(invoice);
+    setShowReturnModal(true);
+  };
+
+  const handleView = (invoice) => {
     if (!canViewInvoice) {
       showError('ليس لديك صلاحية لعرض فواتير المشتريات');
       return;
@@ -286,326 +71,358 @@ const ManagePurchaseInvoices = () => {
     setShowViewModal(true);
   };
 
-  const handleEditClick = (invoice) => {
-    if (!canEditInvoice) {
-      showError('ليس لديك صلاحية لتعديل فواتير المشتريات');
-      return;
-    }
-    navigate(`/purchases/new?editId=${invoice.id}`);
-  };
-
-  const handleDeleteClick = (invoice) => {
-    if (!canDeleteInvoice) {
-      showError('ليس لديك صلاحية لحذف فواتير المشتريات');
-      return;
-    }
-    setSelectedInvoice(invoice);
-    setShowDeleteModal(true);
-  };
-
-  const handlePrintClick = (invoice) => {
+  const handlePrint = (invoice) => {
     if (!canPrintInvoice) {
-      showError('ليس لديك صلاحية لطباعة فواتير المشتريات');
-      return;
-    }
-    printInvoiceDirectly(invoice, 'purchase');
-  };
-
-  const handleDeleteConfirm = () => {
-    if (!canDeleteInvoice) {
-      showError('ليس لديك صلاحية لحذف فواتير المشتريات');
-      setShowDeleteModal(false);
+      showError('ليس لديك صلاحية لطباعة الفواتير');
       return;
     }
     
     try {
-      deletePurchaseInvoice(selectedInvoice.id);
-      const itemsCount = selectedInvoice.items?.length || 0;
-      const totalQuantity = selectedInvoice.items?.reduce((sum, item) => sum + parseInt(item.quantity), 0) || 0;
-      
-      showSuccess(`تم حذف الفاتورة بنجاح!\nتمت إعادة ${itemsCount} منتج بإجمالي كمية ${totalQuantity} إلى المخزون`);
-      setShowDeleteModal(false);
-      setSelectedInvoice(null);
+      const invoiceData = {
+        formData: invoice,
+        items: invoice.items || [],
+        total: invoice.total || 0,
+        suppliers,
+        products,
+        warehouses
+      };
+      printInvoiceDirectly(invoiceData, 'purchase');
+      showSuccess('تم إرسال الفاتورة للطباعة');
     } catch (error) {
-      showError(error.message || 'حدث خطأ في حذف الفاتورة');
-      setShowDeleteModal(false);
+      showError('حدث خطأ في طباعة الفاتورة');
     }
+  };
+
+  const handleDelete = (invoice) => {
+    if (!canDeleteInvoice) {
+      showError('ليس لديك صلاحية لحذف فواتير المشتريات');
+      return;
+    }
+    
+    if (window.confirm(`هل أنت متأكد من حذف الفاتورة #${invoice.id}؟\nسيتم إعادة الكميات إلى المخزون.`)) {
+      try {
+        deletePurchaseInvoice(invoice.id);
+        showSuccess('تم حذف الفاتورة بنجاح وإعادة الكميات للمخزون');
+      } catch (error) {
+        showError(error.message || 'حدث خطأ في حذف الفاتورة');
+      }
+    }
+  };
+
+  // دوال معالجة الإرجاع
+  const handlePurchaseReturn = (returnData) => {
+    try {
+      addPurchaseReturn(returnData);
+      showSuccess('تم إرجاع المنتجات بنجاح');
+      setShowReturnModal(false);
+      setReturnInvoice(null);
+    } catch (error) {
+      showError(error.message || 'حدث خطأ في عملية الإرجاع');
+    }
+  };
+
+  const closeReturnModal = () => {
+    setShowReturnModal(false);
+    setReturnInvoice(null);
+  };
+
+  const paymentTypes = {
+    'cash': 'نقدي',
+    'deferred': 'آجل',
+    'partial': 'جزئي'
   };
 
   // فحص صلاحية الوصول
   if (!canManagePurchase && !canViewInvoice) {
     return (
-      <div>
+      <div className="max-w-7xl mx-auto p-4">
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 flex items-center gap-4">
           <FaExclamationTriangle className="text-red-600 text-2xl" />
           <div>
             <h3 className="text-red-800 font-bold text-lg">وصول غير مصرح</h3>
-            <p className="text-red-600">ليس لديك صلاحية للوصول إلى هذه الصفحة</p>
+            <p className="text-red-700">ليس لديك صلاحية لعرض أو إدارة فواتير المشتريات</p>
+            <p className="text-red-600 text-sm mt-1">يرجى التواصل مع المدير للحصول على الصلاحية المطلوبة</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // تعريف الأعمدة
-  const columns = [
-    {
-      header: 'رقم الفاتورة',
-      accessor: 'id',
-      sortable: true
-    },
-    {
-      header: 'المورد',
-      accessor: 'supplierName',
-      render: (row) => {
-        const supplier = suppliers?.find(s => s.id === row.supplierId);
-        return supplier ? supplier.name : 'غير محدد';
-      },
-      sortable: true
-    },
-    {
-      header: 'التاريخ',
-      accessor: 'date',
-      render: (row) => new Date(row.date).toLocaleDateString('ar-EG'),
-      sortable: true
-    },
-    {
-      header: 'حالة الدفع',
-      accessor: 'paymentStatus',
-      render: (row) => {
-        const financialInfo = calculateFinancialInfo(row);
-        return (
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${financialInfo.statusColor}`}>
-            {financialInfo.status}
-          </span>
-        );
-      }
-    },
-    {
-      header: 'حالة الإرجاع',
-      accessor: 'returnStatus',
-      render: (row) => {
-        const returnInfo = calculateReturnInfo(row);
-        return (
-          <div className="flex items-center gap-2">
-            {returnInfo.icon}
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${returnInfo.statusColor}`}>
-              {returnInfo.status}
-            </span>
-          </div>
-        );
-      }
-    },
-    {
-      header: 'المجموع',
-      accessor: 'total',
-      render: (row) => (
-        <span className="font-bold text-blue-600">{formatCurrency(row.total || 0)}</span>
-      ),
-      sortable: true
-    },
-  ];
-
   return (
-    <div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">إدارة فواتير المشتريات</h1>
+    <div className="max-w-7xl mx-auto p-4">
+      <h2 className="text-xl font-bold text-gray-800 mb-4">إدارة فواتير المشتريات</h2>
 
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        {/* الفلاتر */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">بحث</label>
+      {/* شريط البحث والتصفية */}
+      <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* البحث */}
+          <div className="col-span-2">
             <div className="relative">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث باسم المورد أو رقم الفاتورة..."
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="ابحث برقم الفاتورة أو اسم المورد..."
               />
+              <FaSearch className="absolute left-3 top-3 text-gray-400" />
             </div>
           </div>
 
+          {/* التصفية حسب نوع الدفع */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">نوع الدفع</label>
-            <select
-              value={paymentTypeFilter}
-              onChange={(e) => setPaymentTypeFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {paymentTypeOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">حالة الإرجاع</label>
-            <select
-              value={returnStatusFilter}
-              onChange={(e) => setReturnStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {returnStatusOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-end">
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setPaymentTypeFilter('all');
-                setReturnStatusFilter('all');
-              }}
-              className="w-full px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
-            >
-              <FaUndo /> إعادة تعيين
-            </button>
-          </div>
-        </div>
-
-        {/* إحصائيات سريعة */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="text-blue-600 text-sm font-medium">إجمالي الفواتير</div>
-            <div className="text-2xl font-bold text-blue-800">{purchaseInvoices.length}</div>
-          </div>
-          <div className="bg-yellow-50 p-4 rounded-lg">
-            <div className="text-yellow-600 text-sm font-medium">فواتير في الانتظار</div>
-            <div className="text-2xl font-bold text-yellow-800">
-              {purchaseInvoices.filter(inv => (inv.returnStatus || 'none') === 'pending').length}
-            </div>
-          </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <div className="text-green-600 text-sm font-medium">فواتير مُرجعة</div>
-            <div className="text-2xl font-bold text-green-800">
-              {purchaseInvoices.filter(inv => (inv.returnStatus || 'none') === 'completed').length}
-            </div>
-          </div>
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <div className="text-purple-600 text-sm font-medium">قيمة الإرجاعات</div>
-            <div className="text-2xl font-bold text-purple-800">
-              {formatCurrency(
-                purchaseInvoices
-                  .filter(inv => (inv.returnStatus || 'none') === 'completed')
-                  .reduce((sum, inv) => sum + (inv.total || 0), 0)
-              )}
+            <div className="relative">
+              <select
+                value={paymentTypeFilter}
+                onChange={(e) => setPaymentTypeFilter(e.target.value)}
+                className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+              >
+                <option value="all">كل الأنواع</option>
+                <option value="cash">نقدي</option>
+                <option value="deferred">آجل</option>
+                <option value="partial">جزئي</option>
+              </select>
+              <FaFilter className="absolute left-3 top-3 text-gray-400" />
             </div>
           </div>
         </div>
 
-        {/* الجدول */}
-        <Table
-          columns={columns}
-          data={filteredAndSortedData.slice(
-            (tableConfig.currentPage - 1) * tableConfig.pageSize,
-            tableConfig.currentPage * tableConfig.pageSize
-          )}
-          loading={tableConfig.loading}
-          error={tableConfig.error}
-          sortable={tableConfig.sortable}
-          filterable={tableConfig.filterable}
-          pagination={tableConfig.pagination}
-          currentPage={tableConfig.currentPage}
-          totalPages={tableConfig.totalPages}
-          pageSize={tableConfig.pageSize}
-          onSort={handleSort}
-          onPageChange={handlePageChange}
-          onEdit={canEditInvoice ? handleEditClick : null}
-          onDelete={canDeleteInvoice ? handleDeleteClick : null}
-          onView={canViewInvoice ? handleViewClick : null}
-          onReturn={canReturnInvoice ? handleReturn : null}
-          onPrint={canPrintInvoice ? handlePrintClick : null}
-          returnConfig={returnConfig}
-        />
+        <div className="mt-3 text-sm text-gray-600">
+          عرض {filteredInvoices.length} من {purchaseInvoices.length} فاتورة
+        </div>
       </div>
 
-      {/* نافذة عرض التفاصيل */}
-      {showViewModal && selectedInvoice && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">تفاصيل فاتورة المشتريات #{selectedInvoice.id}</h3>
-              <button
-                onClick={() => setShowViewModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <FaTimes size={24} />
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div>
-                <strong>المورد:</strong>
-                <span className="mr-2">
-                  {suppliers?.find(s => s.id === selectedInvoice.supplierId)?.name || 'غير محدد'}
-                </span>
-              </div>
-              <div>
-                <strong>التاريخ:</strong>
-                <span className="mr-2">{new Date(selectedInvoice.date).toLocaleDateString('ar-EG')}</span>
-              </div>
-              <div>
-                <strong>المجموع:</strong>
-                <span className="mr-2 font-bold text-blue-600">{formatCurrency(selectedInvoice.total || 0)}</span>
-              </div>
-              <div>
-                <strong>حالة الإرجاع:</strong>
-                <span className="mr-2">
-                  {(() => {
-                    const returnInfo = calculateReturnInfo(selectedInvoice);
-                    return (
-                      <div className="flex items-center gap-2">
-                        {returnInfo.icon}
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${returnInfo.statusColor}`}>
-                          {returnInfo.status}
+      {/* جدول الفواتير */}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-100 border-b">
+                <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">رقم الفاتورة</th>
+                <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">المورد</th>
+                <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">التاريخ</th>
+                <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">نوع الدفع</th>
+                <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">المجموع</th>
+                <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">عدد المنتجات</th>
+                <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {filteredInvoices.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
+                    <FaFileInvoice className="mx-auto mb-2 text-3xl text-gray-300" />
+                    <p>لا توجد فواتير</p>
+                  </td>
+                </tr>
+              ) : (
+                filteredInvoices.map((invoice) => {
+                  const supplier = suppliers.find(s => s.id === parseInt(invoice.supplierId));
+                  return (
+                    <tr key={invoice.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 font-semibold text-blue-600">
+                        #{invoice.id}
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="font-medium">{supplier?.name || 'غير محدد'}</div>
+                        <div className="text-xs text-gray-500">{supplier?.phone || '-'}</div>
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        {new Date(invoice.date).toLocaleDateString('ar-EG')}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          invoice.paymentType === 'cash' ? 'bg-green-100 text-green-700' :
+                          invoice.paymentType === 'deferred' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-blue-100 text-blue-700'
+                        }`}>
+                          {paymentTypes[invoice.paymentType] || invoice.paymentType}
                         </span>
-                      </div>
-                    );
-                  })()}
-                </span>
-              </div>
-            </div>
-
-            <div className="border-t pt-4">
-              <h4 className="font-bold mb-3">عناصر الفاتورة</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-4 py-2 text-right">المنتج</th>
-                      <th className="px-4 py-2 text-right">الكمية</th>
-                      <th className="px-4 py-2 text-right">السعر</th>
-                      <th className="px-4 py-2 text-right">المجموع</th>
+                      </td>
+                      <td className="px-3 py-2 text-center font-bold text-green-600">
+                        {formatCurrency(invoice.total || 0)}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <span className="px-2 py-1 bg-gray-100 rounded-full text-xs">
+                          {invoice.items?.length || 0}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="flex justify-center gap-2">
+                          {canViewInvoice && (
+                            <button
+                              onClick={() => handleView(invoice)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                              title="عرض"
+                            >
+                              <FaFileInvoice />
+                            </button>
+                          )}
+                          {canReturnInvoice && (
+                            <button
+                              onClick={() => handleReturn(invoice)}
+                              className="p-2 text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                              title="إرجاع"
+                            >
+                              <FaUndo />
+                            </button>
+                          )}
+                          {canPrintInvoice && (
+                            <button
+                              onClick={() => handlePrint(invoice)}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors"
+                              title="طباعة"
+                            >
+                              <FaPrint />
+                            </button>
+                          )}
+                          {canDeleteInvoice && (
+                            <button
+                              onClick={() => handleDelete(invoice)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                              title="حذف"
+                            >
+                              <FaTrash />
+                            </button>
+                          )}
+                          {!canViewInvoice && !canReturnInvoice && !canPrintInvoice && !canDeleteInvoice && (
+                            <span className="text-xs text-gray-400">غير متوفر</span>
+                          )}
+                        </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {selectedInvoice.items?.map((item, index) => (
-                      <tr key={index} className="border-b">
-                        <td className="px-4 py-2">
-                          {products?.find(p => p.id === item.productId)?.name || 'غير محدد'}
-                        </td>
-                        <td className="px-4 py-2">{item.quantity}</td>
-                        <td className="px-4 py-2">{formatCurrency(item.price || 0)}</td>
-                        <td className="px-4 py-2">{formatCurrency((item.quantity || 0) * (item.price || 0))}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Modal عرض تفاصيل الفاتورة */}
+      {showViewModal && selectedInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 text-white sticky top-0">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-bold">تفاصيل فاتورة المشتريات #{selectedInvoice.id}</h3>
+                <button
+                  onClick={() => setShowViewModal(false)}
+                  className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all"
+                >
+                  ✕
+                </button>
               </div>
             </div>
 
-            <div className="flex justify-end mt-6">
+            {/* Body */}
+            <div className="p-6">
+              {/* معلومات الفاتورة */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">المورد</p>
+                  <p className="font-semibold text-sm">
+                    {suppliers.find(s => s.id === parseInt(selectedInvoice.supplierId))?.name || 'غير محدد'}
+                  </p>
+                </div>
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">التاريخ</p>
+                  <p className="font-semibold text-sm">
+                    {new Date(selectedInvoice.date).toLocaleDateString('ar-EG')}
+                  </p>
+                </div>
+                <div className="bg-yellow-50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">نوع الدفع</p>
+                  <p className="font-semibold text-sm">
+                    {paymentTypes[selectedInvoice.paymentType] || selectedInvoice.paymentType}
+                  </p>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">المجموع الكلي</p>
+                  <p className="font-bold text-lg text-purple-600">
+                    {formatCurrency(selectedInvoice.total || 0)}
+                  </p>
+                </div>
+              </div>
+
+              {/* جدول المنتجات */}
+              <div className="mb-6">
+                <h4 className="text-sm font-bold text-gray-800 mb-3">المنتجات</h4>
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="px-3 py-2 text-right text-xs font-semibold">#</th>
+                        <th className="px-3 py-2 text-right text-xs font-semibold">المنتج</th>
+                        <th className="px-3 py-2 text-center text-xs font-semibold">الكمية</th>
+                        <th className="px-3 py-2 text-center text-xs font-semibold">السعر</th>
+                        <th className="px-3 py-2 text-center text-xs font-semibold">الإجمالي</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {(selectedInvoice.items || []).map((item, index) => {
+                        const product = products.find(p => p.id === parseInt(item.productId));
+                        // محاولة الحصول على اسم المنتج من مصادر متعددة
+                        const productName = product?.name || item.productName || 'غير محدد';
+                        const productCategory = product?.category || '-';
+                        const itemTotal = (item.quantity || 0) * (item.price || 0) + 
+                                         (item.subQuantity || 0) * (item.subPrice || 0);
+                        return (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-3 py-2">{index + 1}</td>
+                            <td className="px-3 py-2">
+                              <div className="font-medium">{productName}</div>
+                              <div className="text-xs text-gray-500">{productCategory}</div>
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <div>{item.quantity || 0} أساسي</div>
+                              {item.subQuantity > 0 && (
+                                <div className="text-xs text-gray-500">{item.subQuantity} فرعي</div>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <div>{formatCurrency(item.price || 0)}</div>
+                              {item.subPrice > 0 && (
+                                <div className="text-xs text-gray-500">{formatCurrency(item.subPrice || 0)}</div>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-center font-semibold text-blue-600">
+                              {formatCurrency(itemTotal)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* الملاحظات */}
+              {selectedInvoice.notes && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">ملاحظات</p>
+                  <p className="text-sm">{selectedInvoice.notes}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 p-4 border-t flex justify-end gap-2">
+              {canPrintInvoice && (
+                <button
+                  onClick={() => {
+                    handlePrint(selectedInvoice);
+                    setShowViewModal(false);
+                  }}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  <FaPrint /> طباعة
+                </button>
+              )}
               <button
                 onClick={() => setShowViewModal(false)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
               >
                 إغلاق
               </button>
@@ -614,39 +431,357 @@ const ManagePurchaseInvoices = () => {
         </div>
       )}
 
-      {/* نافذة تأكيد الحذف */}
-      {showDeleteModal && selectedInvoice && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="text-center">
-              <FaExclamationTriangle className="text-red-600 text-4xl mx-auto mb-4" />
-              <h3 className="text-lg font-bold mb-2">تأكيد الحذف</h3>
-              <p className="text-gray-600 mb-6">
-                هل أنت متأكد من حذف فاتورة المشتريات رقم {selectedInvoice.id}؟
-                <br />
-                <strong>لا يمكن التراجع عن هذا الإجراء!</strong>
-              </p>
-              <div className="flex gap-4">
-                <button
-                  onClick={handleDeleteConfirm}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-                >
-                  نعم، احذف الفاتورة
-                </button>
-                <button
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                    setSelectedInvoice(null);
-                  }}
-                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-colors"
-                >
-                  إلغاء
-                </button>
+      {/* نافذة الإرجاع المنبثقة */}
+      {showReturnModal && returnInvoice && (
+        <PurchaseReturnModal
+          invoice={returnInvoice}
+          products={products}
+          suppliers={suppliers}
+          purchaseReturns={purchaseReturns}
+          onSubmit={handlePurchaseReturn}
+          onClose={closeReturnModal}
+          formatCurrency={formatCurrency}
+        />
+      )}
+    </div>
+  );
+};
+
+// مكون النافذة المنبثقة للإرجاع في المشتريات
+const PurchaseReturnModal = ({ invoice, products, suppliers, purchaseReturns, onSubmit, onClose, formatCurrency }) => {
+  const [returnItems, setReturnItems] = useState([]);
+  const [reason, setReason] = useState('');
+  const [notes, setNotes] = useState('');
+
+  const supplier = suppliers.find(s => s.id === parseInt(invoice.supplierId));
+
+  useEffect(() => {
+    // حساب الكميات المرتجعة مسبقاً لكل منتج
+    const itemsWithReturnInfo = invoice.items.map(item => {
+      const previousReturns = purchaseReturns.filter(ret => 
+        ret.invoiceId === invoice.id && ret.status !== 'cancelled'
+      );
+      
+      let totalReturnedQty = 0;
+      previousReturns.forEach(ret => {
+        const retItem = ret.items.find(i => i.productId === item.productId);
+        if (retItem) {
+          totalReturnedQty += (retItem.quantity || 0) + (retItem.subQuantity || 0);
+        }
+      });
+      
+      const originalQty = parseInt(item.quantity) || 0;
+      const availableQty = originalQty - totalReturnedQty;
+      
+      // الحصول على اسم المنتج من قائمة المنتجات
+      const product = products.find(p => p.id === parseInt(item.productId));
+      
+      return {
+        productId: item.productId,
+        productName: product?.name || item.productName || 'غير محدد',
+        originalQuantity: originalQty,
+        originalPrice: item.price || 0,
+        returnedQty: totalReturnedQty,
+        availableQty: availableQty,
+        returnQuantity: 0,
+        returnSubQuantity: 0,
+        selected: false
+      };
+    });
+    
+    setReturnItems(itemsWithReturnInfo);
+  }, [invoice, purchaseReturns, products]);
+
+  const handleItemSelect = (index) => {
+    const updated = [...returnItems];
+    updated[index].selected = !updated[index].selected;
+    
+    // إذا تم إلغاء التحديد، إعادة تعيين الكميات
+    if (!updated[index].selected) {
+      updated[index].returnQuantity = 0;
+      updated[index].returnSubQuantity = 0;
+    }
+    
+    setReturnItems(updated);
+  };
+
+  const handleQuantityChange = (index, value) => {
+    const updated = [...returnItems];
+    const item = updated[index];
+    
+    updated[index].returnQuantity = Math.max(0, parseInt(value) || 0);
+    
+    // التحقق من عدم تجاوز الكمية المتاحة
+    if (updated[index].returnQuantity > item.availableQty) {
+      updated[index].returnQuantity = 0;
+    }
+    
+    setReturnItems(updated);
+  };
+
+  const calculateTotalReturn = () => {
+    return returnItems.reduce((total, item) => {
+      if (item.selected) {
+        const mainAmount = item.returnQuantity * item.originalPrice;
+        return total + mainAmount;
+      }
+      return total;
+    }, 0);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    // التحقق من وجود منتجات محددة
+    const selectedItems = returnItems.filter(item => item.selected);
+    if (selectedItems.length === 0) {
+      alert('يرجى اختيار منتج واحد على الأقل للإرجاع');
+      return;
+    }
+
+    // التحقق من الكميات
+    const hasInvalidQuantity = selectedItems.some(item => 
+      item.returnQuantity === 0
+    );
+    
+    if (hasInvalidQuantity) {
+      alert('يرجى إدخال كمية صحيحة للمنتجات المحددة');
+      return;
+    }
+
+    // التحقق من سبب الإرجاع
+    if (!reason.trim()) {
+      alert('يرجى إدخال سبب الإرجاع');
+      return;
+    }
+
+    try {
+      // إعداد بيانات الإرجاع
+      const returnData = {
+        invoiceId: invoice.id,
+        items: selectedItems.map(item => ({
+          productId: item.productId,
+          quantity: item.returnQuantity,
+          subQuantity: 0
+        })),
+        reason,
+        notes
+      };
+
+      onSubmit(returnData);
+    } catch (error) {
+      alert(error.message || 'حدث خطأ في عملية الإرجاع');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        {/* رأس النافذة */}
+        <div className="flex justify-between items-center p-6 border-b">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">إرجاع فاتورة مشتريات</h2>
+            <p className="text-sm text-gray-600">فاتورة رقم #{invoice.id}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 text-2xl"
+          >
+            <FaTimes />
+          </button>
+        </div>
+
+        {/* محتوى النافذة */}
+        <div className="p-6">
+          {/* معلومات الفاتورة الأصلية */}
+          <div className="bg-gray-50 p-4 rounded-lg mb-4">
+            <h3 className="text-sm font-bold text-gray-800 mb-3">معلومات الفاتورة الأصلية</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-xs text-gray-600 mb-1">المورد</p>
+                <p className="font-semibold text-sm">{supplier?.name || 'غير محدد'}</p>
+              </div>
+              <div className="bg-green-50 p-3 rounded-lg">
+                <p className="text-xs text-gray-600 mb-1">التاريخ</p>
+                <p className="font-semibold text-sm">
+                  {new Date(invoice.date).toLocaleDateString('ar-EG')}
+                </p>
+              </div>
+              <div className="bg-yellow-50 p-3 rounded-lg">
+                <p className="text-xs text-gray-600 mb-1">نوع الدفع</p>
+                <p className="font-semibold text-sm">
+                  {invoice.paymentType === 'cash' ? 'نقدي' : invoice.paymentType === 'deferred' ? 'آجل' : 'جزئي'}
+                </p>
+              </div>
+              <div className="bg-purple-50 p-3 rounded-lg">
+                <p className="text-xs text-gray-600 mb-1">المجموع الكلي</p>
+                <p className="font-bold text-lg text-purple-600">{formatCurrency(invoice.total || 0)}</p>
               </div>
             </div>
           </div>
+
+          {/* نموذج الإرجاع */}
+          <form onSubmit={handleSubmit}>
+            {/* جدول المنتجات */}
+            <div className="bg-white border rounded-lg mb-4">
+              <div className="p-4 border-b">
+                <h3 className="text-sm font-bold text-gray-800">المنتجات المراد إرجاعها</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 w-10">
+                        <input
+                          type="checkbox"
+                          onChange={(e) => {
+                            const updated = returnItems.map(item => ({
+                              ...item,
+                              selected: e.target.checked && item.availableQty > 0
+                            }));
+                            setReturnItems(updated);
+                          }}
+                          className="rounded"
+                        />
+                      </th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">المنتج</th>
+                      <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">الكمية الأصلية</th>
+                      <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">المرتجع سابقاً</th>
+                      <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">المتاح للإرجاع</th>
+                      <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">كمية الإرجاع</th>
+                      <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">المبلغ المرتجع</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {returnItems.map((item, index) => {
+                      const product = products.find(p => p.id === parseInt(item.productId));
+                      const returnAmount = item.returnQuantity * item.originalPrice;
+                      const isDisabled = item.availableQty === 0;
+                      
+                      return (
+                        <tr key={index} className={`hover:bg-gray-50 ${isDisabled ? 'opacity-50' : ''}`}>
+                          <td className="px-3 py-2 text-center">
+                            <input
+                              type="checkbox"
+                              checked={item.selected}
+                              onChange={() => handleItemSelect(index)}
+                              disabled={isDisabled}
+                              className="rounded"
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="font-medium">{item.productName}</div>
+                            <div className="text-xs text-gray-500">{product?.category || '-'}</div>
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            {item.originalQuantity}
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                              {item.returnedQty}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              item.availableQty > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                            }`}>
+                              {item.availableQty}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2">
+                            {item.selected && (
+                              <input
+                                type="number"
+                                value={item.returnQuantity}
+                                onChange={(e) => handleQuantityChange(index, e.target.value)}
+                                className="w-20 px-2 py-1 text-xs text-center border border-gray-300 rounded"
+                                min="0"
+                                max={item.availableQty}
+                              />
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-center font-semibold text-red-600">
+                            {item.selected ? returnAmount.toFixed(2) : '0.00'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* سبب الإرجاع والملاحظات */}
+            <div className="bg-white border rounded-lg mb-4 p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    سبب الإرجاع <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">اختر السبب...</option>
+                    <option value="defective">منتج معيب</option>
+                    <option value="damaged">منتج تالف</option>
+                    <option value="wrong_item">منتج خاطئ</option>
+                    <option value="supplier_request">طلب المورد</option>
+                    <option value="other">أخرى</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">ملاحظات إضافية</label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows="2"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="أدخل ملاحظات إضافية..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ملخص الإرجاع */}
+            <div className="bg-white border rounded-lg mb-4 p-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm text-gray-600">عدد المنتجات المحددة</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {returnItems.filter(i => i.selected).length}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-600">إجمالي المبلغ المرتجع</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {formatCurrency(calculateTotalReturn())}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* أزرار الحفظ */}
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                type="submit"
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors"
+              >
+                <FaUndo /> تنفيذ الإرجاع
+              </button>
+            </div>
+          </form>
         </div>
-      )}
+      </div>
     </div>
   );
 };
