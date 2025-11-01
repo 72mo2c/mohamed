@@ -12,7 +12,7 @@ import Card from '../../components/Common/Card';
 import Table from '../../components/Common/Table';
 import Input from '../../components/Common/Input';
 import Select from '../../components/Common/Select';
-import { FaFileInvoice, FaSearch, FaExclamationTriangle, FaTimes, FaUndo, FaEye, FaTrash, FaPrint } from 'react-icons/fa';
+import { FaFileInvoice, FaSearch, FaExclamationTriangle, FaTimes, FaUndo, FaEye, FaTrash, FaPrint, FaEdit } from 'react-icons/fa';
 import InvoicePrint from '../../components/Common/InvoicePrint';
 
 const ManageSalesInvoices = () => {
