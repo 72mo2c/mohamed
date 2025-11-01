@@ -35,7 +35,9 @@ import {
   FaDollarSign,
   FaCashRegister,
   FaTools,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaCalculator,
+  FaBookOpen
 } from 'react-icons/fa';
 
 const Sidebar = ({ isOpen, closeSidebar }) => {
@@ -146,6 +148,16 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
         { title: 'حركة الخزينة', icon: <FaChartLine />, path: '/treasury/movement' },
         { title: 'أرصدة العملاء', icon: <FaUsers />, path: '/treasury/customer-balances' },
         { title: 'أرصدة الموردين', icon: <FaTruck />, path: '/treasury/supplier-balances' },
+      ]
+    },
+    {
+      id: 'accounting',
+      title: 'المحاسبة',
+      icon: <FaCalculator />,
+      color: 'from-orange-500 to-orange-600',
+      subItems: [
+        { title: 'دليل الحسابات', icon: <FaBookOpen />, path: '/accounting/chart-of-accounts' },
+        { title: 'القيود اليومية', icon: <FaFileInvoice />, path: '/accounting/journal-entry' },
       ]
     },
     {

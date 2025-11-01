@@ -78,6 +78,10 @@ import ProfitLossReport from '../../pages/Reports/ProfitLossReport';
 
 // Adjustments
 import QuantityAdjustment from '../../pages/Adjustments/QuantityAdjustment';
+
+// Accounting
+import ChartOfAccounts from '../../pages/Accounting/ChartOfAccounts';
+import JournalEntry from '../../pages/Accounting/JournalEntry';
 import ValueAdjustment from '../../pages/Adjustments/ValueAdjustment';
 import DamagedWriteOff from '../../pages/Adjustments/DamagedWriteOff';
 import CustomerBalanceAdjustment from '../../pages/Adjustments/CustomerBalanceAdjustment';
@@ -155,6 +159,10 @@ const getComponentForPath = (path) => {
     
     // Tools
     '/tools/fix-negative-quantities': FixNegativeQuantities,
+    
+    // Accounting
+    '/accounting/chart-of-accounts': ChartOfAccounts,
+    '/accounting/journal-entry': JournalEntry,
     
     // Reports
     '/reports': ReportsHome,

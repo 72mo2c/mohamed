@@ -44,6 +44,10 @@ export const DataProvider = ({ children }) => {
   
   // بيانات التحويلات بين المخازن
   const [transfers, setTransfers] = useState([]);
+  
+  // بيانات نظام المحاسبة
+  const [accounts, setAccounts] = useState([]);  // دليل الحسابات
+  const [journalEntries, setJournalEntries] = useState([]);  // القيود اليومية
 
   // تحميل البيانات من LocalStorage
   useEffect(() => {
@@ -79,6 +83,8 @@ export const DataProvider = ({ children }) => {
     loadData('bero_cash_receipts', setCashReceipts);
     loadData('bero_cash_disbursements', setCashDisbursements);
     loadData('bero_transfers', setTransfers);
+    loadData('bero_accounts', setAccounts);
+    loadData('bero_journal_entries', setJournalEntries);
   };
 
   // حفض البيانات في LocalStorage
@@ -1397,6 +1403,301 @@ export const DataProvider = ({ children }) => {
     return newTransfer;
   };
 
+  // ==================== دوال دليل الحسابات (Chart of Accounts) ====================
+  
+  const addAccount = (account) => {
+    // التحقق من وجود الحساب الأب عند إنشاء حساب فرعي
+    if (account.parentId) {
+      const parentAccount = accounts.find(acc => acc.id === account.parentId);
+      if (!parentAccount) {
+        throw new Error('الحساب الأب المحدد غير موجود');
+      }
+    }
+    
+    // التحقق من عدم تكرار رمز الحساب
+    const existingAccount = accounts.find(acc => acc.code === account.code);
+    if (existingAccount) {
+      throw new Error(`رمز الحساب ${account.code} موجود مسبقاً`);
+    }
+    
+    // حساب مستوى الحساب
+    let level = 1;
+    if (account.parentId) {
+      const parentAccount = accounts.find(acc => acc.id === account.parentId);
+      level = parentAccount ? parentAccount.level + 1 : 1;
+    }
+    
+    const newAccount = {
+      id: Date.now(),
+      code: account.code,
+      name: account.name,
+      nameEn: account.nameEn || '',
+      parentId: account.parentId || null,
+      level: level,
+      type: account.type, // asset, liability, equity, revenue, expense, gain, loss
+      nature: account.nature, // debit, credit
+      category: account.category || '',
+      isActive: account.isActive !== false,
+      isSystem: account.isSystem || false,
+      allowPosting: account.allowPosting !== false,
+      description: account.description || '',
+      balance: 0,
+      openingBalance: account.openingBalance || 0,
+      openingBalanceType: account.openingBalanceType || 'debit',
+      costCenterId: account.costCenterId || null,
+      branchId: account.branchId || null,
+      createdAt: new Date().toISOString(),
+      createdBy: 1, // TODO: من AuthContext
+      updatedAt: new Date().toISOString(),
+      updatedBy: 1
+    };
+    
+    const updated = [...accounts, newAccount];
+    setAccounts(updated);
+    saveData('bero_accounts', updated);
+    return newAccount;
+  };
+  
+  const updateAccount = (id, updatedData) => {
+    // التحقق من وجود الحساب
+    const existingAccount = accounts.find(acc => acc.id === id);
+    if (!existingAccount) {
+      throw new Error('الحساب غير موجود');
+    }
+    
+    // منع تعديل الحسابات النظامية
+    if (existingAccount.isSystem) {
+      throw new Error('لا يمكن تعديل الحسابات النظامية');
+    }
+    
+    // التحقق من تكرار الرمز (إذا تم تغييره)
+    if (updatedData.code && updatedData.code !== existingAccount.code) {
+      const codeExists = accounts.find(acc => acc.code === updatedData.code && acc.id !== id);
+      if (codeExists) {
+        throw new Error(`رمز الحساب ${updatedData.code} موجود مسبقاً`);
+      }
+    }
+    
+    const updated = accounts.map(acc => 
+      acc.id === id ? { 
+        ...acc, 
+        ...updatedData,
+        updatedAt: new Date().toISOString(),
+        updatedBy: 1
+      } : acc
+    );
+    setAccounts(updated);
+    saveData('bero_accounts', updated);
+  };
+  
+  const deleteAccount = (id) => {
+    // التحقق من وجود الحساب
+    const account = accounts.find(acc => acc.id === id);
+    if (!account) {
+      throw new Error('الحساب غير موجود');
+    }
+    
+    // منع حذف الحسابات النظامية
+    if (account.isSystem) {
+      throw new Error('لا يمكن حذف الحسابات النظامية');
+    }
+    
+    // التحقق من وجود حسابات فرعية
+    const hasChildren = accounts.some(acc => acc.parentId === id);
+    if (hasChildren) {
+      throw new Error('لا يمكن حذف الحساب: يوجد حسابات فرعية مرتبطة به');
+    }
+    
+    // التحقق من وجود حركات في الحساب
+    const hasTransactions = journalEntries.some(entry => 
+      entry.entries.some(je => je.accountId === id)
+    );
+    if (hasTransactions) {
+      throw new Error('لا يمكن حذف الحساب: يوجد حركات محاسبية مرتبطة به');
+    }
+    
+    const updated = accounts.filter(acc => acc.id !== id);
+    setAccounts(updated);
+    saveData('bero_accounts', updated);
+  };
+  
+  // ==================== دوال القيود اليومية ====================
+  
+  const createJournalEntry = (entryData) => {
+    const { date, description, reference, entries, totalDebit, totalCredit } = entryData;
+    
+    // التحقق من توازن القيد (المدين = الدائن)
+    if (Math.abs(totalDebit - totalCredit) > 0.001) {
+      throw new Error('القيد غير متوازن: إجمالي المدين يجب أن يساوي إجمالي الدائن');
+    }
+    
+    // التحقق من وجود حسابات صحيحة
+    for (const entry of entries) {
+      const account = accounts.find(acc => acc.id === entry.accountId);
+      if (!account) {
+        throw new Error(`الحساب رقم ${entry.accountId} غير موجود`);
+      }
+      
+      if (!account.allowPosting) {
+        throw new Error(`الحساب ${account.name} لا يسمح بالترحيل`);
+      }
+    }
+    
+    // إنشاء رقم تسلسلي للقيد
+    const lastEntry = journalEntries.length > 0 ? journalEntries[0] : null;
+    const nextNumber = lastEntry ? lastEntry.entryNumber + 1 : 1;
+    
+    const newEntry = {
+      id: Date.now(),
+      entryNumber: nextNumber,
+      date: date || new Date().toISOString(),
+      description: description,
+      reference: reference || '',
+      entries: entries.map(entry => ({
+        ...entry,
+        id: Date.now() + Math.random() // معرف فريد لكل سطر قيد
+      })),
+      totalDebit: totalDebit,
+      totalCredit: totalCredit,
+      status: 'posted', // draft, posted, reversed
+      createdAt: new Date().toISOString(),
+      createdBy: 1,
+      postedAt: new Date().toISOString(),
+      postedBy: 1
+    };
+    
+    // إضافة القيد للقائمة (الأحدث أولاً)
+    const updated = [newEntry, ...journalEntries];
+    setJournalEntries(updated);
+    saveData('bero_journal_entries', updated);
+    
+    // تحديث أرصدة الحسابات المتأثرة
+    updateAccountBalances(entries);
+    
+    return newEntry;
+  };
+  
+  // دالة مساعدة لتحديث أرصدة الحسابات
+  const updateAccountBalances = (entryLines) => {
+    const updatedAccounts = [...accounts];
+    
+    entryLines.forEach(line => {
+      const accountIndex = updatedAccounts.findIndex(acc => acc.id === line.accountId);
+      if (accountIndex !== -1) {
+        const account = updatedAccounts[accountIndex];
+        let currentBalance = account.balance || 0;
+        
+        if (line.debit && line.debit > 0) {
+          // إضافة إلى الرصيد
+          if (account.nature === 'debit') {
+            currentBalance += line.debit;
+          } else {
+            currentBalance -= line.debit;
+          }
+        }
+        
+        if (line.credit && line.credit > 0) {
+          // خصم من الرصيد
+          if (account.nature === 'credit') {
+            currentBalance += line.credit;
+          } else {
+            currentBalance -= line.credit;
+          }
+        }
+        
+        updatedAccounts[accountIndex] = {
+          ...account,
+          balance: currentBalance,
+          updatedAt: new Date().toISOString(),
+          updatedBy: 1
+        };
+      }
+    });
+    
+    setAccounts(updatedAccounts);
+    saveData('bero_accounts', updatedAccounts);
+  };
+  
+  // دالة لاسترجاع حركة حساب معين
+  const getAccountTransactions = (accountId, startDate = null, endDate = null) => {
+    let transactions = [];
+    
+    journalEntries.forEach(entry => {
+      // فلترة حسب التاريخ إذا تم تحديدها
+      if (startDate && new Date(entry.date) < new Date(startDate)) return;
+      if (endDate && new Date(entry.date) > new Date(endDate)) return;
+      
+      // البحث عن سطور القيد المتعلقة بالحساب
+      entry.entries.forEach(entryLine => {
+        if (entryLine.accountId === accountId) {
+          transactions.push({
+            id: entry.id,
+            entryNumber: entry.entryNumber,
+            date: entry.date,
+            description: entry.description,
+            reference: entry.reference,
+            debit: entryLine.debit || 0,
+            credit: entryLine.credit || 0,
+            balance: 0, // سيتم حسابه لاحقاً
+            runningBalance: 0 // رصيد تراكمي
+          });
+        }
+      });
+    });
+    
+    // ترتيب حسب التاريخ والرقم
+    transactions.sort((a, b) => {
+      if (a.date !== b.date) {
+        return new Date(b.date) - new Date(a.date);
+      }
+      return b.entryNumber - a.entryNumber;
+    });
+    
+    // حساب الرصيد التراكمي
+    let runningBalance = 0;
+    const account = accounts.find(acc => acc.id === accountId);
+    const isDebitNature = account ? account.nature === 'debit' : true;
+    
+    transactions.forEach(transaction => {
+      if (isDebitNature) {
+        runningBalance += (transaction.debit - transaction.credit);
+      } else {
+        runningBalance += (transaction.credit - transaction.debit);
+      }
+      transaction.runningBalance = runningBalance;
+    });
+    
+    return transactions;
+  };
+  
+  // دالة للحصول على ميزان مراجعة
+  const getTrialBalance = (asOfDate = null) => {
+    const accountsWithBalances = accounts.map(account => {
+      const transactions = getAccountTransactions(account.id, null, asOfDate);
+      const totalDebit = transactions.reduce((sum, t) => sum + t.debit, 0);
+      const totalCredit = transactions.reduce((sum, t) => sum + t.credit, 0);
+      
+      let balance = account.openingBalance || 0;
+      if (account.openingBalanceType === 'debit') {
+        balance += totalDebit - totalCredit;
+      } else {
+        balance += totalCredit - totalDebit;
+      }
+      
+      return {
+        ...account,
+        debit: totalDebit,
+        credit: totalCredit,
+        balance: balance,
+        balanceType: account.nature === 'debit' ? 'debit' : 'credit'
+      };
+    });
+    
+    return accountsWithBalances.filter(acc => 
+      acc.debit > 0 || acc.credit > 0 || acc.balance !== 0
+    );
+  };
+
   const value = {
     warehouses,
     products,
@@ -1448,7 +1749,16 @@ export const DataProvider = ({ children }) => {
     updateSupplierBalance,
     getAllCustomerBalances,
     getAllSupplierBalances,
-    transferProduct
+    transferProduct,
+    // دوال المحاسبة
+    accounts,
+    journalEntries,
+    addAccount,
+    updateAccount,
+    deleteAccount,
+    createJournalEntry,
+    getAccountTransactions,
+    getTrialBalance
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

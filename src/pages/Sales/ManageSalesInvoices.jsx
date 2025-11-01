@@ -434,7 +434,6 @@ const ManageSalesInvoices = () => {
           onSubmit={handleSalesReturn}
           onClose={closeReturnModal}
           formatCurrency={formatCurrency}
-          showError={showError}
         />
       )}
     </div>
@@ -442,7 +441,7 @@ const ManageSalesInvoices = () => {
 };
 
 // مكون النافذة المنبثقة للإرجاع في المبيعات
-const SalesReturnModal = ({ invoice, products, customers, salesReturns, onSubmit, onClose, formatCurrency, showError }) => {
+const SalesReturnModal = ({ invoice, products, customers, salesReturns, onSubmit, onClose, formatCurrency }) => {
   const [returnItems, setReturnItems] = useState([]);
   const [reason, setReason] = useState('');
   const [notes, setNotes] = useState('');
@@ -529,7 +528,7 @@ const SalesReturnModal = ({ invoice, products, customers, salesReturns, onSubmit
     // التحقق من وجود منتجات محددة
     const selectedItems = returnItems.filter(item => item.selected);
     if (selectedItems.length === 0) {
-      showError('يرجى اختيار منتج واحد على الأقل للإرجاع');
+      alert('يرجى اختيار منتج واحد على الأقل للإرجاع');
       return;
     }
 
@@ -539,13 +538,13 @@ const SalesReturnModal = ({ invoice, products, customers, salesReturns, onSubmit
     );
     
     if (hasInvalidQuantity) {
-      showError('يرجى إدخال كمية صحيحة للمنتجات المحددة');
+      alert('يرجى إدخال كمية صحيحة للمنتجات المحددة');
       return;
     }
 
     // التحقق من سبب الإرجاع
     if (!reason.trim()) {
-      showError('يرجى إدخال سبب الإرجاع');
+      alert('يرجى إدخال سبب الإرجاع');
       return;
     }
 
@@ -564,7 +563,7 @@ const SalesReturnModal = ({ invoice, products, customers, salesReturns, onSubmit
 
       onSubmit(returnData);
     } catch (error) {
-      showError('حدث خطأ في عملية الإرجاع');
+      alert(error.message || 'حدث خطأ في عملية الإرجاع');
     }
   };
 
