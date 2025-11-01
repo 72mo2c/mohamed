@@ -21,10 +21,25 @@ const NewSalesReturn = () => {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
+    console.log('🔍 تحليل معرف الفاتورة من URL:', {
+      invoiceId,
+      invoiceIdType: typeof invoiceId,
+      invoiceIdValue: invoiceId,
+      isUndefined: invoiceId === undefined,
+      isNull: invoiceId === null,
+      isEmptyString: invoiceId === '',
+      isUndefinedString: invoiceId === 'undefined',
+      hasInvoiceId: !!invoiceId
+    });
+    
     // التأكد من وجود المعرف
     if (!invoiceId || invoiceId === 'undefined' || invoiceId === '') {
-      console.error('معرف الفاتورة غير صحيح:', invoiceId);
-      showError('خطأ في رابط الإرجاع - معرف الفاتورة غير محدد');
+      console.error('معرف الفاتورة غير صحيح:', {
+        invoiceId,
+        invoiceIdType: typeof invoiceId,
+        invoiceIdValue: invoiceId
+      });
+      showError(`خطأ في رابط الإرجاع - معرف الفاتورة غير محدد. القيمة المستلمة: ${invoiceId} (نوع: ${typeof invoiceId})`);
       navigate('/sales/manage');
       return;
     }

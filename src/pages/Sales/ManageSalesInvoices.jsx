@@ -111,9 +111,24 @@ const ManageSalesInvoices = () => {
     sampleInvoice: filteredInvoices[0] ? {
       id: filteredInvoices[0].id,
       idType: typeof filteredInvoices[0].id,
-      customerId: filteredInvoices[0].customerId
+      customerId: filteredInvoices[0].customerId,
+      fullData: filteredInvoices[0]
     } : 'لا توجد فواتير',
-    allInvoiceIds: salesInvoices.map(inv => ({ id: inv.id, type: typeof inv.id }))
+    allInvoiceIds: salesInvoices.map(inv => ({ 
+      id: inv.id, 
+      type: typeof inv.id,
+      hasId: inv.id !== undefined && inv.id !== null,
+      isString: typeof inv.id === 'string',
+      isNumber: typeof inv.id === 'number'
+    })),
+    allFilteredInvoiceIds: filteredInvoices.map(inv => ({ 
+      id: inv.id, 
+      type: typeof inv.id,
+      hasId: inv.id !== undefined && inv.id !== null,
+      isString: typeof inv.id === 'string',
+      isNumber: typeof inv.id === 'number',
+      fullData: inv
+    }))
   });
 
   const handleView = (invoice) => {
@@ -126,26 +141,35 @@ const ManageSalesInvoices = () => {
   };
 
   const handleReturn = (invoice) => {
+    console.log('🚨 محاولة إرجاع الفاتورة - تشخيص شامل:', {
+      fullInvoice: invoice,
+      invoiceId: invoice?.id,
+      invoiceIdType: typeof invoice?.id,
+      invoiceIdValue: invoice?.id,
+      isValidId: invoice?.id != null && invoice?.id !== '',
+      hasInvoice: !!invoice,
+      invoiceKeys: invoice ? Object.keys(invoice) : [],
+      allData: invoice
+    });
+    
     if (!canReturnInvoice) {
       showError('ليس لديك صلاحية لإرجاع فواتير المبيعات');
       return;
     }
     
-    // تشخيص المشكلة
-    console.log('معلومات الفاتورة للإرجاع:', {
-      invoice,
-      invoiceId: invoice.id,
-      invoiceIdType: typeof invoice.id,
-      isValidId: invoice.id != null && invoice.id !== ''
-    });
-    
     // التحقق من صحة المعرف
-    if (!invoice.id || invoice.id === undefined || invoice.id === null || invoice.id === '') {
-      console.error('معرف الفاتورة غير صحيح:', invoice.id);
-      showError('خطأ في معرف الفاتورة - المعرف غير موجود أو فارغ');
+    if (!invoice || !invoice.id || invoice.id === undefined || invoice.id === null || invoice.id === '') {
+      console.error('معرف الفاتورة غير صحيح:', {
+        invoice,
+        invoiceId: invoice?.id,
+        invoiceIdType: typeof invoice?.id,
+        hasInvoice: !!invoice
+      });
+      showError(`خطأ في معرف الفاتورة - المعرف غير موجود أو فارغ. البيانات المستلمة: ${JSON.stringify(invoice)}`);
       return;
     }
     
+    console.log('✅ تم التحقق من معرف الفاتورة بنجاح:', invoice.id);
     navigate(`/sales/return/${invoice.id}`);
   };
 
@@ -344,6 +368,21 @@ const ManageSalesInvoices = () => {
           عدد النتائج: <span className="font-semibold text-gray-800">{filteredInvoices.length}</span> من {salesInvoices.length}
         </div>
 
+        {/* Table debugging */}
+        {console.log('🔍 بيانات الجدول قبل الرسم:', {
+          filteredInvoices: filteredInvoices,
+          firstInvoice: filteredInvoices[0],
+          firstInvoiceId: filteredInvoices[0]?.id,
+          firstInvoiceIdType: typeof filteredInvoices[0]?.id,
+          filteredInvoicesWithIds: filteredInvoices.map((inv, index) => ({
+            index,
+            id: inv?.id,
+            idType: typeof inv?.id,
+            hasId: !!inv?.id,
+            fullInvoice: inv
+          }))
+        }) && null}
+        
         <Table
           columns={columns}
           data={filteredInvoices}
