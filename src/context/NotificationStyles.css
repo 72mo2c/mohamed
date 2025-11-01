@@ -1,0 +1,244 @@
+/* NotificationStyles.css */
+.notification-wrapper {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.notification-item {
+  position: relative;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(255, 255, 255, 0.1) inset,
+    0 -1px 2px rgba(0, 0, 0, 0.05) inset;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transform: translateX(400px);
+  opacity: 0;
+  animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.notification-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.6) 50%, 
+    transparent 100%);
+}
+
+.notification-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.12),
+    0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.notification-item.exiting {
+  animation: slideOut 0.3s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.notification-item.unread {
+  border-right: 4px solid;
+}
+
+.notification-success {
+  border-right-color: #00d26a !important;
+}
+
+.notification-error {
+  border-right-color: #ff375f !important;
+}
+
+.notification-warning {
+  border-right-color: #ff9f0a !important;
+}
+
+.notification-info {
+  border-right-color: #0a84ff !important;
+}
+
+.notification-content {
+  position: relative;
+  z-index: 2;
+}
+
+.notification-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.notification-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.notification-success .notification-icon {
+  background: rgba(0, 210, 106, 0.15);
+  color: #00d26a;
+}
+
+.notification-error .notification-icon {
+  background: rgba(255, 55, 95, 0.15);
+  color: #ff375f;
+}
+
+.notification-warning .notification-icon {
+  background: rgba(255, 159, 10, 0.15);
+  color: #ff9f0a;
+}
+
+.notification-info .notification-icon {
+  background: rgba(10, 132, 255, 0.15);
+  color: #0a84ff;
+}
+
+.notification-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: #1c1c1e;
+  flex: 1;
+}
+
+.notification-close {
+  background: rgba(0, 0, 0, 0.08);
+  border: none;
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #8e8e93;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.notification-close:hover {
+  background: rgba(0, 0, 0, 0.12);
+  color: #1c1c1e;
+}
+
+.notification-message {
+  font-size: 14px;
+  color: #48484a;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.notification-time {
+  font-size: 12px;
+  color: #8e8e93;
+}
+
+.notification-indicator {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #007aff;
+  animation: pulse 2s infinite;
+}
+
+.notification-success .notification-indicator {
+  background: #00d26a;
+}
+
+.notification-error .notification-indicator {
+  background: #ff375f;
+}
+
+.notification-warning .notification-indicator {
+  background: #ff9f0a;
+}
+
+.notification-info .notification-indicator {
+  background: #0a84ff;
+}
+
+@keyframes slideIn {
+  0% {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 1;
+  }
+}
+
+/* تأثيرات One UI Core */
+@media (max-width: 768px) {
+  .notification-wrapper {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+  
+  .notification-item {
+    padding: 14px;
+    border-radius: 14px;
+  }
+}
+
+/* دعم المتصفحات القديمة */
+@supports not (backdrop-filter: blur(20px)) {
+  .notification-item {
+    background: rgba(255, 255, 255, 0.95);
+  }
+}
