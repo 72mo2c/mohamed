@@ -5,14 +5,14 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { 
-  ChevronDownIcon, 
-  ChevronLeftIcon, 
-  PlusIcon, 
-  PencilIcon, 
-  TrashIcon,
-  FolderIcon,
-  FolderOpenIcon
-} from '@heroicons/react/24/outline';
+  FaChevronDown, 
+  FaChevronLeft, 
+  FaPlus, 
+  FaEdit, 
+  FaTrash,
+  FaFolder,
+  FaFolderOpen
+} from 'react-icons/fa';
 
 const ChartOfAccounts = () => {
   const { accounts, addAccount, updateAccount, deleteAccount } = useData();
@@ -165,9 +165,9 @@ const ChartOfAccounts = () => {
                 className="mr-2 p-1 text-gray-400 hover:text-gray-600"
               >
                 {expandedAccounts.has(account.id) ? (
-                  <ChevronDownIcon className="w-4 h-4" />
+                  <FaChevronDown className="w-4 h-4" />
                 ) : (
-                  <ChevronLeftIcon className="w-4 h-4" />
+                  <FaChevronLeft className="w-4 h-4" />
                 )}
               </button>
             )}
@@ -181,9 +181,9 @@ const ChartOfAccounts = () => {
             <div className="flex-1 flex items-center">
               {account.children && account.children.length > 0 ? (
                 expandedAccounts.has(account.id) ? (
-                  <FolderOpenIcon className="w-4 h-4 text-orange-500 mr-2" />
+                  <FaFolderOpen className="w-4 h-4 text-orange-500 mr-2" />
                 ) : (
-                  <FolderIcon className="w-4 h-4 text-orange-500 mr-2" />
+                  <FaFolder className="w-4 h-4 text-orange-500 mr-2" />
                 )
               ) : (
                 <div className="w-4 h-4 mr-2"></div>
@@ -226,7 +226,7 @@ const ChartOfAccounts = () => {
               className="p-2 text-gray-400 hover:text-orange-500"
               title="تعديل"
             >
-              <PencilIcon className="w-4 h-4" />
+              <FaEdit className="w-4 h-4" />
             </button>
             <button
               onClick={() => handleDelete(account)}
@@ -234,7 +234,7 @@ const ChartOfAccounts = () => {
               title="حذف"
               disabled={account.isSystem}
             >
-              <TrashIcon className="w-4 h-4" />
+              <FaTrash className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -259,7 +259,7 @@ const ChartOfAccounts = () => {
           onClick={() => openAccountModal()}
           className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center"
         >
-          <PlusIcon className="w-4 h-4 ml-2" />
+          <FaPlus className="w-4 h-4 ml-2" />
           حساب جديد
         </button>
       </div>

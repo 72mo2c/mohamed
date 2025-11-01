@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
-import { PlusIcon, TrashIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { FaPlus, FaTrash, FaFileAlt } from 'react-icons/fa';
 
 const JournalEntry = () => {
   const { accounts, journalEntries, createJournalEntry } = useData();
@@ -169,7 +169,7 @@ const JournalEntry = () => {
           onClick={() => setShowModal(true)}
           className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center"
         >
-          <PlusIcon className="w-4 h-4 ml-2" />
+          <FaPlus className="w-4 h-4 ml-2" />
           قيد جديد
         </button>
       </div>
@@ -247,7 +247,7 @@ const JournalEntry = () => {
                       className="text-orange-600 hover:text-orange-900 ml-3"
                       title="نسخ القيد"
                     >
-                      <DocumentTextIcon className="w-4 h-4" />
+                      <FaFileAlt className="w-4 h-4" />
                     </button>
                   </td>
                 </tr>
@@ -386,7 +386,7 @@ const JournalEntry = () => {
                       className="bg-orange-500 text-white p-2 rounded-md hover:bg-orange-600"
                       title="إضافة سطر"
                     >
-                      <PlusIcon className="w-4 h-4" />
+                      <FaPlus className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -433,7 +433,7 @@ const JournalEntry = () => {
                             onClick={() => removeEntryLine(line.id)}
                             className="text-red-500 hover:text-red-700"
                           >
-                            <TrashIcon className="w-4 h-4" />
+                            <FaTrash className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
