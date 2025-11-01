@@ -1,8 +1,9 @@
 // ======================================
-// Notification Context - إدارة الإشعارات
+// Notification Context - إدارة الإشعارات (مطوّر بتصميم محسن)
 // ======================================
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import './NotificationStyles.css'; // سيتم إنشاء هذا الملف لاحقاً
 
 const NotificationContext = createContext();
 
@@ -18,95 +19,111 @@ export const useNotification = () => {
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [activeToast, setActiveToast] = useState(null);
+  const [position, setPosition] = useState('top-right'); // top-right, top-left, bottom-right, bottom-left
 
-  // إضافة إشعار جديد
-  const addNotification = useCallback((notification) => {
-    const newNotification = {
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      read: false,
-      ...notification
+  // تحميل الإشعارات من LocalStorage عند التهيئة
+  useEffect(() => {
+    const loadNotifications = () => {
+      try {
+        const stored = localStorage.getItem('bero_notifications');
+        if (stored) {
+          const parsedNotifications = JSON.parse(stored);
+          setNotifications(parsedNotifications);
+        }
+      } catch (error) {
+        console.error('Failed to load notifications from localStorage:', error);
+        localStorage.removeItem('bero_notifications');
+      }
     };
 
-    setNotifications(prev => [newNotification, ...prev]);
-    setUnreadCount(prev => prev + 1);
-
-    // حفظ في LocalStorage
-    const stored = localStorage.getItem('bero_notifications');
-    const allNotifications = stored ? JSON.parse(stored) : [];
-    allNotifications.unshift(newNotification);
-    localStorage.setItem('bero_notifications', JSON.stringify(allNotifications.slice(0, 100))); // حفظ آخر 100 إشعار
+    loadNotifications();
   }, []);
 
-  // عرض toast يشبه iOS
-  const showToast = useCallback((notification) => {
-    const toastId = Date.now();
-    const toastNotification = {
-      id: toastId,
+  // تحديث عداد الإشعارات غير المقروءة
+  useEffect(() => {
+    const count = notifications.filter(notif => !notif.read).length;
+    setUnreadCount(count);
+  }, [notifications]);
+
+  // حفظ الإشعارات في LocalStorage تلقائياً عند أي تغيير
+  useEffect(() => {
+    const saveNotifications = () => {
+      try {
+        localStorage.setItem('bero_notifications', JSON.stringify(notifications.slice(0, 100)));
+      } catch (error) {
+        console.error('Failed to save notifications to localStorage:', error);
+      }
+    };
+
+    saveNotifications();
+  }, [notifications]);
+
+  // إضافة إشعار جديد مع تحسينات الأداء
+  const addNotification = useCallback((notification) => {
+    const newNotification = {
+      id: Date.now() + Math.random(),
       timestamp: new Date().toISOString(),
+      read: false,
+      duration: 5000, // مدة العرض الافتراضية
       ...notification
     };
 
-    setActiveToast(toastNotification);
+    setNotifications(prev => {
+      const updated = [newNotification, ...prev];
+      return updated.slice(0, 100);
+    });
 
-    // إخفاء التوست تلقائياً بعد 5 ثواني
-    setTimeout(() => {
-      setActiveToast(null);
-    }, 5000);
+    // حذف تلقائي بعد المدة المحددة
+    if (newNotification.duration !== 0) {
+      setTimeout(() => {
+        removeNotification(newNotification.id);
+      }, newNotification.duration);
+    }
   }, []);
 
   // إضافة إشعار نجاح
-  const showSuccess = useCallback((message) => {
-    const notification = {
+  const showSuccess = useCallback((message, options = {}) => {
+    addNotification({
       type: 'success',
       title: 'نجاح',
       message,
-      icon: '✓'
-    };
-    
-    addNotification(notification);
-    showToast(notification);
-  }, [addNotification, showToast]);
+      icon: '✓',
+      ...options
+    });
+  }, [addNotification]);
 
   // إضافة إشعار خطأ
-  const showError = useCallback((message) => {
-    const notification = {
+  const showError = useCallback((message, options = {}) => {
+    addNotification({
       type: 'error',
       title: 'خطأ',
       message,
-      icon: '⚠️'
-    };
-    
-    addNotification(notification);
-    showToast(notification);
-  }, [addNotification, showToast]);
+      icon: '✕',
+      ...options
+    });
+  }, [addNotification]);
 
   // إضافة إشعار تحذير
-  const showWarning = useCallback((message) => {
-    const notification = {
+  const showWarning = useCallback((message, options = {}) => {
+    addNotification({
       type: 'warning',
       title: 'تحذير',
       message,
-      icon: '⚠️'
-    };
-    
-    addNotification(notification);
-    showToast(notification);
-  }, [addNotification, showToast]);
+      icon: '⚠',
+      ...options
+    });
+  }, [addNotification]);
 
   // إضافة إشعار معلومات
-  const showInfo = useCallback((message) => {
-    const notification = {
+  const showInfo = useCallback((message, options = {}) => {
+    addNotification({
       type: 'info',
       title: 'معلومة',
       message,
-      icon: 'ℹ️'
-    };
-    
-    addNotification(notification);
-    showToast(notification);
-  }, [addNotification, showToast]);
+      icon: 'ℹ',
+      ...options
+    });
+  }, [addNotification]);
 
   // وضع إشعار كمقروء
   const markAsRead = useCallback((id) => {
@@ -115,7 +132,6 @@ export const NotificationProvider = ({ children }) => {
         notif.id === id ? { ...notif, read: true } : notif
       )
     );
-    setUnreadCount(prev => Math.max(0, prev - 1));
   }, []);
 
   // وضع جميع الإشعارات كمقروءة
@@ -123,36 +139,27 @@ export const NotificationProvider = ({ children }) => {
     setNotifications(prev => 
       prev.map(notif => ({ ...notif, read: true }))
     );
-    setUnreadCount(0);
   }, []);
 
   // حذف إشعار
   const removeNotification = useCallback((id) => {
-    setNotifications(prev => {
-      const notification = prev.find(n => n.id === id);
-      if (notification && !notification.read) {
-        setUnreadCount(count => Math.max(0, count - 1));
-      }
-      return prev.filter(notif => notif.id !== id);
-    });
+    setNotifications(prev => prev.filter(notif => notif.id !== id));
   }, []);
 
   // حذف جميع الإشعارات
   const clearAll = useCallback(() => {
     setNotifications([]);
-    setUnreadCount(0);
-    localStorage.removeItem('bero_notifications');
   }, []);
 
-  // إغلاق التوست يدوياً
-  const closeToast = useCallback(() => {
-    setActiveToast(null);
+  // تغيير موضع عرض الإشعارات
+  const setNotificationPosition = useCallback((newPosition) => {
+    setPosition(newPosition);
   }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     notifications,
     unreadCount,
-    activeToast,
+    position,
     addNotification,
     showSuccess,
     showError,
@@ -162,159 +169,157 @@ export const NotificationProvider = ({ children }) => {
     markAllAsRead,
     removeNotification,
     clearAll,
-    closeToast,
-    showToast
-  };
+    setNotificationPosition
+  }), [
+    notifications,
+    unreadCount,
+    position,
+    addNotification,
+    showSuccess,
+    showError,
+    showWarning,
+    showInfo,
+    markAsRead,
+    markAllAsRead,
+    removeNotification,
+    clearAll,
+    setNotificationPosition
+  ]);
 
   return (
     <NotificationContext.Provider value={value}>
       {children}
-      
-      {/* iOS-style Toast Notification */}
-      {activeToast && (
-        <div style={styles.toastContainer}>
-          <div style={{
-            ...styles.toast,
-            ...getToastStyle(activeToast.type)
-          }}>
-            <div style={styles.toastContent}>
-              <span style={styles.toastIcon}>{activeToast.icon}</span>
-              <div style={styles.toastText}>
-                <div style={styles.toastTitle}>{activeToast.title}</div>
-                <div style={styles.toastMessage}>{activeToast.message}</div>
-              </div>
-              <button 
-                onClick={closeToast}
-                style={styles.closeButton}
-                aria-label="إغلاق"
-              >
-                ✕
-              </button>
-            </div>
-            <div 
-              style={{
-                ...styles.progressBar,
-                ...getProgressBarStyle(activeToast.type)
-              }} 
-            />
-          </div>
-        </div>
-      )}
+      <NotificationContainer />
     </NotificationContext.Provider>
   );
 };
 
-// الأنماط الخاصة بالتوست
-const styles = {
-  toastContainer: {
-    position: 'fixed',
-    top: '20px',
-    right: '20px',
-    left: '20px',
-    zIndex: 9999,
-    display: 'flex',
-    justifyContent: 'center',
-    pointerEvents: 'none'
-  },
-  toast: {
-    width: '100%',
-    maxWidth: '400px',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    backdropFilter: 'blur(20px)',
-    borderRadius: '14px',
-    padding: '16px',
-    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    pointerEvents: 'auto',
-    overflow: 'hidden'
-  },
-  toastContent: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: '12px'
-  },
-  toastIcon: {
-    fontSize: '18px',
-    marginTop: '2px'
-  },
-  toastText: {
-    flex: 1
-  },
-  toastTitle: {
-    fontSize: '16px',
-    fontWeight: '600',
-    marginBottom: '2px',
-    color: '#000'
-  },
-  toastMessage: {
-    fontSize: '14px',
-    color: '#666',
-    lineHeight: '1.4'
-  },
-  closeButton: {
-    background: 'none',
-    border: 'none',
-    fontSize: '16px',
-    cursor: 'pointer',
-    padding: '4px',
-    color: '#999',
-    borderRadius: '4px'
-  },
-  progressBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    height: '3px',
-    width: '100%',
-    transform: 'scaleX(1)',
-    transformOrigin: 'left',
-    animation: 'progress 5s linear forwards'
-  }
+// مكون حاوية الإشعارات مع التصميم المحسن
+const NotificationContainer = () => {
+  const { 
+    notifications, 
+    unreadCount, 
+    position,
+    markAsRead, 
+    removeNotification, 
+    markAllAsRead, 
+    clearAll 
+  } = useNotification();
+
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (notifications.length === 0) return null;
+
+  return (
+    <div className={`notification-container ${position} ${isOpen ? 'open' : 'closed'}`}>
+      {/* زر عداد الإشعارات */}
+      <div className="notification-bell" onClick={() => setIsOpen(!isOpen)}>
+        <span className="bell-icon">🔔</span>
+        {unreadCount > 0 && (
+          <span className="unread-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+        )}
+      </div>
+
+      {/* لوحة الإشعارات */}
+      {isOpen && (
+        <div className="notification-panel">
+          <div className="panel-header">
+            <h3>الإشعارات</h3>
+            <div className="header-actions">
+              {unreadCount > 0 && (
+                <button className="mark-all-btn" onClick={markAllAsRead}>
+                  تعيين الكل كمقروء
+                </button>
+              )}
+              <button className="clear-all-btn" onClick={clearAll}>
+                حذف الكل
+              </button>
+              <button className="close-btn" onClick={() => setIsOpen(false)}>
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <div className="notifications-list">
+            {notifications.map(notification => (
+              <NotificationItem
+                key={notification.id}
+                notification={notification}
+                onMarkAsRead={markAsRead}
+                onRemove={removeNotification}
+              />
+            ))}
+          </div>
+
+          <div className="panel-footer">
+            <span>إجمالي الإشعارات: {notifications.length}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
-// الحصول على الأنماط حسب نوع الإشعار
-const getToastStyle = (type) => {
-  const styles = {
-    success: {
-      borderLeft: '4px solid #34C759'
-    },
-    error: {
-      borderLeft: '4px solid #FF3B30'
-    },
-    warning: {
-      borderLeft: '4px solid #FF9500'
-    },
-    info: {
-      borderLeft: '4px solid #007AFF'
+// مكون عنصر الإشعار الفردي
+const NotificationItem = ({ notification, onMarkAsRead, onRemove }) => {
+  const { id, type, title, message, icon, read, timestamp } = notification;
+
+  const handleMarkAsRead = () => {
+    if (!read) {
+      onMarkAsRead(id);
     }
   };
-  return styles[type] || styles.info;
-};
 
-const getProgressBarStyle = (type) => {
-  const styles = {
-    success: {
-      backgroundColor: '#34C759'
-    },
-    error: {
-      backgroundColor: '#FF3B30'
-    },
-    warning: {
-      backgroundColor: '#FF9500'
-    },
-    info: {
-      backgroundColor: '#007AFF'
-    }
+  const formatTime = (isoString) => {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diff = now - date;
+    
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'الآن';
+    if (minutes < 60) return `منذ ${minutes} دقيقة`;
+    if (hours < 24) return `منذ ${hours} ساعة`;
+    if (days < 7) return `منذ ${days} يوم`;
+    
+    return date.toLocaleDateString('ar-SA');
   };
-  return styles[type] || styles.info;
-};
 
-// إضافة أنيميشن للتقدم
-const styleSheet = document.styleSheets[0];
-const keyframes = `
-@keyframes progress {
-  from { transform: scaleX(1); }
-  to { transform: scaleX(0); }
-}
-`;
-styleSheet.insertRule(keyframes, styleSheet.cssRules.length);
+  return (
+    <div className={`notification-item ${type} ${read ? 'read' : 'unread'}`}>
+      <div className="notification-icon">{icon}</div>
+      
+      <div className="notification-content" onClick={handleMarkAsRead}>
+        <div className="notification-header">
+          <h4 className="notification-title">{title}</h4>
+          <span className="notification-time">{formatTime(timestamp)}</span>
+        </div>
+        
+        <p className="notification-message">{message}</p>
+      </div>
+
+      <div className="notification-actions">
+        {!read && (
+          <button 
+            className="mark-read-btn" 
+            onClick={handleMarkAsRead}
+            title="وضع كمقروء"
+          >
+            •
+          </button>
+        )}
+        <button 
+          className="remove-btn" 
+          onClick={() => onRemove(id)}
+          title="حذف الإشعار"
+        >
+          ✕
+        </button>
+      </div>
+
+      {!read && <div className="unread-indicator"></div>}
+    </div>
+  );
+};
