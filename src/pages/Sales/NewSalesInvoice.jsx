@@ -58,6 +58,41 @@ const NewSalesInvoice = () => {
     return getCustomerBalance(parseInt(formData.customerId));
   };
 
+  // حساب الإجمالي قبل خصم العنصر
+  const calculateItemTotalWithoutDiscount = (item) => {
+    const mainTotal = (item.quantity || 0) * (item.price || 0);
+    const subTotal = (item.subQuantity || 0) * (item.subPrice || 0);
+    return mainTotal + subTotal;
+  };
+
+  // حساب إجمالي العنصر بعد الخصم
+  const calculateItemTotal = (item) => {
+    const totalWithoutDiscount = calculateItemTotalWithoutDiscount(item);
+    const itemDiscount = item.discount || 0;
+    return Math.max(0, totalWithoutDiscount - itemDiscount);
+  };
+
+  const calculateSubTotal = () => {
+    return items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
+  };
+
+  // حساب قيمة الخصم
+  const calculateDiscountAmount = () => {
+    const subTotal = calculateSubTotal();
+    if (formData.discountType === 'percentage') {
+      return (subTotal * (formData.discountValue / 100));
+    } else {
+      return parseFloat(formData.discountValue) || 0;
+    }
+  };
+
+  // حساب الإجمالي بعد الخصم
+  const calculateTotal = () => {
+    const subTotal = calculateSubTotal();
+    const discountAmount = calculateDiscountAmount();
+    return Math.max(0, subTotal - discountAmount);
+  };
+
   // الحصول على تحذيرات نوع الدفع
   const getPaymentTypeWarning = () => {
     const total = calculateTotal();
@@ -280,41 +315,6 @@ const NewSalesInvoice = () => {
     }
     
     return null;
-  };
-
-  // حساب الإجمالي قبل خصم العنصر
-  const calculateItemTotalWithoutDiscount = (item) => {
-    const mainTotal = (item.quantity || 0) * (item.price || 0);
-    const subTotal = (item.subQuantity || 0) * (item.subPrice || 0);
-    return mainTotal + subTotal;
-  };
-
-  // حساب إجمالي العنصر بعد الخصم
-  const calculateItemTotal = (item) => {
-    const totalWithoutDiscount = calculateItemTotalWithoutDiscount(item);
-    const itemDiscount = item.discount || 0;
-    return Math.max(0, totalWithoutDiscount - itemDiscount);
-  };
-
-  const calculateSubTotal = () => {
-    return items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
-  };
-
-  // حساب قيمة الخصم
-  const calculateDiscountAmount = () => {
-    const subTotal = calculateSubTotal();
-    if (formData.discountType === 'percentage') {
-      return (subTotal * (formData.discountValue / 100));
-    } else {
-      return parseFloat(formData.discountValue) || 0;
-    }
-  };
-
-  // حساب الإجمالي بعد الخصم
-  const calculateTotal = () => {
-    const subTotal = calculateSubTotal();
-    const discountAmount = calculateDiscountAmount();
-    return Math.max(0, subTotal - discountAmount);
   };
 
   // التحقق الشامل من البيانات
