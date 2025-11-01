@@ -2,7 +2,7 @@
 // Manage Sales Invoices - إدارة فواتير المبيعات
 // ======================================
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { useNotification } from '../../context/NotificationContext';
