@@ -181,7 +181,7 @@ const NewSalesInvoice = () => {
       ...newItems[index],
       productId: product.id,
       productName: product.name,
-      price: parseFloat(product.price) || 0, // استخدام 'price' بدلاً من 'mainPrice'
+      price: parseFloat(product.mainPrice) || 0, // إصلاح: استخدام 'mainPrice' بدلاً من 'price'
       subPrice: parseFloat(product.subPrice) || 0,
       discount: 0
     };
