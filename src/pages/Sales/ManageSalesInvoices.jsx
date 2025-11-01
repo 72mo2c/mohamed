@@ -571,6 +571,7 @@ const ManageSalesInvoices = () => {
                 </span>
               </div>
             </div>
+            </div>
           </div>
         </div>
       )}
