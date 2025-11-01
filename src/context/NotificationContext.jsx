@@ -1,8 +1,12 @@
-// NotificationContext.jsx - محدث
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+// ======================================
+// Notification Context - إدارة الإشعارات
+// ======================================
+
+import React, { createContext, useContext, useState, useCallback } from 'react';
 
 const NotificationContext = createContext();
 
+// Hook لاستخدام Notification Context
 export const useNotification = () => {
   const context = useContext(NotificationContext);
   if (!context) {
@@ -14,18 +18,9 @@ export const useNotification = () => {
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [activeNotification, setActiveNotification] = useState(null);
+  const [activeToast, setActiveToast] = useState(null);
 
-  // تحميل الإشعارات من localStorage عند التهيئة
-  useEffect(() => {
-    const stored = localStorage.getItem('bero_notifications');
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      setNotifications(parsed);
-      setUnreadCount(parsed.filter(n => !n.read).length);
-    }
-  }, []);
-
+  // إضافة إشعار جديد
   const addNotification = useCallback((notification) => {
     const newNotification = {
       id: Date.now(),
@@ -36,56 +31,84 @@ export const NotificationProvider = ({ children }) => {
 
     setNotifications(prev => [newNotification, ...prev]);
     setUnreadCount(prev => prev + 1);
-    setActiveNotification(newNotification);
-
-    // إخفاء الإشعار تلقائياً بعد 5 ثوانٍ
-    setTimeout(() => {
-      setActiveNotification(null);
-    }, 5000);
 
     // حفظ في LocalStorage
     const stored = localStorage.getItem('bero_notifications');
     const allNotifications = stored ? JSON.parse(stored) : [];
     allNotifications.unshift(newNotification);
-    localStorage.setItem('bero_notifications', JSON.stringify(allNotifications.slice(0, 100)));
+    localStorage.setItem('bero_notifications', JSON.stringify(allNotifications.slice(0, 100))); // حفظ آخر 100 إشعار
   }, []);
 
+  // عرض toast يشبه iOS
+  const showToast = useCallback((notification) => {
+    const toastId = Date.now();
+    const toastNotification = {
+      id: toastId,
+      timestamp: new Date().toISOString(),
+      ...notification
+    };
+
+    setActiveToast(toastNotification);
+
+    // إخفاء التوست تلقائياً بعد 5 ثواني
+    setTimeout(() => {
+      setActiveToast(null);
+    }, 5000);
+  }, []);
+
+  // إضافة إشعار نجاح
   const showSuccess = useCallback((message) => {
-    addNotification({
+    const notification = {
       type: 'success',
       title: 'نجاح',
       message,
-      icon: 'success'
-    });
-  }, [addNotification]);
+      icon: '✓'
+    };
+    
+    addNotification(notification);
+    showToast(notification);
+  }, [addNotification, showToast]);
 
+  // إضافة إشعار خطأ
   const showError = useCallback((message) => {
-    addNotification({
+    const notification = {
       type: 'error',
       title: 'خطأ',
       message,
-      icon: 'error'
-    });
-  }, [addNotification]);
+      icon: '⚠️'
+    };
+    
+    addNotification(notification);
+    showToast(notification);
+  }, [addNotification, showToast]);
 
+  // إضافة إشعار تحذير
   const showWarning = useCallback((message) => {
-    addNotification({
+    const notification = {
       type: 'warning',
       title: 'تحذير',
       message,
-      icon: 'warning'
-    });
-  }, [addNotification]);
+      icon: '⚠️'
+    };
+    
+    addNotification(notification);
+    showToast(notification);
+  }, [addNotification, showToast]);
 
+  // إضافة إشعار معلومات
   const showInfo = useCallback((message) => {
-    addNotification({
+    const notification = {
       type: 'info',
       title: 'معلومة',
       message,
-      icon: 'info'
-    });
-  }, [addNotification]);
+      icon: 'ℹ️'
+    };
+    
+    addNotification(notification);
+    showToast(notification);
+  }, [addNotification, showToast]);
 
+  // وضع إشعار كمقروء
   const markAsRead = useCallback((id) => {
     setNotifications(prev => 
       prev.map(notif => 
@@ -95,6 +118,7 @@ export const NotificationProvider = ({ children }) => {
     setUnreadCount(prev => Math.max(0, prev - 1));
   }, []);
 
+  // وضع جميع الإشعارات كمقروءة
   const markAllAsRead = useCallback(() => {
     setNotifications(prev => 
       prev.map(notif => ({ ...notif, read: true }))
@@ -102,6 +126,7 @@ export const NotificationProvider = ({ children }) => {
     setUnreadCount(0);
   }, []);
 
+  // حذف إشعار
   const removeNotification = useCallback((id) => {
     setNotifications(prev => {
       const notification = prev.find(n => n.id === id);
@@ -112,21 +137,22 @@ export const NotificationProvider = ({ children }) => {
     });
   }, []);
 
+  // حذف جميع الإشعارات
   const clearAll = useCallback(() => {
     setNotifications([]);
     setUnreadCount(0);
-    setActiveNotification(null);
     localStorage.removeItem('bero_notifications');
   }, []);
 
-  const hideActiveNotification = useCallback(() => {
-    setActiveNotification(null);
+  // إغلاق التوست يدوياً
+  const closeToast = useCallback(() => {
+    setActiveToast(null);
   }, []);
 
   const value = {
     notifications,
     unreadCount,
-    activeNotification,
+    activeToast,
     addNotification,
     showSuccess,
     showError,
@@ -136,86 +162,159 @@ export const NotificationProvider = ({ children }) => {
     markAllAsRead,
     removeNotification,
     clearAll,
-    hideActiveNotification
+    closeToast,
+    showToast
   };
 
   return (
     <NotificationContext.Provider value={value}>
       {children}
-      <OneUINotification 
-        notification={activeNotification}
-        onClose={hideActiveNotification}
-      />
+      
+      {/* iOS-style Toast Notification */}
+      {activeToast && (
+        <div style={styles.toastContainer}>
+          <div style={{
+            ...styles.toast,
+            ...getToastStyle(activeToast.type)
+          }}>
+            <div style={styles.toastContent}>
+              <span style={styles.toastIcon}>{activeToast.icon}</span>
+              <div style={styles.toastText}>
+                <div style={styles.toastTitle}>{activeToast.title}</div>
+                <div style={styles.toastMessage}>{activeToast.message}</div>
+              </div>
+              <button 
+                onClick={closeToast}
+                style={styles.closeButton}
+                aria-label="إغلاق"
+              >
+                ✕
+              </button>
+            </div>
+            <div 
+              style={{
+                ...styles.progressBar,
+                ...getProgressBarStyle(activeToast.type)
+              }} 
+            />
+          </div>
+        </div>
+      )}
     </NotificationContext.Provider>
   );
 };
 
-// مكون الإشعار الجديد بتصميم One UI
-const OneUINotification = ({ notification, onClose }) => {
-  if (!notification) return null;
-
-  const getIcon = () => {
-    switch (notification.icon) {
-      case 'success':
-        return (
-          <div className="oneui-notification-icon success">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0zm-2 15l-5-5 1.41-1.41L8 12.17l7.59-7.59L17 6l-9 9z"/>
-            </svg>
-          </div>
-        );
-      case 'error':
-        return (
-          <div className="oneui-notification-icon error">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 0C4.47 0 0 4.47 0 10s4.47 10 10 10 10-4.47 10-10S15.53 0 10 0zm5 13.59L13.59 15 10 11.41 6.41 15 5 13.59 8.59 10 5 6.41 6.41 5 10 8.59 13.59 5 15 6.41 11.41 10 15 13.59z"/>
-            </svg>
-          </div>
-        );
-      case 'warning':
-        return (
-          <div className="oneui-notification-icon warning">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0zm1 15H9v-2h2v2zm0-4H9V5h2v6z"/>
-            </svg>
-          </div>
-        );
-      case 'info':
-        return (
-          <div className="oneui-notification-icon info">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0zm1 15H9v-6h2v6zm0-8H9V5h2v2z"/>
-            </svg>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="oneui-notification-container">
-      <div className={`oneui-notification ${notification.type}`}>
-        <div className="oneui-notification-content">
-          {getIcon()}
-          <div className="oneui-notification-text">
-            <div className="oneui-notification-title">{notification.title}</div>
-            <div className="oneui-notification-message">{notification.message}</div>
-          </div>
-          <button 
-            className="oneui-notification-close"
-            onClick={onClose}
-            aria-label="إغلاق"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-              <path d="M14 1.41L12.59 0 7 5.59 1.41 0 0 1.41 5.59 7 0 12.59 1.41 14 7 8.41 12.59 14 14 12.59 8.41 7 14 1.41z"/>
-            </svg>
-          </button>
-        </div>
-        <div className="oneui-notification-progress"></div>
-      </div>
-    </div>
-  );
+// الأنماط الخاصة بالتوست
+const styles = {
+  toastContainer: {
+    position: 'fixed',
+    top: '20px',
+    right: '20px',
+    left: '20px',
+    zIndex: 9999,
+    display: 'flex',
+    justifyContent: 'center',
+    pointerEvents: 'none'
+  },
+  toast: {
+    width: '100%',
+    maxWidth: '400px',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backdropFilter: 'blur(20px)',
+    borderRadius: '14px',
+    padding: '16px',
+    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
+    border: '1px solid rgba(255, 255, 255, 0.2)',
+    pointerEvents: 'auto',
+    overflow: 'hidden'
+  },
+  toastContent: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '12px'
+  },
+  toastIcon: {
+    fontSize: '18px',
+    marginTop: '2px'
+  },
+  toastText: {
+    flex: 1
+  },
+  toastTitle: {
+    fontSize: '16px',
+    fontWeight: '600',
+    marginBottom: '2px',
+    color: '#000'
+  },
+  toastMessage: {
+    fontSize: '14px',
+    color: '#666',
+    lineHeight: '1.4'
+  },
+  closeButton: {
+    background: 'none',
+    border: 'none',
+    fontSize: '16px',
+    cursor: 'pointer',
+    padding: '4px',
+    color: '#999',
+    borderRadius: '4px'
+  },
+  progressBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    height: '3px',
+    width: '100%',
+    transform: 'scaleX(1)',
+    transformOrigin: 'left',
+    animation: 'progress 5s linear forwards'
+  }
 };
 
-export default NotificationContext;
+// الحصول على الأنماط حسب نوع الإشعار
+const getToastStyle = (type) => {
+  const styles = {
+    success: {
+      borderLeft: '4px solid #34C759'
+    },
+    error: {
+      borderLeft: '4px solid #FF3B30'
+    },
+    warning: {
+      borderLeft: '4px solid #FF9500'
+    },
+    info: {
+      borderLeft: '4px solid #007AFF'
+    }
+  };
+  return styles[type] || styles.info;
+};
+
+const getProgressBarStyle = (type) => {
+  const styles = {
+    success: {
+      backgroundColor: '#34C759'
+    },
+    error: {
+      backgroundColor: '#FF3B30'
+    },
+    warning: {
+      backgroundColor: '#FF9500'
+    },
+    info: {
+      backgroundColor: '#007AFF'
+    }
+  };
+  return styles[type] || styles.info;
+};
+
+// إضافة أنيميشن للتقدم
+const styleSheet = document.styleSheets[0];
+const keyframes = `
+@keyframes progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+`;
+styleSheet.insertRule(keyframes, styleSheet.cssRules.length);
