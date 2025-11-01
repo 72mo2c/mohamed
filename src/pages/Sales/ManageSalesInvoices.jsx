@@ -178,8 +178,9 @@ const ManageSalesInvoices = () => {
 
 
   return (
-    <div className="max-w-7xl mx-auto p-4">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">إدارة فواتير المبيعات</h2>
+    <>
+      <div className="max-w-7xl mx-auto p-4">
+        <h2 className="text-xl font-bold text-gray-800 mb-4">إدارة فواتير المبيعات</h2>
 
       {/* شريط البحث والتصفية */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-4">
@@ -792,6 +793,7 @@ const ManageSalesInvoices = () => {
         />
       )}
     </div>
+    </>
   );
 };
 
