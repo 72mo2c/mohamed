@@ -21,6 +21,14 @@ const NewSalesReturn = () => {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
+    // التأكد من وجود المعرف
+    if (!invoiceId || invoiceId === 'undefined' || invoiceId === '') {
+      console.error('معرف الفاتورة غير صحيح:', invoiceId);
+      showError('خطأ في رابط الإرجاع - معرف الفاتورة غير محدد');
+      navigate('/sales/manage');
+      return;
+    }
+
     // التأكد من تحميل البيانات
     if (!salesInvoices || salesInvoices.length === 0) {
       console.log('جاري تحميل فواتير المبيعات...');

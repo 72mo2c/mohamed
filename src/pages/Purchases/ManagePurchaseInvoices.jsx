@@ -94,11 +94,39 @@ const ManagePurchaseInvoices = () => {
     return matchesSearch && matchesFilter;
   });
 
+  // تشخيص البيانات للجدول
+  console.log('بيانات الفواتير المفلترة للجدول:', {
+    totalInvoices: purchaseInvoices.length,
+    filteredInvoices: filteredInvoices.length,
+    sampleInvoice: filteredInvoices[0] ? {
+      id: filteredInvoices[0].id,
+      idType: typeof filteredInvoices[0].id,
+      supplierId: filteredInvoices[0].supplierId
+    } : 'لا توجد فواتير',
+    allInvoiceIds: purchaseInvoices.map(inv => ({ id: inv.id, type: typeof inv.id }))
+  });
+
   const handleReturn = (invoice) => {
     if (!canReturnInvoice) {
       showError('ليس لديك صلاحية لإرجاع فواتير المشتريات');
       return;
     }
+    
+    // تشخيص المشكلة
+    console.log('معلومات الفاتورة للإرجاع:', {
+      invoice,
+      invoiceId: invoice.id,
+      invoiceIdType: typeof invoice.id,
+      isValidId: invoice.id != null && invoice.id !== ''
+    });
+    
+    // التحقق من صحة المعرف
+    if (!invoice.id || invoice.id === undefined || invoice.id === null || invoice.id === '') {
+      console.error('معرف الفاتورة غير صحيح:', invoice.id);
+      showError('خطأ في معرف الفاتورة - المعرف غير موجود أو فارغ');
+      return;
+    }
+    
     navigate(`/purchases/return/${invoice.id}`);
   };
 

@@ -104,6 +104,18 @@ const ManageSalesInvoices = () => {
     return matchesSearch && matchesPaymentType;
   });
 
+  // تشخيص البيانات للجدول
+  console.log('بيانات الفواتير المفلترة للجدول:', {
+    totalInvoices: salesInvoices.length,
+    filteredInvoices: filteredInvoices.length,
+    sampleInvoice: filteredInvoices[0] ? {
+      id: filteredInvoices[0].id,
+      idType: typeof filteredInvoices[0].id,
+      customerId: filteredInvoices[0].customerId
+    } : 'لا توجد فواتير',
+    allInvoiceIds: salesInvoices.map(inv => ({ id: inv.id, type: typeof inv.id }))
+  });
+
   const handleView = (invoice) => {
     if (!canViewInvoice) {
       showError('ليس لديك صلاحية لعرض فواتير المبيعات');
@@ -118,6 +130,22 @@ const ManageSalesInvoices = () => {
       showError('ليس لديك صلاحية لإرجاع فواتير المبيعات');
       return;
     }
+    
+    // تشخيص المشكلة
+    console.log('معلومات الفاتورة للإرجاع:', {
+      invoice,
+      invoiceId: invoice.id,
+      invoiceIdType: typeof invoice.id,
+      isValidId: invoice.id != null && invoice.id !== ''
+    });
+    
+    // التحقق من صحة المعرف
+    if (!invoice.id || invoice.id === undefined || invoice.id === null || invoice.id === '') {
+      console.error('معرف الفاتورة غير صحيح:', invoice.id);
+      showError('خطأ في معرف الفاتورة - المعرف غير موجود أو فارغ');
+      return;
+    }
+    
     navigate(`/sales/return/${invoice.id}`);
   };
 
