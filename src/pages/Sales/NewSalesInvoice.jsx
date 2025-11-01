@@ -156,7 +156,7 @@ const NewSalesInvoice = () => {
     setFormData({ 
       ...formData, 
       customerId: customer.id,
-      agentType: customer.agentType || 'main' // تحديد الوكيل تلقائياً من بيانات العميل
+      agentType: customer.agentType || '' // تحديد الوكيل تلقائياً من بيانات العميل
     });
     setCustomerSearch(customer.name);
     setShowCustomerSuggestions(false);
@@ -218,7 +218,7 @@ const NewSalesInvoice = () => {
       setFormData({ 
         ...formData, 
         customerId: newCustomer.id,
-        agentType: newCustomer.agentType || 'main'
+        agentType: newCustomer.agentType || ''
       });
       
       // تحديث نص البحث ليعكس اسم العميل الجديد
@@ -584,7 +584,7 @@ const NewSalesInvoice = () => {
       date: new Date().toISOString().split('T')[0],
       time: new Date().toTimeString().slice(0, 5),
       paymentType: 'main',
-      agentType: 'main',
+      agentType: '',
       notes: '',
       discountType: 'percentage',
       discountValue: 0
@@ -701,10 +701,10 @@ const NewSalesInvoice = () => {
               onChange={handleChange}
               className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
             >
-              <option value="main">اختر وكيل</option>
-              <option value="none">بدون</option>
-              <option value="invoice">فاتورة</option>
-              <option value="carton">كرتونة</option>
+              <option value="">اختر نوع الوكيل / المندوب</option>
+              <option value="general">عام</option>
+              <option value="fatora">فاتورة</option>
+              <option value="kartona">كرتونة</option>
             </select>
           </div>
 
