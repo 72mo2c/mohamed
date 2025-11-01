@@ -5,11 +5,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useNotification } from '../../context/NotificationContext';
-import { FaSave, FaPrint, FaSearch, FaTrash, FaPercent, FaMoneyBillWave, FaInfoCircle, FaExclamationTriangle } from 'react-icons/fa';
+import { FaSave, FaPrint, FaSearch, FaTrash, FaPercent, FaMoneyBillWave, FaInfoCircle, FaExclamationTriangle, FaUserPlus, FaTimes } from 'react-icons/fa';
 import { printInvoiceDirectly } from '../../utils/printUtils';
 
 const NewSalesInvoice = () => {
-  const { customers, products, warehouses, addSalesInvoice, getCustomerBalance } = useData();
+  const { customers, products, warehouses, addSalesInvoice, getCustomerBalance, addCustomer } = useData();
   const { showSuccess, showError } = useNotification();
   
   const [formData, setFormData] = useState({
@@ -51,6 +51,16 @@ const NewSalesInvoice = () => {
   const customerInputRef = useRef(null);
   const productInputRefs = useRef([]);
   const quantityInputRefs = useRef([]);
+
+  // ===== Quick Customer States =====
+  const [showQuickCustomerModal, setShowQuickCustomerModal] = useState(false);
+  const [quickCustomerForm, setQuickCustomerForm] = useState({
+    name: '',
+    phone1: '',
+    address: '',
+    agentType: 'general'
+  });
+  const [quickCustomerLoading, setQuickCustomerLoading] = useState(false);
 
   // الحصول على رصيد العميل المحدد
   const getSelectedCustomerBalance = () => {
@@ -157,6 +167,71 @@ const NewSalesInvoice = () => {
     setTimeout(() => {
       setShowCustomerSuggestions(false);
     }, 200);
+  };
+
+  // ===== دوال العميل السريع =====
+  // فتح modal إضافة العميل السريع
+  const openQuickCustomerModal = () => {
+    setQuickCustomerForm({
+      name: '',
+      phone1: '',
+      address: '',
+      agentType: 'general'
+    });
+    setShowQuickCustomerModal(true);
+  };
+
+  // إغلاق modal العميل السريع
+  const closeQuickCustomerModal = () => {
+    setShowQuickCustomerModal(false);
+    setQuickCustomerLoading(false);
+  };
+
+  // تحديث بيانات نموذج العميل السريع
+  const handleQuickCustomerChange = (e) => {
+    setQuickCustomerForm({
+      ...quickCustomerForm,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  // إضافة عميل سريع جديد
+  const handleAddQuickCustomer = async () => {
+    if (!quickCustomerForm.name.trim() || !quickCustomerForm.phone1.trim()) {
+      showError('يجب إدخال الاسم ورقم الهاتف');
+      return;
+    }
+
+    setQuickCustomerLoading(true);
+
+    try {
+      // إضافة العميل الجديد
+      const newCustomer = addCustomer({
+        ...quickCustomerForm,
+        createdAt: new Date().toISOString(),
+        status: 'active'
+      });
+
+      showSuccess(`تم إضافة العميل "${newCustomer.name}" بنجاح`);
+      
+      // اختيار العميل الجديد فوراً في الفاتورة
+      setFormData({ 
+        ...formData, 
+        customerId: newCustomer.id,
+        agentType: newCustomer.agentType || 'main'
+      });
+      
+      // تحديث نص البحث ليعكس اسم العميل الجديد
+      setCustomerSearch(newCustomer.name);
+      
+      // إغلاق المودال
+      closeQuickCustomerModal();
+
+    } catch (error) {
+      showError('حدث خطأ في إضافة العميل');
+    } finally {
+      setQuickCustomerLoading(false);
+    }
   };
 
   const filteredCustomers = customers.filter(c =>
@@ -544,17 +619,28 @@ const NewSalesInvoice = () => {
         <div className="grid grid-cols-4 gap-3 mb-4 pb-4 border-b">
           {/* العميل */}
           <div className="relative">
-            <div className="relative">
-              <input
-                ref={customerInputRef}
-                type="text"
-                value={customerSearch}
-                onChange={(e) => handleCustomerSearch(e.target.value)}
-                onBlur={handleCustomerBlur}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="ابحث عن العميل..."
-              />
-              <FaSearch className="absolute left-2 top-2.5 text-gray-400 text-xs" />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  ref={customerInputRef}
+                  type="text"
+                  value={customerSearch}
+                  onChange={(e) => handleCustomerSearch(e.target.value)}
+                  onBlur={handleCustomerBlur}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="ابحث عن العميل..."
+                />
+                <FaSearch className="absolute left-2 top-2.5 text-gray-400 text-xs" />
+              </div>
+              <button
+                type="button"
+                onClick={openQuickCustomerModal}
+                className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-1 whitespace-nowrap"
+                title="إضافة عميل جديد سريع"
+              >
+                <FaUserPlus className="text-xs" />
+                عميل جديد
+              </button>
             </div>
             {showCustomerSuggestions && customerSearch.trim().length > 0 && filteredCustomers.length > 0 && (
               <div className="absolute z-[9999] w-full mt-1 bg-white border-2 border-blue-400 rounded-lg shadow-xl max-h-56 overflow-y-auto">
@@ -916,6 +1002,140 @@ const NewSalesInvoice = () => {
           <span className="inline-block mx-2">Tab = التنقل</span>
         </div>
       </div>
+
+      {/* Modal إضافة العميل السريع */}
+      {showQuickCustomerModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+            {/* رأس المودال */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <div className="flex items-center gap-3">
+                <div className="bg-green-100 rounded-full p-2">
+                  <FaUserPlus className="text-green-600 text-lg" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-800">إضافة عميل جديد سريع</h2>
+              </div>
+              <button
+                onClick={closeQuickCustomerModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                type="button"
+              >
+                <FaTimes className="text-xl" />
+              </button>
+            </div>
+
+            {/* محتوى المودال */}
+            <div className="p-6">
+              <form onSubmit={(e) => { e.preventDefault(); handleAddQuickCustomer(); }} className="space-y-4">
+                {/* اسم العميل */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    اسم العميل <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={quickCustomerForm.name}
+                    onChange={handleQuickCustomerChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="أدخل اسم العميل"
+                    required
+                  />
+                </div>
+
+                {/* رقم الهاتف */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    رقم الهاتف <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone1"
+                    value={quickCustomerForm.phone1}
+                    onChange={handleQuickCustomerChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="+20 XXX XXX XXXX"
+                    required
+                  />
+                </div>
+
+                {/* العنوان */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    العنوان
+                  </label>
+                  <input
+                    type="text"
+                    name="address"
+                    value={quickCustomerForm.address}
+                    onChange={handleQuickCustomerChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="أدخل العنوان (اختياري)"
+                  />
+                </div>
+
+                {/* نوع الوكيل */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    نوع الوكيل / المندوب
+                  </label>
+                  <select
+                    name="agentType"
+                    value={quickCustomerForm.agentType}
+                    onChange={handleQuickCustomerChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="general">عام</option>
+                    <option value="fatora">فاتورة</option>
+                    <option value="kartona">كرتونة</option>
+                  </select>
+                </div>
+
+                {/* معلومات إضافية */}
+                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                  <div className="flex items-start gap-2">
+                    <FaInfoCircle className="text-blue-600 text-sm mt-0.5" />
+                    <div className="text-xs text-blue-700">
+                      <p className="font-semibold mb-1">ملاحظة سريعة:</p>
+                      <p>• سيتم إضافة العميل مباشرة لفاتورة المبيعات الحالية</p>
+                      <p>• يمكنك تعديل البيانات لاحقاً من صفحة إدارة العملاء</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* أزرار المودال */}
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={closeQuickCustomerModal}
+                    className="flex-1 px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    disabled={quickCustomerLoading}
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    disabled={quickCustomerLoading || !quickCustomerForm.name.trim() || !quickCustomerForm.phone1.trim()}
+                  >
+                    {quickCustomerLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        جاري الإضافة...
+                      </>
+                    ) : (
+                      <>
+                        <FaUserPlus className="text-sm" />
+                        إضافة العميل
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
