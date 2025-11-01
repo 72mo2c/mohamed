@@ -241,7 +241,7 @@ const SalesReturns = () => {
 
       {/* Modal عرض تفاصيل الإرجاع */}
       {showViewModal && selectedReturn && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998] p-4">
           <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="bg-gradient-to-r from-red-500 to-red-600 p-4 text-white sticky top-0">

@@ -13,7 +13,7 @@ const Toast = () => {
   const recentNotifications = notifications.slice(0, 3);
 
   return (
-    <div className="fixed top-4 left-4 z-50 space-y-3">
+    <div className="fixed top-4 left-4 z-[9999] space-y-3">
       {recentNotifications.map((notification) => (
         <ToastItem
           key={notification.id}

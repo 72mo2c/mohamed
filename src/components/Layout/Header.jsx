@@ -24,7 +24,7 @@ const Header = () => {
 
   return (
     <>
-      <header className="h-[40px] fixed top-0 left-0 right-0 z-50 bg-white shadow-md transition-all">
+      <header className="h-[40px] fixed top-0 left-0 right-0 z-[9998] bg-white shadow-md transition-all">
         {/* Tab Bar - شريط التبويبات */}
         <div className="border-t border-orange-200/50 bg-gradient-to-b from-orange-50/50 to-white">
           <TabBar />
@@ -33,7 +33,7 @@ const Header = () => {
 
       {/* Mobile Search Bar */}
       {showMobileSearch && (
-        <div className="lg:hidden absolute top-full left-0 right-0 p-3 bg-white border-b border-orange-100 shadow-lg z-50">
+        <div className="lg:hidden absolute top-full left-0 right-0 p-3 bg-white border-b border-orange-100 shadow-lg z-[9998]">
           <GlobalSearch isMobile onClose={() => setShowMobileSearch(false)} />
         </div>
       )}

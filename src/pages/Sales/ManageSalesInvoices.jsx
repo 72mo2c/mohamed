@@ -329,7 +329,7 @@ const ManageSalesInvoices = () => {
 
       {/* نافذة عرض التفاصيل */}
       {showDetailsModal && selectedInvoice && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998]">
           <div className="bg-white rounded-lg p-6 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             {/* رأس النافذة */}
             <div className="flex justify-between items-center mb-6 pb-4 border-b">
@@ -479,7 +479,7 @@ const ManageSalesInvoices = () => {
 
       {/* نافذة تأكيد الحذف */}
       {showDeleteModal && invoiceToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998]">
           <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
             {/* رمز التحذير */}
             <div className="flex items-center justify-center mb-4">

@@ -174,7 +174,7 @@ const ManageCustomers = () => {
 
       {/* نافذة تأكيد الحذف */}
       {deleteModal && customerToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998]">
           <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
             {/* رمز التحذير */}
             <div className="flex items-center justify-center mb-4">

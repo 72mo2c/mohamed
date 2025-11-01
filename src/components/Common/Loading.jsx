@@ -41,7 +41,7 @@ const Loading = ({
   };
 
   const containerClasses = fullScreen 
-    ? `fixed inset-0 ${withBackground ? 'bg-white bg-opacity-95 backdrop-blur-sm' : ''} flex items-center justify-center z-50`
+    ? `fixed inset-0 ${withBackground ? 'bg-white bg-opacity-95 backdrop-blur-sm' : ''} flex items-center justify-center z-[9998]`
     : 'flex items-center justify-center py-12';
 
   // مكونات التحميل المختلفة

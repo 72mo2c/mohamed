@@ -459,7 +459,7 @@ const AddUser = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998] p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-2xl">
             <div className="text-center mb-6">
               <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
@@ -509,7 +509,7 @@ const AddUser = () => {
 
       {/* Success Modal */}
       {showSuccessModal && newUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998] p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-2xl">
             <div className="text-center mb-6">
               <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
@@ -554,7 +554,7 @@ const AddUser = () => {
 
       {/* Edit Modal */}
       {showEditModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998] p-4">
           <div className="bg-white rounded-lg max-w-2xl w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-4">

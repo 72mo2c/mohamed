@@ -43,13 +43,13 @@ const ToastContainer = ({ notifications, onRemove, position = 'top-right' }) => 
   if (toasts.length === 0) return null;
 
   return (
-    <div className={`fixed z-50 ${getPositionClasses()} space-y-2`}>
+    <div className={`fixed z-[9999] ${getPositionClasses()} space-y-2`}>
       {toasts.map((notification, index) => (
         <div
           key={notification.id}
           style={{
             transform: `translateY(${index * 8}px)`,
-            zIndex: 1000 - index
+            zIndex: 9999 - index
           }}
         >
           <EnhancedToast

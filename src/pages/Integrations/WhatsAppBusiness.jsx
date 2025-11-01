@@ -459,7 +459,7 @@ const WhatsAppBusiness = () => {
 
       {/* نافذة تأكيد قطع الاتصال */}
       {showDisconnectModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998]">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <div className="flex items-center justify-center mb-4">
               <div className="bg-red-100 rounded-full p-4">
@@ -500,7 +500,7 @@ const WhatsAppBusiness = () => {
 
       {/* نافذة تأكيد الرسالة التجريبية */}
       {showTestModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998]">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <div className="flex items-center justify-center mb-4">
               <div className="bg-blue-100 rounded-full p-4">

@@ -243,7 +243,7 @@ const GlobalSearch = ({ isMobile = false, onClose }) => {
 
       {/* نتائج البحث */}
       {showResults && searchResults.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-orange-100 max-h-[70vh] overflow-y-auto z-50">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-orange-100 max-h-[70vh] overflow-y-auto z-[9998]">
           {Object.entries(groupedResults).map(([type, results]) => (
             <div key={type} className="border-b border-orange-50 last:border-b-0">
               <div className="px-3 py-2 bg-gradient-to-r from-orange-50 to-white sticky top-0">
@@ -285,7 +285,7 @@ const GlobalSearch = ({ isMobile = false, onClose }) => {
 
       {/* لا توجد نتائج */}
       {showResults && searchResults.length === 0 && searchQuery.length >= 2 && !isSearching && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-orange-100 p-6 z-50 text-center">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-orange-100 p-6 z-[9998] text-center">
           <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-3">
             <FaSearch className="text-orange-300" size={24} />
           </div>

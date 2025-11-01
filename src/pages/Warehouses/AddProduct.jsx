@@ -152,7 +152,7 @@ const AddProduct = () => {
 
       {/* Modal تأكيد إضافة المنتج بنجاح */}
       {showSuccessModal && addedProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998] p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full transform transition-all">
             {/* Header */}
             <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-t-2xl text-white relative">

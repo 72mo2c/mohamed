@@ -94,7 +94,7 @@ const EnhancedToast = ({ notification, onClose, autoClose = true, duration = 500
   return (
     <div
       className={`
-        fixed top-4 right-4 z-50 max-w-sm w-full bg-white border rounded-lg shadow-lg
+        fixed top-4 right-4 z-[9999] max-w-sm w-full bg-white border rounded-lg shadow-lg
         transform transition-all duration-300 ease-in-out
         ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
         ${getBackgroundColor(notification.type)}
