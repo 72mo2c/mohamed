@@ -285,7 +285,13 @@ const NewSalesInvoice = () => {
   // الحصول على المخزون المتاح للمنتج
   const getAvailableQuantity = (productId) => {
     const product = products.find(p => p.id === productId);
-    return product ? product.mainQuantity || 0 : 0;
+    if (!product) return { mainQuantity: 0, subQuantity: 0, total: 0 };
+    
+    return {
+      mainQuantity: product.mainQuantity || 0,
+      subQuantity: product.subQuantity || 0,
+      total: (product.mainQuantity || 0) + (product.subQuantity || 0)
+    };
   };
 
   // عرض تحذير عن الكمية المطلوبة
@@ -293,13 +299,19 @@ const NewSalesInvoice = () => {
     const item = items[index];
     if (!item.productId) return null;
     
-    const requestedQty = (item.quantity || 0) + (item.subQuantity || 0);
-    const availableQty = getAvailableQuantity(item.productId);
+    const requestedMainQty = item.quantity || 0;
+    const requestedSubQty = item.subQuantity || 0;
+    const requestedTotal = requestedMainQty + requestedSubQty;
     
-    if (requestedQty > availableQty) {
+    const availableQuantity = getAvailableQuantity(item.productId);
+    const availableMainQty = availableQuantity.mainQuantity;
+    const availableSubQty = availableQuantity.subQuantity;
+    const availableTotal = availableQuantity.total;
+    
+    if (requestedTotal > availableTotal) {
       return (
         <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
-          ⚠️ الكمية المطلوبة ({requestedQty}) أكبر من المتاح ({availableQty})
+          ⚠️ الكمية المطلوبة: {requestedMainQty} أساسي + {requestedSubQty} فرعي = {requestedTotal}، المتوفر: {availableMainQty} أساسي + {availableSubQty} فرعي
         </div>
       );
     }
@@ -389,11 +401,16 @@ const NewSalesInvoice = () => {
       // التحقق من توفر المخزون
       const product = products.find(p => p.id === parseInt(item.productId));
       if (product) {
-        const totalRequested = (item.quantity || 0) + (item.subQuantity || 0);
-        const totalAvailable = product.mainQuantity || 0;
+        const requestedMainQty = item.quantity || 0;
+        const requestedSubQty = item.subQuantity || 0;
+        const totalRequested = requestedMainQty + requestedSubQty;
+        
+        const availableMainQty = product.mainQuantity || 0;
+        const availableSubQty = product.subQuantity || 0;
+        const totalAvailable = availableMainQty + availableSubQty;
         
         if (totalRequested > totalAvailable) {
-          errors[`stock_${index}`] = `الكمية المطلوبة غير متوفرة. المتوفر: ${totalAvailable}`;
+          errors[`stock_${index}`] = `الكمية المطلوبة غير متوفرة. المتوفر: أساسي ${availableMainQty} + فرعي ${availableSubQty} = ${totalAvailable}`;
         }
       }
     });
@@ -663,7 +680,9 @@ const NewSalesInvoice = () => {
                                     <span className="font-semibold text-sm text-gray-800">{product.name}</span>
                                     <span className="text-xs text-gray-600 mr-2">({warehouse?.name || 'غير محدد'} - {product.category})</span>
                                   </div>
-                                  <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded">المخزون: {product.mainQuantity || 0}</span>
+                                  <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded">
+                                    أساسي: {product.mainQuantity || 0}, فرعي: {product.subQuantity || 0}
+                                  </span>
                                 </div>
                               </div>
                             );

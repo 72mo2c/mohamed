@@ -197,88 +197,120 @@ const AdvancedCashManagement = () => {
   });
   const [showProjectionsModal, setShowProjectionsModal] = useState(false);
   const [showOptimizationModal, setShowOptimizationModal] = useState(false);
-  const [showInvestmentModal, setShowOptimizationModal] = useState(false);
+  const [showInvestmentModal, setShowInvestmentModal] = useState(false);
   
   // حساب تحليل التدفقات النقدية المتقدم
   const cashFlowAnalysis = useMemo(() => {
-    const now = new Date();
-    const analysisPeriod = selectedPeriod === 'week' ? 7 : 
-                          selectedPeriod === 'month' ? 30 : 
-                          selectedPeriod === 'quarter' ? 90 : 365;
-    
-    const startDate = new Date(now.getTime() - analysisPeriod * 24 * 60 * 60 * 1000);
-    
-    // جمع المعاملات
-    const periodReceipts = cashReceipts.filter(r => new Date(r.date) >= startDate);
-    const periodDisbursements = cashDisbursements.filter(d => new Date(d.date) >= startDate);
-    
-    // تحليل التدفقات حسب الفئات
-    const receiptsByCategory = {};
-    const disbursementsByCategory = {};
-    
-    periodReceipts.forEach(r => {
-      receiptsByCategory[r.category] = (receiptsByCategory[r.category] || 0) + parseFloat(r.amount || 0);
-    });
-    
-    periodDisbursements.forEach(d => {
-      disbursementsByCategory[d.category] = (disbursementsByCategory[d.category] || 0) + parseFloat(d.amount || 0);
-    });
-    
-    // حساب المتوسطات والتوجهات
-    const totalReceipts = periodReceipts.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0);
-    const totalDisbursements = periodDisbursements.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
-    const netFlow = totalReceipts - totalDisbursements;
-    
-    const dailyAverage = netFlow / analysisPeriod;
-    const volatilityIndex = Math.abs(dailyAverage) > 0 ? 
-      Math.sqrt(periodReceipts.length + periodDisbursements.length) / analysisPeriod : 0;
-    
-    // التنبؤ
-    const projected30Days = dailyAverage * 30;
-    const projected90Days = dailyAverage * 90;
-    
-    return {
-      totalReceipts,
-      totalDisbursements,
-      netFlow,
-      dailyAverage,
-      volatilityIndex,
-      projected30Days,
-      projected90Days,
-      receiptsByCategory,
-      disbursementsByCategory,
-      periodLength: analysisPeriod,
-      transactionCount: periodReceipts.length + periodDisbursements.length
-    };
+    try {
+      const now = new Date();
+      const analysisPeriod = selectedPeriod === 'week' ? 7 : 
+                            selectedPeriod === 'month' ? 30 : 
+                            selectedPeriod === 'quarter' ? 90 : 365;
+      
+      const startDate = new Date(now.getTime() - analysisPeriod * 24 * 60 * 60 * 1000);
+      
+      // جمع المعاملات
+      const periodReceipts = cashReceipts.filter(r => new Date(r.date) >= startDate);
+      const periodDisbursements = cashDisbursements.filter(d => new Date(d.date) >= startDate);
+      
+      // تحليل التدفقات حسب الفئات
+      const receiptsByCategory = {};
+      const disbursementsByCategory = {};
+      
+      periodReceipts.forEach(r => {
+        if (r.category) {
+          receiptsByCategory[r.category] = (receiptsByCategory[r.category] || 0) + parseFloat(r.amount || 0);
+        }
+      });
+      
+      periodDisbursements.forEach(d => {
+        if (d.category) {
+          disbursementsByCategory[d.category] = (disbursementsByCategory[d.category] || 0) + parseFloat(d.amount || 0);
+        }
+      });
+      
+      // حساب المتوسطات والتوجهات
+      const totalReceipts = periodReceipts.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0);
+      const totalDisbursements = periodDisbursements.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+      const netFlow = totalReceipts - totalDisbursements;
+      
+      const dailyAverage = analysisPeriod > 0 ? netFlow / analysisPeriod : 0;
+      const volatilityIndex = Math.abs(dailyAverage) > 0 ? 
+        Math.sqrt((periodReceipts.length + periodDisbursements.length)) / analysisPeriod : 0;
+      
+      // التنبؤ
+      const projected30Days = dailyAverage * 30;
+      const projected90Days = dailyAverage * 90;
+      
+      return {
+        totalReceipts,
+        totalDisbursements,
+        netFlow,
+        dailyAverage,
+        volatilityIndex: Math.min(Math.max(volatilityIndex, 0), 1), // ضمان أن القيمة بين 0 و 1
+        projected30Days,
+        projected90Days,
+        receiptsByCategory,
+        disbursementsByCategory,
+        periodLength: analysisPeriod,
+        transactionCount: periodReceipts.length + periodDisbursements.length
+      };
+    } catch (error) {
+      console.error('خطأ في تحليل التدفقات النقدية:', error);
+      return {
+        totalReceipts: 0,
+        totalDisbursements: 0,
+        netFlow: 0,
+        dailyAverage: 0,
+        volatilityIndex: 0,
+        projected30Days: 0,
+        projected90Days: 0,
+        receiptsByCategory: {},
+        disbursementsByCategory: {},
+        periodLength: 30,
+        transactionCount: 0
+      };
+    }
   }, [cashReceipts, cashDisbursements, selectedPeriod]);
 
   // تحليل السيولة والمخاطر
   const liquidityAnalysis = useMemo(() => {
-    // حساب احتياطيات الطوارئ المقترحة
-    const emergencyReserve = Math.abs(cashFlowAnalysis.dailyAverage) * 30; // 30 يوم تغطية
-    
-    // معدل دوران النقد
-    const cashTurnover = treasuryBalance > 0 ? 
-      (cashFlowAnalysis.totalReceipts + cashFlowAnalysis.totalDisbursements) / treasuryBalance : 0;
-    
-    // مؤشر الاستقرار
-    const stabilityIndex = cashFlowAnalysis.volatilityIndex < 0.1 ? 'مستقر جداً' :
-                          cashFlowAnalysis.volatilityIndex < 0.2 ? 'مستقر' :
-                          cashFlowAnalysis.volatilityIndex < 0.3 ? 'متقلب قليلاً' :
-                          cashFlowAnalysis.volatilityIndex < 0.5 ? 'متقلب' : 'متقلب جداً';
-    
-    // مستوى السيولة
-    const liquidityLevel = treasuryBalance > emergencyReserve * 2 ? 'ممتاز' :
-                          treasuryBalance > emergencyReserve ? 'جيد' :
-                          treasuryBalance > emergencyReserve * 0.5 ? 'مقبول' : 'ضعيف';
-    
-    return {
-      emergencyReserve,
-      cashTurnover,
-      stabilityIndex,
-      liquidityLevel,
-      reserveRatio: emergencyReserve > 0 ? treasuryBalance / emergencyReserve : 0
-    };
+    try {
+      // حساب احتياطيات الطوارئ المقترحة
+      const emergencyReserve = Math.abs(cashFlowAnalysis.dailyAverage) * 30; // 30 يوم تغطية
+      
+      // معدل دوران النقد
+      const cashTurnover = treasuryBalance > 0 ? 
+        (cashFlowAnalysis.totalReceipts + cashFlowAnalysis.totalDisbursements) / treasuryBalance : 0;
+      
+      // مؤشر الاستقرار
+      const stabilityIndex = cashFlowAnalysis.volatilityIndex < 0.1 ? 'مستقر جداً' :
+                            cashFlowAnalysis.volatilityIndex < 0.2 ? 'مستقر' :
+                            cashFlowAnalysis.volatilityIndex < 0.3 ? 'متقلب قليلاً' :
+                            cashFlowAnalysis.volatilityIndex < 0.5 ? 'متقلب' : 'متقلب جداً';
+      
+      // مستوى السيولة
+      const liquidityLevel = treasuryBalance > emergencyReserve * 2 ? 'ممتاز' :
+                            treasuryBalance > emergencyReserve ? 'جيد' :
+                            treasuryBalance > emergencyReserve * 0.5 ? 'مقبول' : 'ضعيف';
+      
+      return {
+        emergencyReserve: Math.max(0, emergencyReserve),
+        cashTurnover: Math.max(0, Math.min(cashTurnover, 100)), // منع القيم المرتفعة جداً
+        stabilityIndex,
+        liquidityLevel,
+        reserveRatio: emergencyReserve > 0 ? treasuryBalance / emergencyReserve : 0
+      };
+    } catch (error) {
+      console.error('خطأ في تحليل السيولة:', error);
+      return {
+        emergencyReserve: 0,
+        cashTurnover: 0,
+        stabilityIndex: 'غير محدد',
+        liquidityLevel: 'غير محدد',
+        reserveRatio: 0
+      };
+    }
   }, [cashFlowAnalysis, treasuryBalance]);
 
   // اقتراحات التحسين
@@ -323,34 +355,39 @@ const AdvancedCashManagement = () => {
 
   // بيانات الرسوم البيانية
   const chartData = useMemo(() => {
-    const days = selectedPeriod === 'week' ? 7 : 
-                selectedPeriod === 'month' ? 30 : 
-                selectedPeriod === 'quarter' ? 90 : 365;
-    
-    const dailyData = Array.from({ length: days }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (days - 1 - i));
-      const dateStr = date.toISOString().split('T')[0];
+    try {
+      const days = selectedPeriod === 'week' ? 7 : 
+                  selectedPeriod === 'month' ? 30 : 
+                  selectedPeriod === 'quarter' ? 90 : 365;
       
-      const dayReceipts = cashReceipts
-        .filter(r => r.date.startsWith(dateStr))
-        .reduce((sum, r) => sum + parseFloat(r.amount || 0), 0);
+      const dailyData = Array.from({ length: days }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (days - 1 - i));
+        const dateStr = date.toISOString().split('T')[0];
+        
+        const dayReceipts = cashReceipts
+          .filter(r => r.date && r.date.startsWith(dateStr))
+          .reduce((sum, r) => sum + parseFloat(r.amount || 0), 0);
+        
+        const dayDisbursements = cashDisbursements
+          .filter(d => d.date && d.date.startsWith(dateStr))
+          .reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+        
+        return {
+          label: selectedPeriod === 'week' ? 
+            ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'][date.getDay()] :
+            date.getDate().toString(),
+          value: dayReceipts - dayDisbursements,
+          receipts: dayReceipts,
+          disbursements: dayDisbursements
+        };
+      });
       
-      const dayDisbursements = cashDisbursements
-        .filter(d => d.date.startsWith(dateStr))
-        .reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
-      
-      return {
-        label: selectedPeriod === 'week' ? 
-          ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'][date.getDay()] :
-          date.getDate().toString(),
-        value: dayReceipts - dayDisbursements,
-        receipts: dayReceipts,
-        disbursements: dayDisbursements
-      };
-    });
-    
-    return dailyData;
+      return dailyData;
+    } catch (error) {
+      console.error('خطأ في إنشاء بيانات الرسوم البيانية:', error);
+      return [];
+    }
   }, [cashReceipts, cashDisbursements, selectedPeriod]);
 
   // بيانات توزيع التدفقات

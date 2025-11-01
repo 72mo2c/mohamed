@@ -601,7 +601,7 @@ const NewPurchaseInvoice = () => {
                                   <span className="font-semibold text-sm text-gray-800">{product.name}</span>
                                   <span className="text-xs text-gray-600 mr-2">({warehouse?.name || 'غير محدد'} - {product.category})</span>
                                 </div>
-                                <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded">الكمية: {product.mainQuantity || 0}</span>
+                                <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded">أساسي: {product.mainQuantity || 0}, فرعي: {product.subQuantity || 0}</span>
                               </div>
                             </div>
                           );

@@ -246,59 +246,116 @@ const AdvancedBalancesManagement = () => {
 
   // حساب الأرصدة المتقدمة مع التحليل
   const advancedBalances = useMemo(() => {
-    const customerBalances = getAllCustomerBalances();
-    const supplierBalances = getAllSupplierBalances();
-    
-    // تحليل المخاطر للعملاء
-    const analyzedCustomers = customerBalances.map(customer => {
-      const balance = customer.balance || 0;
-      const riskScore = calculateRiskScore(customer, balance);
+    try {
+      const customerBalances = getAllCustomerBalances();
+      const supplierBalances = getAllSupplierBalances();
       
-      // حساب اتجاه الرصيد
-      const balanceHistory = calculateBalanceHistory(customer.id, 'customer', timeRange);
+      // التأكد من أن البيانات صالحة
+      if (!Array.isArray(customerBalances) || !Array.isArray(supplierBalances)) {
+        console.warn('البيانات المتوفرة غير صالحة');
+        return {
+          customers: [],
+          suppliers: [],
+          totalCustomerDebt: 0,
+          totalSupplierDebt: 0,
+          highRiskCustomers: 0,
+          highRiskSuppliers: 0,
+          averageCustomerBalance: 0,
+          averageSupplierBalance: 0
+        };
+      }
+      
+      // تحليل المخاطر للعملاء
+      const analyzedCustomers = customerBalances.map(customer => {
+        try {
+          const balance = parseFloat(customer.balance || 0);
+          const riskScore = calculateRiskScore(customer, balance);
+          
+          // حساب اتجاه الرصيد
+          const balanceHistory = calculateBalanceHistory(customer.id, 'customer', timeRange);
+          
+          return {
+            ...customer,
+            balance,
+            riskScore,
+            riskLevel: getRiskLevel(riskScore),
+            balanceHistory,
+            lastActivity: getLastActivity(customer.id, 'customer'),
+            paymentBehavior: analyzePaymentBehavior(customer.id, 'customer'),
+            recommendations: generateRecommendations(customer, balance, riskScore)
+          };
+        } catch (error) {
+          console.error('خطأ في تحليل عميل:', error);
+          return {
+            ...customer,
+            balance: 0,
+            riskScore: 50,
+            riskLevel: 'متوسط',
+            balanceHistory: [],
+            lastActivity: null,
+            paymentBehavior: 'غير محدد',
+            recommendations: []
+          };
+        }
+      });
+      
+      // تحليل المخاطر للموردين
+      const analyzedSuppliers = supplierBalances.map(supplier => {
+        try {
+          const balance = parseFloat(supplier.balance || 0);
+          const riskScore = calculateRiskScore(supplier, balance);
+          
+          // حساب اتجاه الرصيد
+          const balanceHistory = calculateBalanceHistory(supplier.id, 'supplier', timeRange);
+          
+          return {
+            ...supplier,
+            balance,
+            riskScore,
+            riskLevel: getRiskLevel(riskScore),
+            balanceHistory,
+            lastActivity: getLastActivity(supplier.id, 'supplier'),
+            paymentBehavior: analyzePaymentBehavior(supplier.id, 'supplier'),
+            recommendations: generateRecommendations(supplier, balance, riskScore)
+          };
+        } catch (error) {
+          console.error('خطأ في تحليل مورد:', error);
+          return {
+            ...supplier,
+            balance: 0,
+            riskScore: 50,
+            riskLevel: 'متوسط',
+            balanceHistory: [],
+            lastActivity: null,
+            paymentBehavior: 'غير محدد',
+            recommendations: []
+          };
+        }
+      });
       
       return {
-        ...customer,
-        balance,
-        riskScore,
-        riskLevel: getRiskLevel(riskScore),
-        balanceHistory,
-        lastActivity: getLastActivity(customer.id, 'customer'),
-        paymentBehavior: analyzePaymentBehavior(customer.id, 'customer'),
-        recommendations: generateRecommendations(customer, balance, riskScore)
+        customers: analyzedCustomers,
+        suppliers: analyzedSuppliers,
+        totalCustomerDebt: analyzedCustomers.reduce((sum, c) => sum + (c.balance > 0 ? c.balance : 0), 0),
+        totalSupplierDebt: analyzedSuppliers.reduce((sum, s) => sum + (s.balance < 0 ? Math.abs(s.balance) : 0), 0),
+        highRiskCustomers: analyzedCustomers.filter(c => c.riskLevel === 'عالي').length,
+        highRiskSuppliers: analyzedSuppliers.filter(s => s.riskLevel === 'عالي').length,
+        averageCustomerBalance: analyzedCustomers.length > 0 ? analyzedCustomers.reduce((sum, c) => sum + c.balance, 0) / analyzedCustomers.length : 0,
+        averageSupplierBalance: analyzedSuppliers.length > 0 ? analyzedSuppliers.reduce((sum, s) => sum + s.balance, 0) / analyzedSuppliers.length : 0
       };
-    });
-    
-    // تحليل المخاطر للموردين
-    const analyzedSuppliers = supplierBalances.map(supplier => {
-      const balance = supplier.balance || 0;
-      const riskScore = calculateRiskScore(supplier, balance);
-      
-      // حساب اتجاه الرصيد
-      const balanceHistory = calculateBalanceHistory(supplier.id, 'supplier', timeRange);
-      
+    } catch (error) {
+      console.error('خطأ في حساب الأرصدة المتقدمة:', error);
       return {
-        ...supplier,
-        balance,
-        riskScore,
-        riskLevel: getRiskLevel(riskScore),
-        balanceHistory,
-        lastActivity: getLastActivity(supplier.id, 'supplier'),
-        paymentBehavior: analyzePaymentBehavior(supplier.id, 'supplier'),
-        recommendations: generateRecommendations(supplier, balance, riskScore)
+        customers: [],
+        suppliers: [],
+        totalCustomerDebt: 0,
+        totalSupplierDebt: 0,
+        highRiskCustomers: 0,
+        highRiskSuppliers: 0,
+        averageCustomerBalance: 0,
+        averageSupplierBalance: 0
       };
-    });
-    
-    return {
-      customers: analyzedCustomers,
-      suppliers: analyzedSuppliers,
-      totalCustomerDebt: analyzedCustomers.reduce((sum, c) => sum + (c.balance > 0 ? c.balance : 0), 0),
-      totalSupplierDebt: analyzedSuppliers.reduce((sum, s) => sum + (s.balance < 0 ? Math.abs(s.balance) : 0), 0),
-      highRiskCustomers: analyzedCustomers.filter(c => c.riskLevel === 'عالي').length,
-      highRiskSuppliers: analyzedSuppliers.filter(s => s.riskLevel === 'عالي').length,
-      averageCustomerBalance: analyzedCustomers.length > 0 ? analyzedCustomers.reduce((sum, c) => sum + c.balance, 0) / analyzedCustomers.length : 0,
-      averageSupplierBalance: analyzedSuppliers.length > 0 ? analyzedSuppliers.reduce((sum, s) => sum + s.balance, 0) / analyzedSuppliers.length : 0
-    };
+    }
   }, [getAllCustomerBalances, getAllSupplierBalances, salesInvoices, purchaseInvoices, cashReceipts, cashDisbursements, timeRange]);
 
   // حساب نقاط المخاطر

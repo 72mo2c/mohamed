@@ -182,15 +182,27 @@ const AdvancedReceiptsManagement = () => {
 
   // حساب أرصدة العملاء والموردين المتقدمة
   const advancedBalances = useMemo(() => {
-    const customerBalances = getAllCustomerBalances();
-    const supplierBalances = getAllSupplierBalances();
-    
-    return {
-      customers: customerBalances,
-      suppliers: supplierBalances,
-      totalCustomerDebt: customerBalances.reduce((sum, c) => sum + (c.balance > 0 ? c.balance : 0), 0),
-      totalSupplierDebt: supplierBalances.reduce((sum, s) => sum + (s.balance < 0 ? Math.abs(s.balance) : 0), 0)
-    };
+    try {
+      const customerBalances = getAllCustomerBalances();
+      const supplierBalances = getAllSupplierBalances();
+      
+      return {
+        customers: Array.isArray(customerBalances) ? customerBalances : [],
+        suppliers: Array.isArray(supplierBalances) ? supplierBalances : [],
+        totalCustomerDebt: Array.isArray(customerBalances) ? 
+          customerBalances.reduce((sum, c) => sum + (c.balance > 0 ? c.balance : 0), 0) : 0,
+        totalSupplierDebt: Array.isArray(supplierBalances) ? 
+          supplierBalances.reduce((sum, s) => sum + (s.balance < 0 ? Math.abs(s.balance) : 0), 0) : 0
+      };
+    } catch (error) {
+      console.error('خطأ في حساب الأرصدة المتقدمة:', error);
+      return {
+        customers: [],
+        suppliers: [],
+        totalCustomerDebt: 0,
+        totalSupplierDebt: 0
+      };
+    }
   }, [getAllCustomerBalances, getAllSupplierBalances]);
 
   // ربط الإيصالات بالفواتير تلقائياً
@@ -213,29 +225,34 @@ const AdvancedReceiptsManagement = () => {
 
   // حساب حالة الدفع المتقدمة
   const getPaymentStatus = (receipt) => {
-    if (receipt.referenceNumber) {
-      // فحص الفاتورة المرتبطة
-      if (receipt.fromType === 'customer') {
-        const invoice = salesInvoices.find(inv => inv.invoiceNumber === receipt.referenceNumber);
-        if (invoice) {
-          const paidAmount = parseFloat(invoice.paidAmount || 0);
-          const total = parseFloat(invoice.total || 0);
-          if (paidAmount >= total) return 'fully_paid';
-          if (paidAmount > 0) return 'partially_paid';
-          return 'unpaid';
-        }
-      } else if (receipt.fromType === 'supplier') {
-        const invoice = purchaseInvoices.find(inv => inv.invoiceNumber === receipt.referenceNumber);
-        if (invoice) {
-          const paidAmount = parseFloat(invoice.paidAmount || 0);
-          const total = parseFloat(invoice.total || 0);
-          if (paidAmount >= total) return 'fully_paid';
-          if (paidAmount > 0) return 'partially_paid';
-          return 'unpaid';
+    try {
+      if (receipt.referenceNumber) {
+        // فحص الفاتورة المرتبطة
+        if (receipt.fromType === 'customer') {
+          const invoice = salesInvoices.find(inv => inv.invoiceNumber === receipt.referenceNumber);
+          if (invoice) {
+            const paidAmount = parseFloat(invoice.paidAmount || 0);
+            const total = parseFloat(invoice.total || 0);
+            if (total > 0 && paidAmount >= total) return 'fully_paid';
+            if (paidAmount > 0 && paidAmount < total) return 'partially_paid';
+            return 'unpaid';
+          }
+        } else if (receipt.fromType === 'supplier') {
+          const invoice = purchaseInvoices.find(inv => inv.invoiceNumber === receipt.referenceNumber);
+          if (invoice) {
+            const paidAmount = parseFloat(invoice.paidAmount || 0);
+            const total = parseFloat(invoice.total || 0);
+            if (total > 0 && paidAmount >= total) return 'fully_paid';
+            if (paidAmount > 0 && paidAmount < total) return 'partially_paid';
+            return 'unpaid';
+          }
         }
       }
+      return 'unlinked';
+    } catch (error) {
+      console.error('خطأ في حساب حالة الدفع:', error);
+      return 'unlinked';
     }
-    return 'unlinked';
   };
 
   // الحصول على معلومات المصدر الكاملة

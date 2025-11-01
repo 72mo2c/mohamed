@@ -174,8 +174,10 @@ const AdvancedTreasuryDashboard = () => {
 
   // إعداد التحديث التلقائي
   useEffect(() => {
+    let interval;
+    
     if (autoRefresh) {
-      const interval = setInterval(() => {
+      interval = setInterval(() => {
         showInfo('تم تحديث بيانات الخزينة');
       }, 30000); // كل 30 ثانية
       
@@ -185,43 +187,61 @@ const AdvancedTreasuryDashboard = () => {
 
   // حساب الإحصائيات المتقدمة
   const advancedStats = useMemo(() => {
-    const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    try {
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    // الإيرادات والمصروفات
-    const recentReceipts = cashReceipts.filter(r => new Date(r.date) >= sevenDaysAgo);
-    const recentDisbursements = cashDisbursements.filter(d => new Date(d.date) >= sevenDaysAgo);
-    
-    const totalReceipts = cashReceipts.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0);
-    const totalDisbursements = cashDisbursements.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
-    
-    // معدل التدفق
-    const dailyAverage = (totalReceipts - totalDisbursements) / 30;
-    const weeklyAverage = dailyAverage * 7;
-    
-    // مؤشر السيولة
-    const liquidityRatio = treasuryBalance > 0 ? (treasuryBalance / (totalDisbursements / 30)) : 0;
-    
-    // تنبؤ بالاحتياجات
-    const projectedNeeds = weeklyAverage * 4; // توقعات الشهر القادم
-    
-    // مؤشرات المخاطر
-    const riskLevel = liquidityRatio < 1 ? 'عالي' : liquidityRatio < 3 ? 'متوسط' : 'منخفض';
-    const liquidityDays = liquidityRatio * 30;
-    
-    return {
-      totalReceipts,
-      totalDisbursements,
-      dailyAverage,
-      weeklyAverage,
-      liquidityRatio,
-      projectedNeeds,
-      riskLevel,
-      liquidityDays,
-      recentReceiptsCount: recentReceipts.length,
-      recentDisbursementsCount: recentDisbursements.length
-    };
+      // الإيرادات والمصروفات
+      const recentReceipts = cashReceipts.filter(r => new Date(r.date) >= sevenDaysAgo);
+      const recentDisbursements = cashDisbursements.filter(d => new Date(d.date) >= sevenDaysAgo);
+      
+      const totalReceipts = cashReceipts.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0);
+      const totalDisbursements = cashDisbursements.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+      
+      // معدل التدفق
+      const dailyAverage = (totalReceipts - totalDisbursements) / 30;
+      const weeklyAverage = dailyAverage * 7;
+      
+      // مؤشر السيولة - معالجة حالة القسمة على صفر
+      const dailyExpense = totalDisbursements / 30;
+      const liquidityRatio = dailyExpense > 0 ? treasuryBalance / dailyExpense : 0;
+      
+      // تنبؤ بالاحتياجات
+      const projectedNeeds = weeklyAverage * 4; // توقعات الشهر القادم
+      
+      // مؤشرات المخاطر
+      const riskLevel = liquidityRatio < 1 ? 'عالي' : liquidityRatio < 3 ? 'متوسط' : 'منخفض';
+      const liquidityDays = liquidityRatio * 30;
+      
+      return {
+        totalReceipts,
+        totalDisbursements,
+        dailyAverage,
+        weeklyAverage,
+        liquidityRatio: Math.max(0, liquidityRatio), // ضمان عدم السالبية
+        projectedNeeds,
+        riskLevel,
+        liquidityDays: Math.max(0, liquidityDays),
+        recentReceiptsCount: recentReceipts.length,
+        recentDisbursementsCount: recentDisbursements.length
+      };
+    } catch (error) {
+      console.error('خطأ في حساب الإحصائيات:', error);
+      // إرجاع قيم افتراضية في حالة الخطأ
+      return {
+        totalReceipts: 0,
+        totalDisbursements: 0,
+        dailyAverage: 0,
+        weeklyAverage: 0,
+        liquidityRatio: 0,
+        projectedNeeds: 0,
+        riskLevel: 'غير محدد',
+        liquidityDays: 0,
+        recentReceiptsCount: 0,
+        recentDisbursementsCount: 0
+      };
+    }
   }, [cashReceipts, cashDisbursements, treasuryBalance]);
 
   // بيانات الرسوم البيانية

@@ -408,33 +408,54 @@ const SmartSystemIntegration = () => {
 
   // حساب إحصائيات التكامل
   const integrationStats = useMemo(() => {
-    const totalSystems = Object.keys(syncStatus).length;
-    const connectedSystems = Object.values(syncStatus).filter(status => status === 'connected').length;
-    const syncingSystems = Object.values(syncStatus).filter(status => status === 'syncing').length;
-    const errorSystems = Object.values(syncStatus).filter(status => status === 'error').length;
-    
-    // حساب عدد السجلات المتزامنة
-    const syncedRecords = {
-      customers: customers.length,
-      suppliers: suppliers.length,
-      products: products.length,
-      sales: salesInvoices.length,
-      purchases: purchaseInvoices.length,
-      receipts: cashReceipts.length,
-      disbursements: cashDisbursements.length
-    };
-    
-    const totalSynced = Object.values(syncedRecords).reduce((sum, count) => sum + count, 0);
-    
-    return {
-      totalSystems,
-      connectedSystems,
-      syncingSystems,
-      errorSystems,
-      connectionRate: totalSystems > 0 ? (connectedSystems / totalSystems) * 100 : 0,
-      syncedRecords,
-      totalSynced
-    };
+    try {
+      const totalSystems = Object.keys(syncStatus).length;
+      const connectedSystems = Object.values(syncStatus).filter(status => status === 'connected').length;
+      const syncingSystems = Object.values(syncStatus).filter(status => status === 'syncing').length;
+      const errorSystems = Object.values(syncStatus).filter(status => status === 'error').length;
+      
+      // حساب عدد السجلات المتزامنة
+      const syncedRecords = {
+        customers: Array.isArray(customers) ? customers.length : 0,
+        suppliers: Array.isArray(suppliers) ? suppliers.length : 0,
+        products: Array.isArray(products) ? products.length : 0,
+        sales: Array.isArray(salesInvoices) ? salesInvoices.length : 0,
+        purchases: Array.isArray(purchaseInvoices) ? purchaseInvoices.length : 0,
+        receipts: Array.isArray(cashReceipts) ? cashReceipts.length : 0,
+        disbursements: Array.isArray(cashDisbursements) ? cashDisbursements.length : 0
+      };
+      
+      const totalSynced = Object.values(syncedRecords).reduce((sum, count) => sum + (count || 0), 0);
+      
+      return {
+        totalSystems,
+        connectedSystems,
+        syncingSystems,
+        errorSystems,
+        connectionRate: totalSystems > 0 ? (connectedSystems / totalSystems) * 100 : 0,
+        syncedRecords,
+        totalSynced
+      };
+    } catch (error) {
+      console.error('خطأ في حساب إحصائيات التكامل:', error);
+      return {
+        totalSystems: 0,
+        connectedSystems: 0,
+        syncingSystems: 0,
+        errorSystems: 0,
+        connectionRate: 0,
+        syncedRecords: {
+          customers: 0,
+          suppliers: 0,
+          products: 0,
+          sales: 0,
+          purchases: 0,
+          receipts: 0,
+          disbursements: 0
+        },
+        totalSynced: 0
+      };
+    }
   }, [syncStatus, customers, suppliers, products, salesInvoices, purchaseInvoices, cashReceipts, cashDisbursements]);
 
   // تنفيذ مزامنة
