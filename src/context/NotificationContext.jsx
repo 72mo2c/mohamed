@@ -2,7 +2,7 @@
 // Notification Context - إدارة الإشعارات
 // ======================================
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 
 const NotificationContext = createContext();
 
@@ -18,6 +18,9 @@ export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [activeNotification, setActiveNotification] = useState(null);
+  const [isVisible, setIsVisible] = useState(false);
+  
+  const timeoutRef = useRef(null);
 
   const addNotification = useCallback((notification) => {
     const newNotification = {
@@ -29,19 +32,44 @@ export const NotificationProvider = ({ children }) => {
 
     setNotifications(prev => [newNotification, ...prev]);
     setUnreadCount(prev => prev + 1);
-    setActiveNotification(newNotification);
 
-    // إخفاء الإشعار بعد 4 ثواني
-    setTimeout(() => {
-      setActiveNotification(null);
-    }, 4000);
+    // إذا كان هناك إشعار نشط، نغلقه أولاً ثم نعرض الجديد
+    if (activeNotification) {
+      setIsVisible(false);
+      
+      // ننتظر حتى يختفي الإشعار الحالي ثم نعرض الجديد
+      setTimeout(() => {
+        setActiveNotification(newNotification);
+        setIsVisible(true);
+        
+        // إعادة ضبط المؤقت للإشعار الجديد
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = setTimeout(() => {
+          setIsVisible(false);
+        }, 4000);
+      }, 300);
+    } else {
+      // إذا لم يكن هناك إشعار نشط، نعرض مباشرة
+      setActiveNotification(newNotification);
+      setIsVisible(true);
+      
+      // ضبط مؤقت للإخفاء التلقائي
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => {
+        setIsVisible(false);
+      }, 4000);
+    }
 
     // حفظ في LocalStorage
     const stored = localStorage.getItem('bero_notifications');
     const allNotifications = stored ? JSON.parse(stored) : [];
     allNotifications.unshift(newNotification);
     localStorage.setItem('bero_notifications', JSON.stringify(allNotifications.slice(0, 100)));
-  }, []);
+  }, [activeNotification]);
 
   const showSuccess = useCallback((message) => {
     addNotification({
@@ -108,13 +136,23 @@ export const NotificationProvider = ({ children }) => {
   }, []);
 
   const closeNotification = useCallback(() => {
-    setActiveNotification(null);
+    setIsVisible(false);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
   }, []);
+
+  const handleAnimationEnd = useCallback(() => {
+    if (!isVisible) {
+      setActiveNotification(null);
+    }
+  }, [isVisible]);
 
   const value = {
     notifications,
     unreadCount,
     activeNotification,
+    isVisible,
     addNotification,
     showSuccess,
     showError,
@@ -130,14 +168,14 @@ export const NotificationProvider = ({ children }) => {
   return (
     <NotificationContext.Provider value={value}>
       {children}
-      <SamsungNotification />
+      <SamsungNotification onAnimationEnd={handleAnimationEnd} />
     </NotificationContext.Provider>
   );
 };
 
 // مكون الإشعار بتصميم سامسونج
-const SamsungNotification = () => {
-  const { activeNotification, closeNotification } = useNotification();
+const SamsungNotification = ({ onAnimationEnd }) => {
+  const { activeNotification, isVisible, closeNotification } = useNotification();
 
   if (!activeNotification) return null;
 
@@ -162,7 +200,13 @@ const SamsungNotification = () => {
   };
 
   return (
-    <div style={styles.container}>
+    <div 
+      style={{
+        ...styles.container,
+        ...(isVisible ? styles.visible : styles.hidden)
+      }}
+      onAnimationEnd={onAnimationEnd}
+    >
       <div style={{...styles.notification, borderLeft: `4px solid ${getColor()}`}}>
         <div style={styles.header}>
           <div style={{...styles.icon, backgroundColor: getColor()}}>
@@ -187,6 +231,14 @@ const styles = {
     zIndex: 10000,
     minWidth: '300px',
     maxWidth: '400px',
+    transform: 'translateX(400px)',
+    opacity: 0,
+  },
+  visible: {
+    animation: 'slideIn 0.3s ease forwards',
+  },
+  hidden: {
+    animation: 'slideOut 0.3s ease forwards',
   },
   notification: {
     background: 'rgba(255, 255, 255, 0.95)',
@@ -195,7 +247,6 @@ const styles = {
     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
     border: '1px solid rgba(255, 255, 255, 0.3)',
     overflow: 'hidden',
-    animation: 'slideDown 0.3s ease',
   },
   header: {
     display: 'flex',
@@ -246,18 +297,33 @@ const styles = {
 };
 
 // إضافة الأنيميشن
-const styleSheet = document.styleSheets[0];
-styleSheet.insertRule(`
-  @keyframes slideDown {
-    from {
-      transform: translateY(-100%);
-      opacity: 0;
+if (typeof document !== 'undefined') {
+  const styleSheet = document.styleSheets[0];
+  styleSheet.insertRule(`
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
     }
-    to {
-      transform: translateY(0);
-      opacity: 1;
+  `, styleSheet.cssRules.length);
+  
+  styleSheet.insertRule(`
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(400px);
+        opacity: 0;
+      }
     }
-  }
-`, styleSheet.cssRules.length);
+  `, styleSheet.cssRules.length);
+}
 
 export default NotificationContext;
