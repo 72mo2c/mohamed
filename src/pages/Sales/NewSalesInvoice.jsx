@@ -9,7 +9,7 @@ import { FaSave, FaPrint, FaSearch, FaTrash, FaPercent, FaMoneyBillWave, FaInfoC
 import { printInvoiceDirectly } from '../../utils/printUtils';
 
 const NewSalesInvoice = () => {
-  const { customers, products, warehouses, treasuryBalance, addSalesInvoice, getCustomerBalance } = useData();
+  const { customers, products, warehouses, addSalesInvoice, getCustomerBalance } = useData();
   const { showSuccess, showError } = useNotification();
   
   const [formData, setFormData] = useState({
@@ -95,17 +95,7 @@ const NewSalesInvoice = () => {
 
   // الحصول على تحذيرات نوع الدفع
   const getPaymentTypeWarning = () => {
-    const total = calculateTotal();
-    const customerBalance = getSelectedCustomerBalance();
-    
-    if (formData.paymentType === 'deferred' && customerBalance !== null) {
-      const newBalance = customerBalance + total;
-      return {
-        type: 'info',
-        message: `رصيد العميل الحالي: ${customerBalance.toFixed(2)} ج.م\nسيصبح بعد الفاتورة: ${newBalance.toFixed(2)} ج.م`
-      };
-    }
-    
+    // تم إخفاء التحذيرات المالية لحماية المعلومات
     return null;
   };
 
@@ -573,31 +563,7 @@ const NewSalesInvoice = () => {
             </select>
           </div>
 
-          {/* عرض رصيد الخزينة */}
-          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg mb-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-sm opacity-90">رصيد الخزينة الحالي</p>
-                <p className="text-2xl font-bold">{(treasuryBalance || 0).toFixed(2)} ج.م</p>
-              </div>
-              <FaMoneyBillWave className="text-3xl opacity-50" />
-            </div>
-          </div>
 
-          {/* عرض رصيد العميل */}
-          {formData.customerId && (
-            <div className="bg-blue-50 p-4 rounded-lg mb-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm text-gray-600">رصيد العميل المحدد</p>
-                  <p className="text-xl font-bold text-blue-600">
-                    {getSelectedCustomerBalance()?.toFixed(2) || '0.00'} ج.م
-                  </p>
-                </div>
-                <FaInfoCircle className="text-blue-500 text-2xl" />
-              </div>
-            </div>
-          )}
 
           {/* تحذيرات نوع الدفع */}
           {paymentWarning && (

@@ -228,8 +228,8 @@ const DashboardUpdated = () => {
           {/* عرض الرصيد إذا كان مسموح */}
           {showTreasury && (
             <StatCard
-              title={`رصيد الخزينة (${currency})`}
-              value={treasuryBalance.toLocaleString()}
+              title="معلومات مالية محمية"
+              value="••••••"
               icon={FaWallet}
               color="text-yellow-600"
               onClick={() => window.location.href = '/treasury'}

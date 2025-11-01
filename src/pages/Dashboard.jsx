@@ -180,9 +180,9 @@ const Dashboard = () => {
       gradient: 'from-yellow-400 to-yellow-600',
       bgGradient: 'from-yellow-50 to-yellow-100',
       stats: {
-        label: 'رصيد الخزينة',
-        value: `${currentTreasuryBalance.toLocaleString()}`,
-        subLabel: 'جنيه مصري'
+        label: 'معلومات محمية',
+        value: '••••••',
+        subLabel: 'معلومات سرية'
       },
       tasks: [
         'إذن استلام نقدي',

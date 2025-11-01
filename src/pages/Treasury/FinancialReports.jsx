@@ -21,26 +21,26 @@ const FinancialReports = () => {
   const stats = [
     {
       title: 'إجمالي المبيعات',
-      value: `${totalSales.toLocaleString()} د.ع`,
+      value: '•••••• د.ع',
       color: 'bg-green-500',
       icon: <FaChartLine />
     },
     {
       title: 'إجمالي المشتريات',
-      value: `${totalPurchases.toLocaleString()} د.ع`,
+      value: '•••••• د.ع',
       color: 'bg-red-500',
       icon: <FaChartLine />
     },
     {
       title: 'الأرباح',
-      value: `${profit.toLocaleString()} د.ع`,
-      color: profit >= 0 ? 'bg-blue-500' : 'bg-red-600',
+      value: '•••••• د.ع',
+      color: 'bg-blue-500',
       icon: <FaFileInvoice />
     },
     {
       title: 'نسبة الربح',
-      value: `${profitPercentage}%`,
-      color: profitPercentage >= 0 ? 'bg-purple-500' : 'bg-red-600',
+      value: '••••••%',
+      color: 'bg-purple-500',
       icon: <FaChartLine />
     },
   ];
@@ -86,7 +86,7 @@ const FinancialReports = () => {
             </div>
             <div className="flex justify-between p-3 bg-gray-50 rounded">
               <span className="text-gray-700">الإجمالي:</span>
-              <span className="font-bold text-green-600">{totalSales.toLocaleString()} د.ع</span>
+              <span className="font-bold text-green-600">•••••• د.ع</span>
             </div>
           </div>
         </Card>
@@ -99,7 +99,7 @@ const FinancialReports = () => {
             </div>
             <div className="flex justify-between p-3 bg-gray-50 rounded">
               <span className="text-gray-700">الإجمالي:</span>
-              <span className="font-bold text-red-600">{totalPurchases.toLocaleString()} د.ع</span>
+              <span className="font-bold text-red-600">•••••• د.ع</span>
             </div>
           </div>
         </Card>
@@ -110,12 +110,10 @@ const FinancialReports = () => {
         <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
           <div className="text-center">
             <p className="text-gray-600 mb-2">صافي الربح / الخسارة</p>
-            <p className={`text-5xl font-bold ${
-              profit >= 0 ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {profit >= 0 ? '+' : ''}{profit.toLocaleString()} د.ع
+            <p className="text-5xl font-bold text-yellow-600">
+              •••••• د.ع
             </p>
-            <p className="text-gray-500 mt-2">نسبة الربح: {profitPercentage}%</p>
+            <p className="text-gray-500 mt-2">نسبة الربح: ••••••%</p>
           </div>
         </div>
       </Card>

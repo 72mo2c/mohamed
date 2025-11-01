@@ -32,13 +32,8 @@ const CustomerBalances = () => {
                            customer.phone?.includes(searchTerm) ||
                            customer.email?.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // فلتر بالنوع
+      // إخفاء فلترة الأرصدة
       let matchesFilter = true;
-      if (filterType === 'debit') {
-        matchesFilter = customer.balance > 0; // له دين علينا
-      } else if (filterType === 'credit') {
-        matchesFilter = customer.balance < 0; // عليه دين
-      }
       
       return matchesSearch && matchesFilter;
     });
@@ -98,10 +93,10 @@ const CustomerBalances = () => {
             </div>
             <div>
               <div className="text-2xl font-bold text-red-600">
-                {stats.totalDebit.toFixed(2)}
+                ••••••
               </div>
               <div className="text-sm text-gray-600">إجمالي المدين (جنيه)</div>
-              <div className="text-xs text-gray-500">لهم دين علينا ({stats.debitCount})</div>
+              <div className="text-xs text-gray-500">معلومات محمية</div>
             </div>
           </div>
         </Card>
@@ -113,10 +108,10 @@ const CustomerBalances = () => {
             </div>
             <div>
               <div className="text-2xl font-bold text-green-600">
-                {stats.totalCredit.toFixed(2)}
+                ••••••
               </div>
               <div className="text-sm text-gray-600">إجمالي الدائن (جنيه)</div>
-              <div className="text-xs text-gray-500">عليهم دين ({stats.creditCount})</div>
+              <div className="text-xs text-gray-500">معلومات محمية</div>
             </div>
           </div>
         </Card>
@@ -134,13 +129,13 @@ const CustomerBalances = () => {
               <div className={`text-2xl font-bold ${
                 stats.netBalance >= 0 ? 'text-red-600' : 'text-green-600'
               }`}>
-                {Math.abs(stats.netBalance).toFixed(2)}
+                ••••••
               </div>
               <div className="text-sm text-gray-600">
                 صافي الرصيد (جنيه)
               </div>
               <div className="text-xs text-gray-500">
-                {stats.netBalance >= 0 ? 'لهم علينا' : 'عليهم لنا'}
+                معلومات محمية
               </div>
             </div>
           </div>
@@ -202,12 +197,8 @@ const CustomerBalances = () => {
                     <td className="px-4 py-3 text-sm">{customer.phone || '-'}</td>
                     <td className="px-4 py-3 text-sm">{customer.email || '-'}</td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`font-semibold ${
-                        customer.balance > 0 ? 'text-red-600' : 
-                        customer.balance < 0 ? 'text-green-600' : 
-                        'text-gray-600'
-                      }`}>
-                        {Math.abs(customer.balance).toFixed(2)} جنيه
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                        معلومات محمية
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">

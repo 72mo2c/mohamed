@@ -10,7 +10,7 @@ import { FaSave, FaPrint, FaSearch, FaTrash, FaPercent, FaMoneyBillWave, FaExcla
 import { printInvoiceDirectly } from '../../utils/printUtils';
 
 const NewPurchaseInvoice = () => {
-  const { suppliers, products, warehouses, treasuryBalance, addPurchaseInvoice, getSupplierBalance } = useData();
+  const { suppliers, products, warehouses, addPurchaseInvoice, getSupplierBalance } = useData();
   const { showSuccess, showError } = useNotification();
   
   const [formData, setFormData] = useState({
@@ -100,19 +100,7 @@ const NewPurchaseInvoice = () => {
 
   // تحذير عند عدم كفاية الرصيد
   const getPaymentTypeWarning = () => {
-    if (formData.paymentType === 'cash') {
-      const total = calculateTotal();
-      if (total > treasuryBalance) {
-        return {
-          type: 'error',
-          message: `الرصيد المتوفر في الخزينة (${treasuryBalance.toFixed(2)}) غير كافٍ للمبلغ المطلوب (${total.toFixed(2)})`
-        };
-      }
-      return {
-        type: 'warning',
-        message: `سيتم خصم ${total.toFixed(2)} من رصيد الخزينة الحالي (${treasuryBalance.toFixed(2)})`
-      };
-    }
+    // تم إخفاء التحذيرات المالية لحماية المعلومات
     return null;
   };
 
@@ -474,16 +462,7 @@ const NewPurchaseInvoice = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-4">
-      {/* عرض رصيد الخزينة */}
-      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg mb-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="text-sm opacity-90">رصيد الخزينة الحالي</p>
-            <p className="text-2xl font-bold">{treasuryBalance.toFixed(2)} ج.م</p>
-          </div>
-          <FaMoneyBillWave className="text-3xl opacity-50" />
-        </div>
-      </div>
+
       
       {/* تحذير نوع الدفع */}
       {paymentWarning && (
@@ -498,27 +477,7 @@ const NewPurchaseInvoice = () => {
         </div>
       )}
       
-      {/* معلومات المورد ورصيده */}
-      {supplierBalance !== null && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">رصيد المورد الحالي</p>
-              <p className={`text-lg font-bold ${supplierBalance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                {supplierBalance >= 0 ? 'دين على الشركة: ' : 'رصيد للمورد: '}
-                {Math.abs(supplierBalance).toFixed(2)} ج.م
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">سيصبح الرصيد بعد الفاتورة</p>
-              <p className={`text-lg font-bold ${(supplierBalance + calculateTotal()) >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                {(supplierBalance + calculateTotal()) >= 0 ? 'دين على الشركة: ' : 'رصيد للمورد: '}
-                {Math.abs(supplierBalance + calculateTotal()).toFixed(2)} ج.م
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* البطاقة الرئيسية */}
       <div className="bg-white rounded-lg shadow-md p-4">
