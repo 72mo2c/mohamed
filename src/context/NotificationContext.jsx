@@ -18,13 +18,36 @@ export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [activeNotification, setActiveNotification] = useState(null);
-  const [isVisible, setIsVisible] = useState(false);
   
+  const notificationQueue = useRef([]);
+  const isShowing = useRef(false);
   const timeoutRef = useRef(null);
+
+  const processQueue = useCallback(() => {
+    if (notificationQueue.current.length === 0 || isShowing.current) {
+      return;
+    }
+
+    isShowing.current = true;
+    const nextNotification = notificationQueue.current.shift();
+    
+    setActiveNotification(nextNotification);
+
+    // إخفاء الإشعار بعد 4 ثواني
+    timeoutRef.current = setTimeout(() => {
+      setActiveNotification(null);
+      isShowing.current = false;
+      
+      // انتظار 300ms قبل عرض الإشعار التالي
+      setTimeout(() => {
+        processQueue();
+      }, 300);
+    }, 4000);
+  }, []);
 
   const addNotification = useCallback((notification) => {
     const newNotification = {
-      id: Date.now(),
+      id: Date.now() + Math.random(), // إضافة random لمنع التكرار
       timestamp: new Date().toISOString(),
       read: false,
       ...notification
@@ -33,35 +56,12 @@ export const NotificationProvider = ({ children }) => {
     setNotifications(prev => [newNotification, ...prev]);
     setUnreadCount(prev => prev + 1);
 
-    // إذا كان هناك إشعار نشط، نغلقه أولاً ثم نعرض الجديد
-    if (activeNotification) {
-      setIsVisible(false);
-      
-      // ننتظر حتى يختفي الإشعار الحالي ثم نعرض الجديد
-      setTimeout(() => {
-        setActiveNotification(newNotification);
-        setIsVisible(true);
-        
-        // إعادة ضبط المؤقت للإشعار الجديد
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-        }
-        timeoutRef.current = setTimeout(() => {
-          setIsVisible(false);
-        }, 4000);
-      }, 300);
-    } else {
-      // إذا لم يكن هناك إشعار نشط، نعرض مباشرة
-      setActiveNotification(newNotification);
-      setIsVisible(true);
-      
-      // ضبط مؤقت للإخفاء التلقائي
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      timeoutRef.current = setTimeout(() => {
-        setIsVisible(false);
-      }, 4000);
+    // إضافة الإشعار إلى الطابور
+    notificationQueue.current.push(newNotification);
+    
+    // إذا لم يكن هناك إشعار معروض، ابدأ المعالجة
+    if (!isShowing.current) {
+      processQueue();
     }
 
     // حفظ في LocalStorage
@@ -69,7 +69,7 @@ export const NotificationProvider = ({ children }) => {
     const allNotifications = stored ? JSON.parse(stored) : [];
     allNotifications.unshift(newNotification);
     localStorage.setItem('bero_notifications', JSON.stringify(allNotifications.slice(0, 100)));
-  }, [activeNotification]);
+  }, [processQueue]);
 
   const showSuccess = useCallback((message) => {
     addNotification({
@@ -136,23 +136,22 @@ export const NotificationProvider = ({ children }) => {
   }, []);
 
   const closeNotification = useCallback(() => {
-    setIsVisible(false);
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-  }, []);
-
-  const handleAnimationEnd = useCallback(() => {
-    if (!isVisible) {
-      setActiveNotification(null);
-    }
-  }, [isVisible]);
+    setActiveNotification(null);
+    isShowing.current = false;
+    
+    // عرض الإشعار التالي بعد إغلاق الحالي
+    setTimeout(() => {
+      processQueue();
+    }, 300);
+  }, [processQueue]);
 
   const value = {
     notifications,
     unreadCount,
     activeNotification,
-    isVisible,
     addNotification,
     showSuccess,
     showError,
@@ -168,14 +167,14 @@ export const NotificationProvider = ({ children }) => {
   return (
     <NotificationContext.Provider value={value}>
       {children}
-      <SamsungNotification onAnimationEnd={handleAnimationEnd} />
+      <SamsungNotification />
     </NotificationContext.Provider>
   );
 };
 
 // مكون الإشعار بتصميم سامسونج
-const SamsungNotification = ({ onAnimationEnd }) => {
-  const { activeNotification, isVisible, closeNotification } = useNotification();
+const SamsungNotification = () => {
+  const { activeNotification, closeNotification } = useNotification();
 
   if (!activeNotification) return null;
 
@@ -200,14 +199,11 @@ const SamsungNotification = ({ onAnimationEnd }) => {
   };
 
   return (
-    <div 
-      style={{
-        ...styles.container,
-        ...(isVisible ? styles.visible : styles.hidden)
-      }}
-      onAnimationEnd={onAnimationEnd}
-    >
-      <div style={{...styles.notification, borderLeft: `4px solid ${getColor()}`}}>
+    <div style={styles.container}>
+      <div 
+        style={{...styles.notification, borderLeft: `4px solid ${getColor()}`}}
+        className="notification-slide-in"
+      >
         <div style={styles.header}>
           <div style={{...styles.icon, backgroundColor: getColor()}}>
             {getIcon()}
@@ -231,14 +227,6 @@ const styles = {
     zIndex: 10000,
     minWidth: '300px',
     maxWidth: '400px',
-    transform: 'translateX(400px)',
-    opacity: 0,
-  },
-  visible: {
-    animation: 'slideIn 0.3s ease forwards',
-  },
-  hidden: {
-    animation: 'slideOut 0.3s ease forwards',
   },
   notification: {
     background: 'rgba(255, 255, 255, 0.95)',
@@ -247,6 +235,7 @@ const styles = {
     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
     border: '1px solid rgba(255, 255, 255, 0.3)',
     overflow: 'hidden',
+    animation: 'slideIn 0.3s ease forwards',
   },
   header: {
     display: 'flex',
@@ -308,19 +297,6 @@ if (typeof document !== 'undefined') {
       to {
         transform: translateX(0);
         opacity: 1;
-      }
-    }
-  `, styleSheet.cssRules.length);
-  
-  styleSheet.insertRule(`
-    @keyframes slideOut {
-      from {
-        transform: translateX(0);
-        opacity: 1;
-      }
-      to {
-        transform: translateX(400px);
-        opacity: 0;
       }
     }
   `, styleSheet.cssRules.length);
