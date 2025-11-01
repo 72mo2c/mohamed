@@ -7,6 +7,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { useNotification } from '../../context/NotificationContext';
 import { FaSave, FaArrowLeft, FaUndo } from 'react-icons/fa';
+import { findBySafeId, logIdInfo, logArrayIdsInfo } from '../../utils/idUtils';
 
 const NewSalesReturn = () => {
   const { invoiceId } = useParams();
@@ -20,10 +21,23 @@ const NewSalesReturn = () => {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
-    // تحميل الفاتورة
-    const foundInvoice = salesInvoices.find(inv => inv.id === parseInt(invoiceId));
+    // التأكد من تحميل البيانات
+    if (!salesInvoices || salesInvoices.length === 0) {
+      console.log('جاري تحميل فواتير المبيعات...');
+      return;
+    }
+
+    // تسجيل معلومات تشخيصية
+    logIdInfo(invoiceId, 'URL Parameter -');
+    logArrayIdsInfo(salesInvoices, 'id', 'Sales Invoices -');
+
+    // البحث عن الفاتورة باستخدام الدالة المساعدة الآمنة
+    const foundInvoice = findBySafeId(salesInvoices, invoiceId, 'id');
+    
     if (!foundInvoice) {
-      showError('الفاتورة غير موجودة');
+      console.error('لم يتم العثور على الفاتورة:', invoiceId);
+      console.error('المعرفات المتاحة:', salesInvoices.map(inv => inv.id));
+      showError(`الفاتورة رقم ${invoiceId} غير موجودة`);
       navigate('/sales/manage');
       return;
     }
