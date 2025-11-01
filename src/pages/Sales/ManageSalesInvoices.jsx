@@ -3,20 +3,14 @@
 // ======================================
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useSystemSettings } from '../../hooks/useSystemSettings';
 import { useAuth } from '../../context/AuthContext';
-import Card from '../../components/Common/Card';
-import Table from '../../components/Common/Table';
-import Input from '../../components/Common/Input';
-import Select from '../../components/Common/Select';
-import { FaFileInvoice, FaSearch, FaExclamationTriangle, FaTimes, FaUndo, FaEye, FaTrash, FaPrint, FaEdit } from 'react-icons/fa';
+import { FaFileInvoice, FaEdit, FaTrash, FaPrint, FaSearch, FaFilter, FaUndo, FaExclamationTriangle, FaTimes } from 'react-icons/fa';
 import { printInvoiceDirectly } from '../../utils/printUtils';
 
 const ManageSalesInvoices = () => {
-  const navigate = useNavigate();
   const { salesInvoices, products, customers, warehouses, deleteSalesInvoice, addSalesReturn, salesReturns } = useData();
   const { showSuccess, showError } = useNotification();
   const { settings } = useSystemSettings();
@@ -183,34 +177,64 @@ const ManageSalesInvoices = () => {
 
 
 
+  const paymentTypeOptions = [
+    { value: 'all', label: 'كل الأنواع' },
+    { value: 'cash', label: 'نقدي' },
+    { value: 'deferred', label: 'آجل' },
+    { value: 'partial', label: 'جزئي' }
+  ];
+
   return (
-    <div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">إدارة فواتير المبيعات</h1>
+    <div className="max-w-7xl mx-auto p-4">
+      <h2 className="text-xl font-bold text-gray-800 mb-4">إدارة فواتير المبيعات</h2>
 
-      <Card icon={<FaFileInvoice />}>
-        {/* الفلاتر */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <Input
-            label="بحث"
-            name="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ابحث باسم العميل أو رقم الفاتورة..."
-            icon={<FaSearch />}
-          />
+      {/* شريط البحث والتصفية */}
+      <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* البحث */}
+          <div className="col-span-2">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="ابحث برقم الفاتورة أو اسم العميل..."
+              />
+              <FaSearch className="absolute left-3 top-3 text-gray-400" />
+            </div>
+          </div>
 
-          <Select
-            label="نوع الدفع"
-            name="paymentTypeFilter"
-            value={paymentTypeFilter}
-            onChange={(e) => setPaymentTypeFilter(e.target.value)}
-            options={paymentTypeOptions}
-          />
+          {/* التصفية حسب نوع الدفع */}
+          <div>
+            <div className="relative">
+              <select
+                value={paymentTypeFilter}
+                onChange={(e) => setPaymentTypeFilter(e.target.value)}
+                className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+              >
+                <option value="all">كل الأنواع</option>
+                <option value="cash">نقدي</option>
+                <option value="deferred">آجل</option>
+                <option value="partial">جزئي</option>
+              </select>
+              <FaFilter className="absolute left-3 top-3 text-gray-400" />
+            </div>
+          </div>
         </div>
 
         {/* عدد النتائج */}
-        <div className="mb-4 text-sm text-gray-600">
-          عدد النتائج: <span className="font-semibold text-gray-800">{filteredInvoices.length}</span> من {salesInvoices.length}
+        <div className="flex justify-between items-center mt-4">
+          <p className="text-sm text-gray-600">
+            عرض <span className="font-semibold">{filteredInvoices.length}</span> من أصل <span className="font-semibold">{salesInvoices.length}</span> فاتورة
+          </p>
+          {filteredInvoices.length > 0 && (
+            <div className="text-sm text-gray-500">
+              إجمالي القيمة: <span className="font-semibold text-green-600">
+                {formatCurrency(filteredInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0))}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="overflow-x-auto">
@@ -341,24 +365,132 @@ const ManageSalesInvoices = () => {
             </tbody>
           </table>
         </div>
-      </Card>
+      </div>
 
-      {/* نافذة عرض التفاصيل */}
-      {showDetailsModal && selectedInvoice && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            {/* رأس النافذة */}
-            <div className="flex justify-between items-center mb-6 pb-4 border-b">
-              <h2 className="text-2xl font-bold text-gray-800">
-                تفاصيل الفاتورة #{selectedInvoice.id}
-              </h2>
-              <button
-                onClick={() => setShowDetailsModal(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                <FaTimes />
-              </button>
-            </div>
+      {/* جدول الفواتير */}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  رقم الفاتورة
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  العميل
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  التاريخ
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  نوع الدفع
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  المجموع
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  الإجراءات
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {filteredInvoices && filteredInvoices.length > 0 ? (
+                filteredInvoices.map((invoice) => {
+                  const customer = customers.find(c => c.id === parseInt(invoice.customerId));
+                  const customerName = customer ? customer.name : '-';
+                  
+                  // تنسيق نوع الدفع
+                  const paymentTypes = {
+                    'cash': { label: 'نقدي', color: 'bg-green-100 text-green-700' },
+                    'deferred': { label: 'آجل', color: 'bg-yellow-100 text-yellow-700' },
+                    'partial': { label: 'جزئي', color: 'bg-blue-100 text-blue-700' }
+                  };
+                  const paymentType = paymentTypes[invoice.paymentType] || { 
+                    label: invoice.paymentType, 
+                    color: 'bg-gray-100 text-gray-700' 
+                  };
+                  
+                  return (
+                    <tr key={invoice.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-blue-600">#{invoice.id}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-gray-900">{customerName}</div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="text-sm text-gray-900">
+                          {new Date(invoice.date).toLocaleDateString('ar-EG')}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${paymentType.color}`}>
+                          {paymentType.label}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="font-bold text-green-600">
+                          {formatCurrency(invoice.total || 0)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex justify-center gap-1">
+                          {canViewInvoice && (
+                            <button
+                              onClick={() => handleView(invoice)}
+                              className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                              title="عرض"
+                            >
+                              <FaFileInvoice size={14} />
+                            </button>
+                          )}
+                          {canReturnInvoice && (
+                            <button
+                              onClick={() => handleReturn(invoice)}
+                              className="p-2 text-orange-600 hover:bg-orange-100 rounded transition-colors"
+                              title="إرجاع"
+                            >
+                              <FaUndo size={14} />
+                            </button>
+                          )}
+                          {canPrintInvoice && (
+                            <button
+                              onClick={() => handlePrint(invoice)}
+                              className="p-2 text-green-600 hover:bg-green-100 rounded transition-colors"
+                              title="طباعة"
+                            >
+                              <FaPrint size={14} />
+                            </button>
+                          )}
+                          {canDeleteInvoice && (
+                            <button
+                              onClick={() => handleDeleteClick(invoice)}
+                              className="p-2 text-red-600 hover:bg-red-100 rounded transition-colors"
+                              title="حذف"
+                            >
+                              <FaTrash size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center">
+                      <FaFileInvoice className="text-4xl text-gray-300 mb-2" />
+                      <p className="text-lg font-medium">لا توجد فواتير مبيعات</p>
+                      <p className="text-sm">لم يتم العثور على أي فواتير مطابقة لمعايير البحث</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
             {/* معلومات الفاتورة */}
             <div className="bg-gray-50 p-4 rounded-lg mb-4">
@@ -518,6 +650,135 @@ const ManageSalesInvoices = () => {
                 className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors"
               >
                 إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة عرض التفاصيل */}
+      {showDetailsModal && selectedInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-4 text-white sticky top-0">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-bold">تفاصيل فاتورة المبيعات #{selectedInvoice.id}</h3>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              {/* معلومات الفاتورة */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">العميل</p>
+                  <p className="font-semibold text-sm">
+                    {customers.find(c => c.id === parseInt(selectedInvoice.customerId))?.name || 'غير محدد'}
+                  </p>
+                </div>
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">التاريخ</p>
+                  <p className="font-semibold text-sm">
+                    {new Date(selectedInvoice.date).toLocaleDateString('ar-EG')}
+                  </p>
+                </div>
+                <div className="bg-yellow-50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">نوع الدفع</p>
+                  <p className="font-semibold text-sm">
+                    {{
+                      'cash': 'نقدي',
+                      'deferred': 'آجل',
+                      'partial': 'جزئي'
+                    }[selectedInvoice.paymentType] || selectedInvoice.paymentType}
+                  </p>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">المجموع الكلي</p>
+                  <p className="font-bold text-lg text-purple-600">
+                    {formatCurrency(selectedInvoice.total || 0)}
+                  </p>
+                </div>
+              </div>
+
+              {/* جدول المنتجات */}
+              <div className="mb-6">
+                <h4 className="text-sm font-bold text-gray-800 mb-3">المنتجات</h4>
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="px-3 py-2 text-right text-xs font-semibold">#</th>
+                        <th className="px-3 py-2 text-right text-xs font-semibold">المنتج</th>
+                        <th className="px-3 py-2 text-center text-xs font-semibold">الكمية</th>
+                        <th className="px-3 py-2 text-center text-xs font-semibold">السعر</th>
+                        <th className="px-3 py-2 text-center text-xs font-semibold">الإجمالي</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {(selectedInvoice.items || []).map((item, index) => {
+                        const product = products.find(p => p.id === parseInt(item.productId));
+                        // محاولة الحصول على اسم المنتج من مصادر متعددة
+                        const productName = product?.name || item.productName || 'غير محدد';
+                        const productCategory = product?.category || '-';
+                        const itemTotal = (item.quantity || 0) * (item.price || 0);
+                        return (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-3 py-2">{index + 1}</td>
+                            <td className="px-3 py-2">
+                              <div className="font-medium">{productName}</div>
+                              <div className="text-xs text-gray-500">{productCategory}</div>
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <div>{item.quantity || 0}</div>
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <div>{formatCurrency(item.price || 0)}</div>
+                            </td>
+                            <td className="px-3 py-2 text-center font-semibold text-blue-600">
+                              {formatCurrency(itemTotal)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* الملاحظات */}
+              {selectedInvoice.notes && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">ملاحظات</p>
+                  <p className="text-sm">{selectedInvoice.notes}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 p-4 border-t flex justify-end gap-2">
+              {canPrintInvoice && (
+                <button
+                  onClick={() => {
+                    handlePrint(selectedInvoice);
+                    setShowDetailsModal(false);
+                  }}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  <FaPrint /> طباعة
+                </button>
+              )}
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                إغلاق
               </button>
             </div>
           </div>
