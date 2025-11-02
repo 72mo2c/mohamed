@@ -144,33 +144,10 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     },
     {
       id: 'treasury',
-      title: 'الخزينة',
+      title: 'الخزينة والادارة العامة' ,
       icon: <FaMoneyBillWave />,
       color: 'from-yellow-500 to-yellow-600',
       subItems: [
-         {
-        id: 'accounting',
-        title: 'المحاسبة',
-        icon: <FaCalculator />,
-        color: 'from-orange-500 to-orange-600',
-        subItems: [
-          { title: 'دليل الحسابات', icon: <FaBookOpen />, path: '/accounting/chart-of-accounts' },
-          { title: 'القيود اليومية', icon: <FaFileInvoice />, path: '/accounting/journal-entry' },
-        ]
-      },
-        {
-          id: 'hr',
-          title: 'العمال',
-          icon: <FaUsers />,
-          color: 'from-blue-500 to-blue-600',
-          subItems: [
-            { title: 'إدارة الموظفين', icon: <FaUserPlus />, path: '/hr/employees' },
-            { title: 'إدارة الأقسام', icon: <FaBuilding />, path: '/hr/organization' },
-            { title: 'الحضور والانصراف', icon: <FaClock />, path: '/hr/attendance' },
-            { title: 'إدارة الإجازات', icon: <FaCalendarAlt />, path: '/hr/leaves' },
-            { title: 'الرواتب', icon: <FaMoneyBillWave />, path: '/hr/payroll' },
-          ]
-        },
         { title: 'إذن استلام نقدي', icon: <FaPlus />, path: '/treasury/receipt/new' },
         { title: 'إيصالات الاستلام', icon: <FaList />, path: '/treasury/receipts' },
         { title: 'إذن صرف نقدي', icon: <FaPlus />, path: '/treasury/disbursement/new' },
@@ -178,24 +155,8 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
         { title: 'حركة الخزينة', icon: <FaChartLine />, path: '/treasury/movement' },
         { title: 'أرصدة العملاء', icon: <FaUsers />, path: '/treasury/customer-balances' },
         { title: 'أرصدة الموردين', icon: <FaTruck />, path: '/treasury/supplier-balances' },
-      ]
-    },
-    {
-      id: 'accounting',
-      title: 'المحاسبة',
-      icon: <FaCalculator />,
-      color: 'from-orange-500 to-orange-600',
-      subItems: [
         { title: 'دليل الحسابات', icon: <FaBookOpen />, path: '/accounting/chart-of-accounts' },
         { title: 'القيود اليومية', icon: <FaFileInvoice />, path: '/accounting/journal-entry' },
-      ]
-    },
-    {
-      id: 'hr',
-      title: 'الموارد البشرية',
-      icon: <FaUsers />,
-      color: 'from-blue-500 to-blue-600',
-      subItems: [
         { title: 'إدارة الموظفين', icon: <FaUserPlus />, path: '/hr/employees' },
         { title: 'إدارة الأقسام', icon: <FaBuilding />, path: '/hr/organization' },
         { title: 'الحضور والانصراف', icon: <FaClock />, path: '/hr/attendance' },
