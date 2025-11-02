@@ -1,11 +1,12 @@
 // ======================================
-// Compact Sidebar - شريط جانبي مصغر ومميز
+// Enhanced Sidebar - شريط جانبي محسن مع قائمة منبثقة
 // ======================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTab } from '../../contexts/TabContext';
 import { useAuth } from '../../context/AuthContext';
+import SidebarPopover from './SidebarPopover';
 import { 
   FaHome, 
   FaWarehouse, 
@@ -52,27 +53,57 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
   const { isAdmin } = useAuth();
   const [expandedMenu, setExpandedMenu] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [activePopover, setActivePopover] = useState(null);
+  const sidebarRef = useRef(null);
 
-  // Check if current path matches any submenu item
-  const isMenuActive = (menuItem) => {
-    if (menuItem.path && location.pathname === menuItem.path) {
-      return true;
-    }
-    if (menuItem.subItems) {
-      return menuItem.subItems.some(subItem => location.pathname === subItem.path);
-    }
-    return false;
+  // Track popover position
+  const [popoverPosition, setPopoverPosition] = useState({ top: 0 });
+
+  // Calculate popover position based on clicked menu item
+  const calculatePopoverPosition = (element) => {
+    if (!element || !sidebarRef.current) return { top: 0 };
+    
+    const sidebarRect = sidebarRef.current.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
+    
+    return {
+      top: elementRect.top - sidebarRect.top
+    };
   };
 
-  // Auto-expand menu if current path is in its submenu
-  useEffect(() => {
-    const activeMenu = menuItems.find(item => 
-      item.subItems && item.subItems.some(subItem => location.pathname === subItem.path)
-    );
-    if (activeMenu) {
-      setExpandedMenu(activeMenu.id);
+  // Handle menu click - open popover or navigate to simple menu
+  const handleMenuClick = (item, event) => {
+    if (item.subItems && item.subItems.length > 0) {
+      // Has submenu - open popover
+      const position = calculatePopoverPosition(event.currentTarget);
+      setPopoverPosition(position);
+      setActivePopover(item);
+    } else if (item.path) {
+      // Simple menu item - navigate directly
+      if (window.innerWidth < 1024) {
+        closeSidebar();
+      }
     }
-  }, [location.pathname]);
+  };
+
+  // Close popover
+  const closePopover = () => {
+    setActivePopover(null);
+  };
+
+  // Handle click outside to close popover
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (activePopover && sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        closePopover();
+      }
+    };
+
+    if (activePopover) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [activePopover]);
 
   const menuItems = [
     {
@@ -144,7 +175,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     },
     {
       id: 'treasury',
-      title: 'الخزينة والادارة العامة' ,
+      title: 'الخزينة',
       icon: <FaMoneyBillWave />,
       color: 'from-yellow-500 to-yellow-600',
       subItems: [
@@ -155,8 +186,24 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
         { title: 'حركة الخزينة', icon: <FaChartLine />, path: '/treasury/movement' },
         { title: 'أرصدة العملاء', icon: <FaUsers />, path: '/treasury/customer-balances' },
         { title: 'أرصدة الموردين', icon: <FaTruck />, path: '/treasury/supplier-balances' },
+      ]
+    },
+    {
+      id: 'accounting',
+      title: 'المحاسبة',
+      icon: <FaCalculator />,
+      color: 'from-orange-500 to-orange-600',
+      subItems: [
         { title: 'دليل الحسابات', icon: <FaBookOpen />, path: '/accounting/chart-of-accounts' },
         { title: 'القيود اليومية', icon: <FaFileInvoice />, path: '/accounting/journal-entry' },
+      ]
+    },
+    {
+      id: 'hr',
+      title: 'الموارد البشرية',
+      icon: <FaUsers />,
+      color: 'from-blue-500 to-blue-600',
+      subItems: [
         { title: 'إدارة الموظفين', icon: <FaUserPlus />, path: '/hr/employees' },
         { title: 'إدارة الأقسام', icon: <FaBuilding />, path: '/hr/organization' },
         { title: 'الحضور والانصراف', icon: <FaClock />, path: '/hr/attendance' },
@@ -236,11 +283,11 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     },
     {
       id: 'integrations',
-      title: 'الربط والتكامل',
+      title: 'الربط',
       icon: <FaLink />,
       color: 'from-indigo-500 to-indigo-600',
       subItems: [
-        { title: 'منصات الربط الخارجية', icon: <FaBuilding />, path: '/integrations/external-platforms' },
+        { title: 'منصات خارجية', icon: <FaBuilding />, path: '/integrations/external-platforms' },
         { title: 'واتساب الأعمال', icon: <FaWhatsapp />, path: '/integrations/whatsapp-business' },
       ]
     },
@@ -256,12 +303,6 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
         { title: 'إعدادات النظام', icon: <FaCog />, path: '/settings/system' },
       ]
     }] : []),
-  ];
-
-  const handleMenuClick = (menuId) => {
-    setExpandedMenu(expandedMenu === menuId ? null : menuId);
-  };
-
   // Determine if sidebar should be expanded
   const isExpanded = isOpen || isHovered;
 
@@ -274,8 +315,19 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
           onClick={closeSidebar}
         />
       )}
+      
+      {/* Sidebar Popover */}
+      <SidebarPopover
+        isOpen={!!activePopover}
+        onClose={closePopover}
+        menuItem={activePopover}
+        position={popoverPosition}
+        closeSidebar={closeSidebar}
+      />
+      
       {/* Sidebar */}
       <aside
+        ref={sidebarRef}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={`
@@ -290,102 +342,33 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
         <nav className="h-full overflow-y-auto py-2 px-1.5">
           {menuItems.map((item) => (
             <div key={item.id} className="mb-1">
-              {item.subItems ? (
-                // Menu with submenu
-                <div>
-                  <button
-                    onClick={() => handleMenuClick(item.id)}
-                    className={`
-                      w-full flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group relative
-                      ${isMenuActive(item) 
-                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-md' 
-                        : expandedMenu === item.id 
-                          ? 'bg-orange-50' 
-                          : 'hover:bg-orange-50'
-                      }
-                    `}
-                    title={!isExpanded ? item.title : ''}
-                  >
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      isMenuActive(item)
-                        ? 'bg-white/20 text-white' 
-                        : `bg-gradient-to-br ${item.color} text-white shadow-sm`
-                    }`}>
-                      <span className="text-sm">{item.icon}</span>
-                    </div>
-                    {isExpanded && (
-                      <>
-                        <span className={`flex-1 text-xs font-semibold text-right truncate ${
-                          isMenuActive(item) ? 'text-white' : 'text-gray-700'
-                        }`}>
-                          {item.title}
-                        </span>
-                        <FaChevronRight 
-                          className={`text-xs transition-transform ${
-                            isMenuActive(item) ? 'text-white/80' : 'text-gray-400'
-                          } ${expandedMenu === item.id ? 'rotate-90' : ''}`}
-                        />
-                      </>
-                    )}
-                  </button>
-
-                  {/* Submenu */}
-                  {expandedMenu === item.id && isExpanded && (
-                    <div className="mr-4 mt-1 space-y-0.5 pr-2 border-r-2 border-orange-200">
-                      {item.subItems.map((subItem, idx) => (
-                        <NavLink
-                          key={idx}
-                          to={subItem.path}
-                          onClick={() => {if (window.innerWidth < 1024) closeSidebar();}}
-                          className={({ isActive }) =>
-                            `flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all ${
-                              isActive
-                                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-sm'
-                                : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600'
-                            }`
-                          }
-                        >
-                          <span className="text-xs flex-shrink-0">{subItem.icon}</span>
-                          <span className="truncate font-medium text-xs">{subItem.title}</span>
-                        </NavLink>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                // Simple menu item
-                <NavLink
-                  to={item.path}
-                  onClick={() => {if (window.innerWidth < 1024) closeSidebar();}}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group ${
-                      isActive
-                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-md'
-                        : 'hover:bg-orange-50'
-                    }`
+              <button
+                onClick={(e) => handleMenuClick(item, e)}
+                className={`
+                  w-full flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group relative
+                  ${item.subItems && item.subItems.length > 0 
+                    ? 'hover:bg-orange-50 cursor-pointer' 
+                    : 'hover:bg-orange-50'
                   }
-                  title={!isExpanded ? item.title : ''}
-                >
-                  {({ isActive }) => (
-                    <>
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        isActive 
-                          ? 'bg-white/20 text-white' 
-                          : `bg-gradient-to-br ${item.color} text-white shadow-sm`
-                      }`}>
-                        <span className="text-sm">{item.icon}</span>
-                      </div>
-                      {isExpanded && (
-                        <span className={`flex-1 text-xs font-semibold text-right truncate ${
-                          isActive ? 'text-white' : 'text-gray-700'
-                        }`}>
-                          {item.title}
-                        </span>
-                      )}
-                    </>
-                  )}
-                </NavLink>
-              )}
+                `}
+                title={!isExpanded ? item.title : ''}
+              >
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${item.color} text-white shadow-sm`}>
+                  <span className="text-sm">{item.icon}</span>
+                </div>
+                {isExpanded && (
+                  <>
+                    <span className="flex-1 text-xs font-semibold text-right truncate text-gray-700">
+                      {item.title}
+                    </span>
+                    {item.subItems && item.subItems.length > 0 && (
+                      <FaChevronRight 
+                        className="text-xs text-gray-400 group-hover:text-orange-500 group-hover:rotate-90 transition-all duration-200"
+                      />
+                    )}
+                  </>
+                )}
+              </button>
             </div>
           ))}
         </nav>
