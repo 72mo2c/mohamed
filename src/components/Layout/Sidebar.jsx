@@ -1,6 +1,7 @@
 // ======================================
 // Compact Sidebar - شريط جانبي مصغر ومميز
 // ======================================
+
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTab } from '../../contexts/TabContext';
@@ -50,8 +51,10 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
   const location = useLocation();
   const { isAdmin } = useAuth();
   const [activeMenu, setActiveMenu] = useState(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [isHovered, setIsHovered] = useState(false);
   const sidebarRef = useRef(null);
+  const menuItemsRef = useRef({});
 
   // Close submenu when clicking outside
   useEffect(() => {
@@ -272,12 +275,19 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     }] : []),
   ];
 
-  const handleMenuClick = (menuId, hasSubItems) => {
+  const handleMenuClick = (menuId, event, hasSubItems) => {
     if (!hasSubItems) {
       setActiveMenu(null);
       if (window.innerWidth < 1024) closeSidebar();
       return;
     }
+
+    // Calculate position for the context menu
+    const buttonRect = event.currentTarget.getBoundingClientRect();
+    setMenuPosition({
+      top: buttonRect.top,
+      left: buttonRect.left - 8 // Position to the left of the sidebar
+    });
     
     setActiveMenu(activeMenu === menuId ? null : menuId);
   };
@@ -302,7 +312,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           className={`
-            fixed z-50 transition-all duration-300 overflow-hidden
+            fixed z-40 transition-all duration-300 overflow-hidden
             bg-white/95 backdrop-blur-md border-l border-orange-100/50 shadow-lg
             top-[40px] h-[calc(100vh-40px)]
             ${isExpanded ? 'w-56' : 'w-14'}
@@ -317,7 +327,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
                   // Menu with submenu
                   <div>
                     <button
-                      onClick={() => handleMenuClick(item.id, true)}
+                      onClick={(e) => handleMenuClick(item.id, e, true)}
                       className={`
                         w-full flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group relative
                         ${(isMenuActive(item) || activeMenu === item.id) 
@@ -359,7 +369,10 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
                   // Simple menu item
                   <NavLink
                     to={item.path}
-                    onClick={() => handleMenuClick(item.id, false)}
+                    onClick={() => {
+                      setActiveMenu(null);
+                      if (window.innerWidth < 1024) closeSidebar();
+                    }}
                     className={({ isActive }) =>
                       `flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group ${
                         isActive
@@ -404,23 +417,23 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
           )}
         </aside>
 
-        {/* Submenu Sidebar */}
-        {activeMenu && isExpanded && (
-          <aside
-            className={`
-              fixed z-40 transition-all duration-300 overflow-hidden
-              bg-white/95 backdrop-blur-md border-r border-orange-100/50 shadow-lg
-              top-[40px] h-[calc(100vh-40px)] w-48
-              ${isExpanded ? (isOpen ? 'right-56' : 'right-14') : 'right-14'}
-            `}
+        {/* Context Menu - appears next to clicked item */}
+        {activeMenu && (
+          <div 
+            className="fixed z-50 bg-white/95 backdrop-blur-md rounded-lg shadow-xl border border-orange-100/50 py-2 min-w-48 max-w-64"
+            style={{
+              top: menuPosition.top,
+              left: menuPosition.left,
+              transform: 'translateX(-100%)'
+            }}
           >
-            <nav className="h-full overflow-y-auto py-2 px-1.5">
-              <div className="mb-4 px-2 py-3 border-b border-orange-100">
-                <h3 className="text-xs font-bold text-orange-600 text-center">
-                  {menuItems.find(item => item.id === activeMenu)?.title}
-                </h3>
-              </div>
-              
+            <div className="px-3 py-2 border-b border-orange-100/50 mb-1">
+              <h3 className="text-xs font-bold text-orange-600 text-center">
+                {menuItems.find(item => item.id === activeMenu)?.title}
+              </h3>
+            </div>
+            
+            <div className="max-h-80 overflow-y-auto">
               {menuItems.find(item => item.id === activeMenu)?.subItems?.map((subItem, idx) => (
                 <NavLink
                   key={idx}
@@ -430,19 +443,26 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
                     if (window.innerWidth < 1024) closeSidebar();
                   }}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all mb-1 ${
+                    `flex items-center gap-3 px-3 py-2.5 transition-all hover:bg-orange-50 hover:text-orange-600 group ${
                       isActive
                         ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-sm'
-                        : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600'
+                        : 'text-gray-600'
                     }`
                   }
                 >
-                  <span className="text-sm flex-shrink-0">{subItem.icon}</span>
+                  <span className="text-sm flex-shrink-0 group-hover:scale-110 transition-transform">
+                    {subItem.icon}
+                  </span>
                   <span className="truncate font-medium text-xs">{subItem.title}</span>
                 </NavLink>
               ))}
-            </nav>
-          </aside>
+            </div>
+            
+            {/* Arrow indicator pointing to the menu item */}
+            <div 
+              className="absolute top-4 -right-2 w-0 h-0 border-t-4 border-b-4 border-l-4 border-t-transparent border-b-transparent border-l-white"
+            />
+          </div>
         )}
       </div>
     </>
