@@ -72,31 +72,39 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     };
   }, []);
 
-  // Close active menu when route changes
+  // Close active menu when route changes and auto-activate relevant menu
   useEffect(() => {
-    setActiveMenu(null);
+    const currentPath = location.pathname;
+    
+    // البحث عن القائمة الفرعية التي تحتوي على المسار الحالي
+    const foundActiveMenu = menuItems.find(item => 
+      item.subItems && item.subItems.some(subItem => currentPath === subItem.path)
+    );
+    
+    if (foundActiveMenu) {
+      setActiveMenu(foundActiveMenu.id);
+    } else {
+      // إذا لم يكن المسار الحالي في أي قائمة فرعية، قم بإلغاء التفعيل
+      setActiveMenu(null);
+    }
   }, [location.pathname]);
 
-  // Check if current path matches any submenu item
+  // Check if current path matches any menu item
   const isMenuActive = (menuItem) => {
+    // إذا كان العنصر الرئيسي له مسار مباشر ويتطابق مع المسار الحالي
     if (menuItem.path && location.pathname === menuItem.path) {
       return true;
     }
+    
+    // إذا كان العنصر يحتوي على قائمة فرعية وأحد عناصرها يتطابق مع المسار الحالي
     if (menuItem.subItems) {
-      return menuItem.subItems.some(subItem => location.pathname === subItem.path);
+      return menuItem.subItems.some(subItem => 
+        subItem.path && location.pathname === subItem.path
+      );
     }
+    
     return false;
   };
-
-  // Auto-activate menu if current path is in its submenu
-  useEffect(() => {
-    const foundActiveMenu = menuItems.find(item => 
-      item.subItems && item.subItems.some(subItem => location.pathname === subItem.path)
-    );
-    if (foundActiveMenu) {
-      setActiveMenu(foundActiveMenu.id);
-    }
-  }, [location.pathname]);
 
   const menuItems = [
     {
@@ -282,37 +290,42 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     }] : []),
   ];
 
-  const handleMenuClick = (menuId, event, hasSubItems) => {
-    if (!hasSubItems) {
+  const handleMenuClick = (menuId, event, hasSubItems, itemPath) => {
+    // إذا كان العنصر لا يحتوي على قائمة فرعية وله مسار مباشر
+    if (!hasSubItems && itemPath) {
       setActiveMenu(null);
       if (window.innerWidth < 1024) closeSidebar();
       return;
     }
 
-    // Calculate position for the context menu
-    const buttonRect = event.currentTarget.getBoundingClientRect();
-    const subItems = menuItems.find(item => item.id === menuId)?.subItems || [];
-    const menuHeight = subItems.length * 40 + 60;
-    
-    let top = buttonRect.top;
-    
-    // Adjust position if menu would go below screen
-    const maxBottom = window.innerHeight - 20;
-    if (top + menuHeight > maxBottom) {
-      top = maxBottom - menuHeight;
+    // إذا كان العنصر يحتوي على قائمة فرعية
+    if (hasSubItems) {
+      // Calculate position for the context menu
+      const buttonRect = event.currentTarget.getBoundingClientRect();
+      const subItems = menuItems.find(item => item.id === menuId)?.subItems || [];
+      const menuHeight = subItems.length * 40 + 60;
+      
+      let top = buttonRect.top;
+      
+      // Adjust position if menu would go below screen
+      const maxBottom = window.innerHeight - 20;
+      if (top + menuHeight > maxBottom) {
+        top = maxBottom - menuHeight;
+      }
+      
+      // Ensure menu doesn't go above screen
+      if (top < 20) {
+        top = 20;
+      }
+      
+      setMenuPosition({
+        top: top,
+        left: buttonRect.left - 8
+      });
+      
+      // تبديل حالة القائمة الفرعية (فتح/إغلاق)
+      setActiveMenu(activeMenu === menuId ? null : menuId);
     }
-    
-    // Ensure menu doesn't go above screen
-    if (top < 20) {
-      top = 20;
-    }
-    
-    setMenuPosition({
-      top: top,
-      left: buttonRect.left - 8
-    });
-    
-    setActiveMenu(activeMenu === menuId ? null : menuId);
   };
 
   const handleMouseEnter = () => {
@@ -329,7 +342,8 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
           !contextMenuRef.current?.contains(relatedTarget)) {
         hoverTimeoutRef.current = setTimeout(() => {
           setIsHovered(false);
-          setActiveMenu(null);
+          // لا تقم بإغلاق القائمة النشطة عند مغادرة الماوس
+          // setActiveMenu(null);
         }, 300);
       }
     }
@@ -387,7 +401,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
                   // Menu with submenu
                   <div>
                     <button
-                      onClick={(e) => handleMenuClick(item.id, e, true)}
+                      onClick={(e) => handleMenuClick(item.id, e, true, item.path)}
                       className={`
                         w-full flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group relative
                         ${(isMenuActive(item) || activeMenu === item.id) 
@@ -434,7 +448,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
                       if (window.innerWidth < 1024) closeSidebar();
                     }}
                     className={({ isActive }) =>
-                      `flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group ${
+                      `flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group relative ${
                         isActive
                           ? 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-md'
                           : 'hover:bg-orange-50'
