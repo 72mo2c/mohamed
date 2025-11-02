@@ -13,7 +13,7 @@ const DepreciationManagement = () => {
   const {
     fixedAssets,
     assetCategories,
-    assetDepreciation,
+    depreciationEntries,
     calculateDepreciation,
     addDepreciationSchedule,
     getDepreciationSummary,
@@ -50,7 +50,7 @@ const DepreciationManagement = () => {
       asset.depreciationMethod && asset.usefulLife
     ).length;
     
-    const totalDepreciationValue = assetDepreciation.reduce((sum, dep) => 
+    const totalDepreciationValue = depreciationEntries.reduce((sum, dep) => 
       sum + (dep.depreciationAmount || 0), 0
     );
     

@@ -13,7 +13,7 @@ const FixedAssetsDashboard = () => {
     fixedAssets,
     assetCategories,
     assetLocations,
-    assetDepreciation,
+    depreciationEntries,
     assetMaintenance,
     assetInventory,
     assetDisposals,
@@ -54,7 +54,7 @@ const FixedAssetsDashboard = () => {
 
   useEffect(() => {
     refreshDashboard();
-  }, [selectedPeriod, fixedAssets, assetDepreciation]);
+  }, [selectedPeriod, fixedAssets, depreciationEntries]);
 
   // حساب إحصائيات شاملة
   const calculateAdvancedStats = () => {
@@ -75,7 +75,7 @@ const FixedAssetsDashboard = () => {
     }, 0);
     
     // إحصائيات الإهلاك
-    const totalDepreciationValue = assetDepreciation.reduce((sum, dep) => sum + (dep.depreciationAmount || 0), 0);
+    const totalDepreciationValue = depreciationEntries.reduce((sum, dep) => sum + (dep.depreciationAmount || 0), 0);
     
     // إحصائيات الصيانة
     const upcomingMaintenance = assetMaintenance.filter(m => 
