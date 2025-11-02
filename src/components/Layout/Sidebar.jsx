@@ -342,20 +342,25 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
           !contextMenuRef.current?.contains(relatedTarget)) {
         hoverTimeoutRef.current = setTimeout(() => {
           setIsHovered(false);
-          // لا تقم بإغلاق القائمة النشطة عند مغادرة الماوس
-          // setActiveMenu(null);
+          setActiveMenu(null); // إغلاق القوائم الفرعية أيضاً
         }, 300);
       }
     }
   };
 
   const handleSubItemClick = () => {
+    // إغلاق القائمة الفرعية فوراً عند النقر على عنصر داخلي
     setActiveMenu(null);
     setIsHovered(false);
     if (window.innerWidth < 1024) {
       closeSidebar();
     }
   };
+
+  // إغلاق القائمة الفرعية عند تغيير المسار
+  useEffect(() => {
+    setActiveMenu(null);
+  }, [location.pathname]);
 
   // Determine if sidebar should be expanded
   const isExpanded = isOpen || isHovered;
