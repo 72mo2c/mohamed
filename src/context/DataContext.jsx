@@ -2269,7 +2269,127 @@ export const DataProvider = ({ children }) => {
     calculateLeaveBalance,
     calculatePayroll,
     generatePayrollReport,
-    generateEmployeeNumber
+    generateEmployeeNumber,
+    
+    // دوال الموارد البشرية الإضافية
+    // سجلات الحضور
+    attendanceRecords: attendance,
+    addAttendanceRecord: (recordData) => {
+      const newRecord = {
+        id: Date.now(),
+        ...recordData,
+        createdAt: new Date().toISOString()
+      };
+      const updated = [...attendance, newRecord];
+      setAttendance(updated);
+      saveData('bero_attendance', updated);
+      return newRecord;
+    },
+    updateAttendanceRecord: (id, updatedData) => {
+      const updated = attendance.map(record => 
+        record.id === id ? { ...record, ...updatedData } : record
+      );
+      setAttendance(updated);
+      saveData('bero_attendance', updated);
+    },
+    deleteAttendanceRecord: (id) => {
+      const updated = attendance.filter(record => record.id !== id);
+      setAttendance(updated);
+      saveData('bero_attendance', updated);
+    },
+    getAttendanceByEmployee: (employeeId) => {
+      return attendance.filter(record => record.employeeId === employeeId);
+    },
+    getMonthlyAttendanceReport: (month, year) => {
+      const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+      return attendance.filter(record => record.date.startsWith(monthStr));
+    },
+    
+    // الإجازات
+    leaves: employeeLeaves,
+    addLeave: (leaveData) => {
+      const newLeave = {
+        id: Date.now(),
+        ...leaveData,
+        leaveDays: Math.ceil((new Date(leaveData.endDate) - new Date(leaveData.startDate)) / (1000 * 60 * 60 * 24)) + 1,
+        createdAt: new Date().toISOString()
+      };
+      const updated = [...employeeLeaves, newLeave];
+      setEmployeeLeaves(updated);
+      saveData('bero_employee_leaves', updated);
+      return newLeave;
+    },
+    updateLeave: (id, updatedData) => {
+      const updated = employeeLeaves.map(leave => 
+        leave.id === id ? { ...leave, ...updatedData } : leave
+      );
+      setEmployeeLeaves(updated);
+      saveData('bero_employee_leaves', updated);
+    },
+    deleteLeave: (id) => {
+      const updated = employeeLeaves.filter(leave => leave.id !== id);
+      setEmployeeLeaves(updated);
+      saveData('bero_employee_leaves', updated);
+    },
+    getLeavesByEmployee: (employeeId) => {
+      return employeeLeaves.filter(leave => leave.employeeId === employeeId);
+    },
+    getLeavesByStatus: (status) => {
+      return employeeLeaves.filter(leave => leave.status === status);
+    },
+    getLeavesByDateRange: (startDate, endDate) => {
+      return employeeLeaves.filter(leave => 
+        leave.startDate >= startDate && leave.endDate <= endDate
+      );
+    },
+    getLeaveBalance: (employeeId, leaveTypeId) => {
+      return employeeLeaveBalances.find(balance => 
+        balance.employeeId === employeeId && balance.leaveTypeId === leaveTypeId
+      );
+    },
+    
+    // الرواتب
+    salaries: payrollDetails,
+    addSalary: (salaryData) => {
+      const newSalary = {
+        id: Date.now(),
+        ...salaryData,
+        createdAt: new Date().toISOString()
+      };
+      const updated = [...payrollDetails, newSalary];
+      setPayrollDetails(updated);
+      saveData('bero_payroll_details', updated);
+      return newSalary;
+    },
+    updateSalary: (id, updatedData) => {
+      const updated = payrollDetails.map(salary => 
+        salary.id === id ? { ...salary, ...updatedData } : salary
+      );
+      setPayrollDetails(updated);
+      saveData('bero_payroll_details', updated);
+    },
+    deleteSalary: (id) => {
+      const updated = payrollDetails.filter(salary => salary.id !== id);
+      setPayrollDetails(updated);
+      saveData('bero_payroll_details', updated);
+    },
+    getSalariesByEmployee: (employeeId) => {
+      return payrollDetails.filter(salary => salary.employeeId === employeeId);
+    },
+    getMonthlySalaryReport: (month, year) => {
+      const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+      return payrollDetails.filter(salary => salary.periodId?.startsWith(monthStr));
+    },
+    calculateMonthlySalary: (employeeId, month, year) => {
+      const employee = employees.find(emp => emp.id === employeeId);
+      if (!employee) return 0;
+      
+      const basicSalary = employee.basicSalary || 0;
+      const allowances = 1000; // بدلات افتراضية
+      const deductions = 500; // خصومات افتراضية
+      
+      return basicSalary + allowances - deductions;
+    }
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

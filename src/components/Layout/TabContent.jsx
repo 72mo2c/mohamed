@@ -86,9 +86,9 @@ import JournalEntry from '../../pages/Accounting/JournalEntry';
 // HR (Human Resources)
 import EmployeeManagement from '../../components/HR/EmployeeManagement';
 import OrganizationManagement from '../../components/HR/OrganizationManagement';
-// import AttendanceManagement from '../../components/HR/AttendanceManagement';
-// import LeaveManagement from '../../components/HR/LeaveManagement';
-// import PayrollManagement from '../../components/HR/PayrollManagement';
+import AttendanceManagement from '../../components/HR/AttendanceManagement';
+import LeaveManagement from '../../components/HR/LeaveManagement';
+import SalaryManagement from '../../components/HR/SalaryManagement';
 
 import ValueAdjustment from '../../pages/Adjustments/ValueAdjustment';
 import DamagedWriteOff from '../../pages/Adjustments/DamagedWriteOff';
@@ -175,9 +175,9 @@ const getComponentForPath = (path) => {
     // HR (Human Resources)
     '/hr/employees': EmployeeManagement,
     '/hr/organization': OrganizationManagement,
-    // '/hr/attendance': AttendanceManagement,
-    // '/hr/leaves': LeaveManagement,
-    // '/hr/payroll': PayrollManagement,
+    '/hr/attendance': AttendanceManagement,
+    '/hr/leaves': LeaveManagement,
+    '/hr/payroll': SalaryManagement,
     
     // Reports
     '/reports': ReportsHome,
