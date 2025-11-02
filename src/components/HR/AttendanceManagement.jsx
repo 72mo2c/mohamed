@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useData } from '../../../context/DataContext.jsx';
+import { useData } from '../../context/DataContext.jsx';
 import { 
   FaClock, 
   FaPlus, 
@@ -27,6 +27,7 @@ import {
 const AttendanceManagement = ({ onNavigate }) => {
   const {
     employees,
+    departments,
     attendanceRecords,
     addAttendanceRecord,
     updateAttendanceRecord,

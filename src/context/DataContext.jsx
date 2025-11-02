@@ -1726,6 +1726,21 @@ export const DataProvider = ({ children }) => {
     );
   };
 
+  // دالة مساعدة لإنشاء رقم الموظف
+  const generateEmployeeNumber = () => {
+    const currentYear = new Date().getFullYear();
+    const yearPrefix = currentYear.toString().slice(-2);
+    const lastEmployee = employees.find(emp => emp.employeeNumber && emp.employeeNumber.startsWith(yearPrefix));
+    
+    let sequence = 1;
+    if (lastEmployee) {
+      const lastSequence = parseInt(lastEmployee.employeeNumber.slice(-3));
+      sequence = lastSequence + 1;
+    }
+    
+    return `${yearPrefix}${sequence.toString().padStart(3, '0')}`;
+  };
+
   const value = {
     warehouses,
     products,
@@ -2214,21 +2229,6 @@ export const DataProvider = ({ children }) => {
       };
     },
     
-    // دالة مساعدة لإنشاء رقم الموظف
-    generateEmployeeNumber: () => {
-      const currentYear = new Date().getFullYear();
-      const yearPrefix = currentYear.toString().slice(-2);
-      const lastEmployee = employees.find(emp => emp.employeeNumber && emp.employeeNumber.startsWith(yearPrefix));
-      
-      let sequence = 1;
-      if (lastEmployee) {
-        const lastSequence = parseInt(lastEmployee.employeeNumber.slice(-3));
-        sequence = lastSequence + 1;
-      }
-      
-      return `${yearPrefix}${sequence.toString().padStart(3, '0')}`;
-    },
-    
     // دوال المحاسبة
     accounts,
     journalEntries,
@@ -2252,24 +2252,6 @@ export const DataProvider = ({ children }) => {
     payrollDetails,
     performanceMetrics,
     performanceReviews,
-    
-    // دوال نظام الموارد البشرية
-    addEmployee,
-    updateEmployee,
-    deleteEmployee,
-    getEmployeeProfile,
-    addDepartment,
-    updateDepartment,
-    deleteDepartment,
-    checkIn,
-    checkOut,
-    getAttendanceReport,
-    applyForLeave,
-    approveLeave,
-    calculateLeaveBalance,
-    calculatePayroll,
-    generatePayrollReport,
-    generateEmployeeNumber,
     
     // دوال الموارد البشرية الإضافية
     // سجلات الحضور

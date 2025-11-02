@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useData } from '../../../context/DataContext.jsx';
+import { useData } from '../../context/DataContext.jsx';
 import { 
   FaUsers, 
   FaPlus, 
