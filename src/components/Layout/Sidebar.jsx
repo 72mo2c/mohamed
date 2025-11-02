@@ -1,8 +1,7 @@
 // ======================================
 // Compact Sidebar - شريط جانبي مصغر ومميز
 // ======================================
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTab } from '../../contexts/TabContext';
 import { useAuth } from '../../context/AuthContext';
@@ -50,8 +49,23 @@ import {
 const Sidebar = ({ isOpen, closeSidebar }) => {
   const location = useLocation();
   const { isAdmin } = useAuth();
-  const [expandedMenu, setExpandedMenu] = useState(null);
+  const [activeMenu, setActiveMenu] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
+  const sidebarRef = useRef(null);
+
+  // Close submenu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        setActiveMenu(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Check if current path matches any submenu item
   const isMenuActive = (menuItem) => {
@@ -64,13 +78,13 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     return false;
   };
 
-  // Auto-expand menu if current path is in its submenu
+  // Auto-activate menu if current path is in its submenu
   useEffect(() => {
-    const activeMenu = menuItems.find(item => 
+    const foundActiveMenu = menuItems.find(item => 
       item.subItems && item.subItems.some(subItem => location.pathname === subItem.path)
     );
-    if (activeMenu) {
-      setExpandedMenu(activeMenu.id);
+    if (foundActiveMenu) {
+      setActiveMenu(foundActiveMenu.id);
     }
   }, [location.pathname]);
 
@@ -258,8 +272,14 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     }] : []),
   ];
 
-  const handleMenuClick = (menuId) => {
-    setExpandedMenu(expandedMenu === menuId ? null : menuId);
+  const handleMenuClick = (menuId, hasSubItems) => {
+    if (!hasSubItems) {
+      setActiveMenu(null);
+      if (window.innerWidth < 1024) closeSidebar();
+      return;
+    }
+    
+    setActiveMenu(activeMenu === menuId ? null : menuId);
   };
 
   // Determine if sidebar should be expanded
@@ -274,127 +294,157 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
           onClick={closeSidebar}
         />
       )}
-      {/* Sidebar */}
-      <aside
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        className={`
-          fixed z-40 transition-all duration-300 overflow-hidden
-          bg-white/95 backdrop-blur-md border-l border-orange-100/50 shadow-lg
-          top-[40px] h-[calc(100vh-40px)]
-          ${isExpanded ? 'w-56' : 'w-14'}
-          ${isOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
-        `}
-        style={{ right: 0 }}
-      >
-        <nav className="h-full overflow-y-auto py-2 px-1.5">
-          {menuItems.map((item) => (
-            <div key={item.id} className="mb-1">
-              {item.subItems ? (
-                // Menu with submenu
-                <div>
-                  <button
-                    onClick={() => handleMenuClick(item.id)}
-                    className={`
-                      w-full flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group relative
-                      ${isMenuActive(item) 
-                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-md' 
-                        : expandedMenu === item.id 
-                          ? 'bg-orange-50' 
+      
+      {/* Sidebar Container */}
+      <div className="flex relative" ref={sidebarRef}>
+        {/* Main Sidebar */}
+        <aside
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          className={`
+            fixed z-50 transition-all duration-300 overflow-hidden
+            bg-white/95 backdrop-blur-md border-l border-orange-100/50 shadow-lg
+            top-[40px] h-[calc(100vh-40px)]
+            ${isExpanded ? 'w-56' : 'w-14'}
+            ${isOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+          `}
+          style={{ right: 0 }}
+        >
+          <nav className="h-full overflow-y-auto py-2 px-1.5">
+            {menuItems.map((item) => (
+              <div key={item.id} className="mb-1 relative">
+                {item.subItems ? (
+                  // Menu with submenu
+                  <div>
+                    <button
+                      onClick={() => handleMenuClick(item.id, true)}
+                      className={`
+                        w-full flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group relative
+                        ${(isMenuActive(item) || activeMenu === item.id) 
+                          ? 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-md' 
                           : 'hover:bg-orange-50'
-                      }
-                    `}
-                    title={!isExpanded ? item.title : ''}
-                  >
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      isMenuActive(item)
-                        ? 'bg-white/20 text-white' 
-                        : `bg-gradient-to-br ${item.color} text-white shadow-sm`
-                    }`}>
-                      <span className="text-sm">{item.icon}</span>
-                    </div>
-                    {isExpanded && (
-                      <>
-                        <span className={`flex-1 text-xs font-semibold text-right truncate ${
-                          isMenuActive(item) ? 'text-white' : 'text-gray-700'
-                        }`}>
-                          {item.title}
-                        </span>
-                        <FaChevronRight 
-                          className={`text-xs transition-transform ${
-                            isMenuActive(item) ? 'text-white/80' : 'text-gray-400'
-                          } ${expandedMenu === item.id ? 'rotate-90' : ''}`}
-                        />
-                      </>
-                    )}
-                  </button>
-
-                  {/* Submenu */}
-                  {expandedMenu === item.id && isExpanded && (
-                    <div className="mr-4 mt-1 space-y-0.5 pr-2 border-r-2 border-orange-200">
-                      {item.subItems.map((subItem, idx) => (
-                        <NavLink
-                          key={idx}
-                          to={subItem.path}
-                          onClick={() => {if (window.innerWidth < 1024) closeSidebar();}}
-                          className={({ isActive }) =>
-                            `flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all ${
-                              isActive
-                                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-sm'
-                                : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600'
-                            }`
-                          }
-                        >
-                          <span className="text-xs flex-shrink-0">{subItem.icon}</span>
-                          <span className="truncate font-medium text-xs">{subItem.title}</span>
-                        </NavLink>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                // Simple menu item
-                <NavLink
-                  to={item.path}
-                  onClick={() => {if (window.innerWidth < 1024) closeSidebar();}}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group ${
-                      isActive
-                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-md'
-                        : 'hover:bg-orange-50'
-                    }`
-                  }
-                  title={!isExpanded ? item.title : ''}
-                >
-                  {({ isActive }) => (
-                    <>
+                        }
+                      `}
+                      title={!isExpanded ? item.title : ''}
+                    >
                       <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        isActive 
+                        (isMenuActive(item) || activeMenu === item.id)
                           ? 'bg-white/20 text-white' 
                           : `bg-gradient-to-br ${item.color} text-white shadow-sm`
                       }`}>
                         <span className="text-sm">{item.icon}</span>
                       </div>
                       {isExpanded && (
-                        <span className={`flex-1 text-xs font-semibold text-right truncate ${
-                          isActive ? 'text-white' : 'text-gray-700'
-                        }`}>
-                          {item.title}
-                        </span>
+                        <>
+                          <span className={`flex-1 text-xs font-semibold text-right truncate ${
+                            (isMenuActive(item) || activeMenu === item.id) ? 'text-white' : 'text-gray-700'
+                          }`}>
+                            {item.title}
+                          </span>
+                          <FaChevronRight 
+                            className={`text-xs transition-transform ${
+                              (isMenuActive(item) || activeMenu === item.id) ? 'text-white/80' : 'text-gray-400'
+                            } ${activeMenu === item.id ? 'rotate-90' : ''}`}
+                          />
+                        </>
                       )}
-                    </>
-                  )}
-                </NavLink>
-              )}
-            </div>
-          ))}
-        </nav>
+                      
+                      {/* Active indicator for collapsed state */}
+                      {!isExpanded && (isMenuActive(item) || activeMenu === item.id) && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-orange-500 rounded-r-full" />
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  // Simple menu item
+                  <NavLink
+                    to={item.path}
+                    onClick={() => handleMenuClick(item.id, false)}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group ${
+                        isActive
+                          ? 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-md'
+                          : 'hover:bg-orange-50'
+                      }`
+                    }
+                    title={!isExpanded ? item.title : ''}
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          isActive 
+                            ? 'bg-white/20 text-white' 
+                            : `bg-gradient-to-br ${item.color} text-white shadow-sm`
+                        }`}>
+                          <span className="text-sm">{item.icon}</span>
+                        </div>
+                        {isExpanded && (
+                          <span className={`flex-1 text-xs font-semibold text-right truncate ${
+                            isActive ? 'text-white' : 'text-gray-700'
+                          }`}>
+                            {item.title}
+                          </span>
+                        )}
+                        
+                        {/* Active indicator for collapsed state */}
+                        {!isExpanded && isActive && (
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-orange-500 rounded-r-full" />
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                )}
+              </div>
+            ))}
+          </nav>
 
-        {/* Hover Indicator */}
-        {!isExpanded && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-gradient-to-b from-orange-400 to-orange-600 rounded-r-full opacity-50" />
+          {/* Hover Indicator */}
+          {!isExpanded && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-gradient-to-b from-orange-400 to-orange-600 rounded-r-full opacity-50" />
+          )}
+        </aside>
+
+        {/* Submenu Sidebar */}
+        {activeMenu && isExpanded && (
+          <aside
+            className={`
+              fixed z-40 transition-all duration-300 overflow-hidden
+              bg-white/95 backdrop-blur-md border-r border-orange-100/50 shadow-lg
+              top-[40px] h-[calc(100vh-40px)] w-48
+              ${isExpanded ? (isOpen ? 'right-56' : 'right-14') : 'right-14'}
+            `}
+          >
+            <nav className="h-full overflow-y-auto py-2 px-1.5">
+              <div className="mb-4 px-2 py-3 border-b border-orange-100">
+                <h3 className="text-xs font-bold text-orange-600 text-center">
+                  {menuItems.find(item => item.id === activeMenu)?.title}
+                </h3>
+              </div>
+              
+              {menuItems.find(item => item.id === activeMenu)?.subItems?.map((subItem, idx) => (
+                <NavLink
+                  key={idx}
+                  to={subItem.path}
+                  onClick={() => {
+                    setActiveMenu(null);
+                    if (window.innerWidth < 1024) closeSidebar();
+                  }}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all mb-1 ${
+                      isActive
+                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-sm'
+                        : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600'
+                    }`
+                  }
+                >
+                  <span className="text-sm flex-shrink-0">{subItem.icon}</span>
+                  <span className="truncate font-medium text-xs">{subItem.title}</span>
+                </NavLink>
+              ))}
+            </nav>
+          </aside>
         )}
-      </aside>
+      </div>
     </>
   );
 };
