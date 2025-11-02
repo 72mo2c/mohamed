@@ -39,7 +39,12 @@ import {
   FaCalculator,
   FaBookOpen,
   FaClock,
-  FaCalendarAlt
+  FaCalendarAlt,
+  FaIndustry,
+  FaCogs,
+  FaTachometerAlt,
+  FaIndustry as FaManufacturing,
+  FaCheckCircle
 } from 'react-icons/fa';
 
 const Sidebar = ({ isOpen, closeSidebar }) => {
@@ -173,6 +178,19 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
         { title: 'الحضور والانصراف', icon: <FaClock />, path: '/hr/attendance' },
         { title: 'إدارة الإجازات', icon: <FaCalendarAlt />, path: '/hr/leaves' },
         { title: 'الرواتب', icon: <FaMoneyBillWave />, path: '/hr/payroll' },
+      ]
+    },
+    {
+      id: 'production',
+      title: 'نظام الإنتاج',
+      icon: <FaIndustry />,
+      color: 'from-orange-500 to-red-600',
+      subItems: [
+        { title: 'لوحة الإنتاجية', icon: <FaTachometerAlt />, path: '/production/dashboard' },
+        { title: 'إدارة أوامر الإنتاج', icon: <FaClipboardList />, path: '/production/orders' },
+        { title: 'تخطيط الإنتاج', icon: <FaCogs />, path: '/production/planning' },
+        { title: 'تتبع المواد الخام', icon: <FaBoxes />, path: '/production/materials' },
+        { title: 'مراقبة الجودة', icon: <FaCheckCircle />, path: '/production/quality' },
       ]
     },
     {

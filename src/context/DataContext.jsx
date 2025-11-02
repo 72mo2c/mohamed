@@ -63,6 +63,17 @@ export const DataProvider = ({ children }) => {
   const [performanceMetrics, setPerformanceMetrics] = useState([]);  // معايير التقييم
   const [performanceReviews, setPerformanceReviews] = useState([]);  // تقييمات الأداء
 
+  // بيانات نظام الإنتاج
+  const [productionOrders, setProductionOrders] = useState([]);  // أوامر الإنتاج
+  const [bomItems, setBomItems] = useState([]);  // قوائم المواد (BOM)
+  const [productionOperations, setProductionOperations] = useState([]);  // عمليات الإنتاج
+  const [workCenters, setWorkCenters] = useState([]);  // مراكز العمل/الآلات
+  const [productionPlans, setProductionPlans] = useState([]);  // خطط الإنتاج
+  const [materialConsumption, setMaterialConsumption] = useState([]);  // استهلاك المواد
+  const [productionWaste, setProductionWaste] = useState([]);  // الهدر في الإنتاج
+  const [qualityControls, setQualityControls] = useState([]);  // ضوابط الجودة
+  const [productionKPIs, setProductionKPIs] = useState([]);  // مؤشرات الأداء الإنتاجية
+
   // تحميل البيانات من LocalStorage
   useEffect(() => {
     loadAllData();
@@ -113,6 +124,17 @@ export const DataProvider = ({ children }) => {
     loadData('bero_payroll_details', setPayrollDetails);
     loadData('bero_performance_metrics', setPerformanceMetrics);
     loadData('bero_performance_reviews', setPerformanceReviews);
+
+    // تحميل بيانات الإنتاج
+    loadData('bero_production_orders', setProductionOrders);
+    loadData('bero_bom_items', setBomItems);
+    loadData('bero_production_operations', setProductionOperations);
+    loadData('bero_work_centers', setWorkCenters);
+    loadData('bero_production_plans', setProductionPlans);
+    loadData('bero_material_consumption', setMaterialConsumption);
+    loadData('bero_production_waste', setProductionWaste);
+    loadData('bero_quality_controls', setQualityControls);
+    loadData('bero_production_kpis', setProductionKPIs);
   };
 
   // حفض البيانات في LocalStorage
@@ -2371,6 +2393,314 @@ export const DataProvider = ({ children }) => {
       const deductions = 500; // خصومات افتراضية
       
       return basicSalary + allowances - deductions;
+    },
+
+    // ==================== نظام الإنتاج ====================
+    
+    // أوامر الإنتاج
+    productionOrders,
+    addProductionOrder: (orderData) => {
+      const newOrder = {
+        id: Date.now(),
+        ...orderData,
+        status: 'Created',
+        createdAt: new Date().toISOString(),
+        progress: 0,
+        actualStartDate: null,
+        actualEndDate: null,
+        actualCost: 0
+      };
+      const updated = [...productionOrders, newOrder];
+      setProductionOrders(updated);
+      saveData('bero_production_orders', updated);
+      return newOrder;
+    },
+    updateProductionOrder: (id, updatedData) => {
+      const updated = productionOrders.map(order => 
+        order.id === id ? { ...order, ...updatedData } : order
+      );
+      setProductionOrders(updated);
+      saveData('bero_production_orders', updated);
+    },
+    deleteProductionOrder: (id) => {
+      const updated = productionOrders.filter(order => order.id !== id);
+      setProductionOrders(updated);
+      saveData('bero_production_orders', updated);
+    },
+    getProductionOrderById: (id) => {
+      return productionOrders.find(order => order.id === id);
+    },
+    getProductionOrdersByStatus: (status) => {
+      return productionOrders.filter(order => order.status === status);
+    },
+    getProductionOrdersByDateRange: (startDate, endDate) => {
+      return productionOrders.filter(order => 
+        order.plannedStartDate >= startDate && order.plannedEndDate <= endDate
+      );
+    },
+    updateProductionOrderStatus: (id, status, progress = null) => {
+      const updatedOrders = productionOrders.map(order => {
+        if (order.id === id) {
+          const updatedOrder = { ...order, status };
+          if (status === 'In Progress' && !order.actualStartDate) {
+            updatedOrder.actualStartDate = new Date().toISOString();
+          }
+          if (status === 'Completed' || status === 'Closed') {
+            updatedOrder.actualEndDate = new Date().toISOString();
+            updatedOrder.progress = 100;
+          }
+          if (progress !== null) {
+            updatedOrder.progress = progress;
+          }
+          return updatedOrder;
+        }
+        return order;
+      });
+      setProductionOrders(updatedOrders);
+      saveData('bero_production_orders', updatedOrders);
+    },
+
+    // قوائم المواد (BOM)
+    bomItems,
+    addBomItem: (bomData) => {
+      const newBomItem = {
+        id: Date.now(),
+        ...bomData,
+        createdAt: new Date().toISOString()
+      };
+      const updated = [...bomItems, newBomItem];
+      setBomItems(updated);
+      saveData('bero_bom_items', updated);
+      return newBomItem;
+    },
+    updateBomItem: (id, updatedData) => {
+      const updated = bomItems.map(item => 
+        item.id === id ? { ...item, ...updatedData } : item
+      );
+      setBomItems(updated);
+      saveData('bero_bom_items', updated);
+    },
+    deleteBomItem: (id) => {
+      const updated = bomItems.filter(item => item.id !== id);
+      setBomItems(updated);
+      saveData('bero_bom_items', updated);
+    },
+    getBomItemsByProduct: (productId) => {
+      return bomItems.filter(item => item.productId === productId);
+    },
+
+    // مراكز العمل والعمليات
+    workCenters,
+    addWorkCenter: (workCenterData) => {
+      const newWorkCenter = {
+        id: Date.now(),
+        ...workCenterData,
+        createdAt: new Date().toISOString(),
+        status: 'Active',
+        utilization: 0
+      };
+      const updated = [...workCenters, newWorkCenter];
+      setWorkCenters(updated);
+      saveData('bero_work_centers', updated);
+      return newWorkCenter;
+    },
+    updateWorkCenter: (id, updatedData) => {
+      const updated = workCenters.map(center => 
+        center.id === id ? { ...center, ...updatedData } : center
+      );
+      setWorkCenters(updated);
+      saveData('bero_work_centers', updated);
+    },
+    deleteWorkCenter: (id) => {
+      const updated = workCenters.filter(center => center.id !== id);
+      setWorkCenters(updated);
+      saveData('bero_work_centers', updated);
+    },
+
+    productionOperations,
+    addProductionOperation: (operationData) => {
+      const newOperation = {
+        id: Date.now(),
+        ...operationData,
+        createdAt: new Date().toISOString(),
+        actualDuration: 0,
+        status: 'Pending'
+      };
+      const updated = [...productionOperations, newOperation];
+      setProductionOperations(updated);
+      saveData('bero_production_operations', updated);
+      return newOperation;
+    },
+    updateProductionOperation: (id, updatedData) => {
+      const updated = productionOperations.map(operation => 
+        operation.id === id ? { ...operation, ...updatedData } : operation
+      );
+      setProductionOperations(updated);
+      saveData('bero_production_operations', updated);
+    },
+    getOperationsByOrder: (orderId) => {
+      return productionOperations.filter(operation => operation.orderId === orderId);
+    },
+
+    // خطط الإنتاج
+    productionPlans,
+    addProductionPlan: (planData) => {
+      const newPlan = {
+        id: Date.now(),
+        ...planData,
+        createdAt: new Date().toISOString(),
+        status: 'Draft'
+      };
+      const updated = [...productionPlans, newPlan];
+      setProductionPlans(updated);
+      saveData('bero_production_plans', updated);
+      return newPlan;
+    },
+    updateProductionPlan: (id, updatedData) => {
+      const updated = productionPlans.map(plan => 
+        plan.id === id ? { ...plan, ...updatedData } : plan
+      );
+      setProductionPlans(updated);
+      saveData('bero_production_plans', updated);
+    },
+    generateMRPRequirements: (productId, quantity) => {
+      const bom = bomItems.filter(item => item.productId === productId);
+      return bom.map(item => ({
+        materialId: item.materialId,
+        requiredQuantity: item.quantity * quantity,
+        availableQuantity: 0, // سيتم حسابها من المخزون
+        shortage: 0
+      }));
+    },
+
+    // تتبع استهلاك المواد
+    materialConsumption,
+    addMaterialConsumption: (consumptionData) => {
+      const newConsumption = {
+        id: Date.now(),
+        ...consumptionData,
+        createdAt: new Date().toISOString()
+      };
+      const updated = [...materialConsumption, newConsumption];
+      setMaterialConsumption(updated);
+      saveData('bero_material_consumption', updated);
+      return newConsumption;
+    },
+    getMaterialConsumptionByOrder: (orderId) => {
+      return materialConsumption.filter(consumption => consumption.orderId === orderId);
+    },
+
+    // الهدر في الإنتاج
+    productionWaste,
+    addProductionWaste: (wasteData) => {
+      const newWaste = {
+        id: Date.now(),
+        ...wasteData,
+        createdAt: new Date().toISOString()
+      };
+      const updated = [...productionWaste, newWaste];
+      setProductionWaste(updated);
+      saveData('bero_production_waste', updated);
+      return newWaste;
+    },
+    getWasteByOrder: (orderId) => {
+      return productionWaste.filter(waste => waste.orderId === orderId);
+    },
+
+    // ضوابط الجودة
+    qualityControls,
+    addQualityControl: (qcData) => {
+      const newQC = {
+        id: Date.now(),
+        ...qcData,
+        createdAt: new Date().toISOString(),
+        status: 'Pending'
+      };
+      const updated = [...qualityControls, newQC];
+      setQualityControls(updated);
+      saveData('bero_quality_controls', updated);
+      return newQC;
+    },
+    updateQualityControl: (id, updatedData) => {
+      const updated = qualityControls.map(qc => 
+        qc.id === id ? { ...qc, ...updatedData } : qc
+      );
+      setQualityControls(updated);
+      saveData('bero_quality_controls', updated);
+    },
+    getQualityControlsByOrder: (orderId) => {
+      return qualityControls.filter(qc => qc.orderId === orderId);
+    },
+
+    // مؤشرات الأداء الإنتاجية
+    productionKPIs,
+    addProductionKPI: (kpiData) => {
+      const newKPI = {
+        id: Date.now(),
+        ...kpiData,
+        createdAt: new Date().toISOString(),
+        calculatedAt: new Date().toISOString()
+      };
+      const updated = [...productionKPIs, newKPI];
+      setProductionKPIs(updated);
+      saveData('bero_production_kpis', updated);
+      return newKPI;
+    },
+    calculateOEE: (orderId) => {
+      // حساب كفاءة المعدات الإجمالية (OEE)
+      const operations = productionOperations.filter(op => op.orderId === orderId);
+      if (operations.length === 0) return 0;
+      
+      const availability = operations.filter(op => op.status === 'Completed').length / operations.length;
+      const performance = operations.reduce((sum, op) => {
+        const plannedTime = op.plannedDuration || 1;
+        const actualTime = op.actualDuration || plannedTime;
+        return sum + (plannedTime / actualTime);
+      }, 0) / operations.length;
+      const quality = 1 - (productionWaste.filter(w => w.orderId === orderId).length / (operations.length || 1));
+      
+      return (availability * performance * quality * 100).toFixed(2);
+    },
+    calculateOnTimeDelivery: (startDate, endDate) => {
+      const orders = productionOrders.filter(order => 
+        order.plannedEndDate >= startDate && order.plannedEndDate <= endDate
+      );
+      if (orders.length === 0) return 0;
+      
+      const onTimeOrders = orders.filter(order => 
+        order.actualEndDate && order.actualEndDate <= order.plannedEndDate
+      );
+      
+      return ((onTimeOrders.length / orders.length) * 100).toFixed(2);
+    },
+    calculateMaterialEfficiency: (orderId) => {
+      const consumption = materialConsumption.filter(c => c.orderId === orderId);
+      const standardMaterials = bomItems.filter(bom => 
+        productionOrders.find(order => order.id === orderId)?.productId === bom.productId
+      );
+      
+      if (consumption.length === 0 || standardMaterials.length === 0) return 100;
+      
+      const actualTotal = consumption.reduce((sum, c) => sum + c.quantity, 0);
+      const standardTotal = standardMaterials.reduce((sum, bom) => sum + bom.quantity, 0);
+      
+      return ((standardTotal / actualTotal) * 100).toFixed(2);
+    },
+    getProductionDashboardData: () => {
+      const totalOrders = productionOrders.length;
+      const completedOrders = productionOrders.filter(order => order.status === 'Completed').length;
+      const inProgressOrders = productionOrders.filter(order => order.status === 'In Progress').length;
+      const onTimeDelivery = productionOrders.filter(order => 
+        order.actualEndDate && order.actualEndDate <= order.plannedEndDate
+      ).length;
+      
+      return {
+        totalOrders,
+        completedOrders,
+        inProgressOrders,
+        onTimeDeliveryRate: totalOrders > 0 ? ((onTimeDelivery / totalOrders) * 100).toFixed(2) : 0,
+        completionRate: totalOrders > 0 ? ((completedOrders / totalOrders) * 100).toFixed(2) : 0
+      };
     }
   };
 

@@ -90,6 +90,14 @@ import AttendanceManagement from '../../components/HR/AttendanceManagement';
 import LeaveManagement from '../../components/HR/LeaveManagement';
 import SalaryManagement from '../../components/HR/SalaryManagement';
 
+// Production System
+import ProductionMain from '../../pages/Production/ProductionMain';
+import ProductionOrders from '../../pages/Production/ProductionOrders';
+import ProductionPlanningPage from '../../pages/Production/ProductionPlanningPage';
+import MaterialTrackingPage from '../../pages/Production/MaterialTrackingPage';
+import QualityControlPage from '../../pages/Production/QualityControlPage';
+import ProductionDashboardPage from '../../pages/Production/ProductionDashboardPage';
+
 import ValueAdjustment from '../../pages/Adjustments/ValueAdjustment';
 import DamagedWriteOff from '../../pages/Adjustments/DamagedWriteOff';
 import CustomerBalanceAdjustment from '../../pages/Adjustments/CustomerBalanceAdjustment';
@@ -178,6 +186,14 @@ const getComponentForPath = (path) => {
     '/hr/attendance': AttendanceManagement,
     '/hr/leaves': LeaveManagement,
     '/hr/payroll': SalaryManagement,
+
+    // Production System
+    '/production': ProductionMain,
+    '/production/orders': ProductionOrders,
+    '/production/planning': ProductionPlanningPage,
+    '/production/materials': MaterialTrackingPage,
+    '/production/quality': QualityControlPage,
+    '/production/dashboard': ProductionDashboardPage,
     
     // Reports
     '/reports': ReportsHome,
