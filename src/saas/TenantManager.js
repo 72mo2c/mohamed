@@ -2,7 +2,7 @@
 // TenantManager - نظام إدارة المؤسسات
 // ======================================
 
-import saasConfig from './saas-config.json';
+import saasConfig from './saas-config.js';
 
 class TenantManager {
   constructor() {
