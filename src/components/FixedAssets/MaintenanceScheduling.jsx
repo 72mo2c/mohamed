@@ -76,7 +76,7 @@ const MaintenanceScheduling = () => {
     const totalCost = completedMaintenance.reduce((sum, m) => sum + (m.actualCost || 0), 0);
 
     return {
-      totalSchedules: assetMaintenance.length,
+      totalSchedules: maintenanceData.length,
       upcomingMaintenance: upcomingMaintenance.length,
       overdueMaintenance: overdueMaintenance.length,
       completedMaintenance: completedMaintenance.length,

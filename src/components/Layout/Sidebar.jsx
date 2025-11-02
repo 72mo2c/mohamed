@@ -236,11 +236,11 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     },
     {
       id: 'integrations',
-      title: 'الربط',
+      title: 'الربط والتكامل',
       icon: <FaLink />,
       color: 'from-indigo-500 to-indigo-600',
       subItems: [
-        { title: 'منصات خارجية', icon: <FaBuilding />, path: '/integrations/external-platforms' },
+        { title: 'منصات الربط الخارجية', icon: <FaBuilding />, path: '/integrations/external-platforms' },
         { title: 'واتساب الأعمال', icon: <FaWhatsapp />, path: '/integrations/whatsapp-business' },
       ]
     },
