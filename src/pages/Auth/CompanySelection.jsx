@@ -3,7 +3,7 @@
 // ======================================
 
 import React from 'react';
-import CompanySelector from '../components/Auth/CompanySelector';
+import CompanySelector from '../../components/Auth/CompanySelector';
 
 const CompanySelectionPage = () => {
   return <CompanySelector />;
