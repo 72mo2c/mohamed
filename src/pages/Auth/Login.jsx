@@ -218,17 +218,7 @@ const Login = () => {
             </button>
           </form>
 
-          {/* Security Notice */}
-          <div className="mt-8 p-4 rounded-xl border-2 border-orange-100 bg-gradient-to-r from-orange-50 to-orange-100/50">
-            <div className="flex items-center justify-center gap-2 text-orange-700">
-              <FaShieldAlt className="text-xl" />
-              <p className="text-sm font-semibold">نظام آمن ومحمي بالكامل</p>
-            </div>
-            <p className="text-xs text-gray-600 text-center mt-2">
-              يرجى استخدام بيانات الاعتماد الخاصة بك للدخول
-            </p>
           </div>
-        </div>
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-gray-600">
