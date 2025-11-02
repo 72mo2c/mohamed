@@ -57,7 +57,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
   const contextMenuRef = useRef(null);
   const hoverTimeoutRef = useRef(null);
 
-  // Close submenu when clicking outside
+  // Close submenu when clicking outside or when location changes
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (sidebarRef.current && !sidebarRef.current.contains(event.target) &&
@@ -71,6 +71,11 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Close active menu when route changes
+  useEffect(() => {
+    setActiveMenu(null);
+  }, [location.pathname]);
 
   // Check if current path matches any submenu item
   const isMenuActive = (menuItem) => {
@@ -287,7 +292,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     // Calculate position for the context menu
     const buttonRect = event.currentTarget.getBoundingClientRect();
     const subItems = menuItems.find(item => item.id === menuId)?.subItems || [];
-    const menuHeight = subItems.length * 40 + 60; // Approximate height based on item count
+    const menuHeight = subItems.length * 40 + 60;
     
     let top = buttonRect.top;
     
@@ -311,7 +316,6 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
   };
 
   const handleMouseEnter = () => {
-    // Clear any existing timeout
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
@@ -319,17 +323,23 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
   };
 
   const handleMouseLeave = (e) => {
-    // Only collapse if not manually opened and mouse leaves to outside
     if (!isOpen) {
-      // Check if mouse is leaving to outside the sidebar area
       const relatedTarget = e.relatedTarget;
       if (!sidebarRef.current?.contains(relatedTarget) && 
           !contextMenuRef.current?.contains(relatedTarget)) {
         hoverTimeoutRef.current = setTimeout(() => {
           setIsHovered(false);
           setActiveMenu(null);
-        }, 300); // Small delay for better UX
+        }, 300);
       }
+    }
+  };
+
+  const handleSubItemClick = () => {
+    setActiveMenu(null);
+    setIsHovered(false);
+    if (window.innerWidth < 1024) {
+      closeSidebar();
     }
   };
 
@@ -472,7 +482,6 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
           <div 
             ref={contextMenuRef}
             onMouseEnter={() => {
-              // Clear timeout when entering context menu
               if (hoverTimeoutRef.current) {
                 clearTimeout(hoverTimeoutRef.current);
               }
@@ -497,11 +506,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
                 <NavLink
                   key={idx}
                   to={subItem.path}
-                  onClick={() => {
-                    setActiveMenu(null);
-                    setIsHovered(false);
-                    if (window.innerWidth < 1024) closeSidebar();
-                  }}
+                  onClick={handleSubItemClick}
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3 py-2.5 transition-all hover:bg-orange-50 hover:text-orange-600 group ${
                       isActive
