@@ -54,12 +54,13 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [isHovered, setIsHovered] = useState(false);
   const sidebarRef = useRef(null);
-  const menuItemsRef = useRef({});
+  const contextMenuRef = useRef(null);
 
   // Close submenu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target) &&
+          contextMenuRef.current && !contextMenuRef.current.contains(event.target)) {
         setActiveMenu(null);
       }
     };
@@ -284,9 +285,25 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
 
     // Calculate position for the context menu
     const buttonRect = event.currentTarget.getBoundingClientRect();
+    const subItems = menuItems.find(item => item.id === menuId)?.subItems || [];
+    const menuHeight = subItems.length * 40 + 60; // Approximate height based on item count
+    
+    let top = buttonRect.top;
+    
+    // Adjust position if menu would go below screen
+    const maxBottom = window.innerHeight - 20;
+    if (top + menuHeight > maxBottom) {
+      top = maxBottom - menuHeight;
+    }
+    
+    // Ensure menu doesn't go above screen
+    if (top < 20) {
+      top = 20;
+    }
+    
     setMenuPosition({
-      top: buttonRect.top,
-      left: buttonRect.left - 8 // Position to the left of the sidebar
+      top: top,
+      left: buttonRect.left - 8
     });
     
     setActiveMenu(activeMenu === menuId ? null : menuId);
@@ -310,7 +327,15 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
         {/* Main Sidebar */}
         <aside
           onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
+          onMouseLeave={() => {
+            setIsHovered(false);
+            // Only close sidebar on mouse leave if it's not manually opened
+            if (!isOpen) {
+              setTimeout(() => {
+                if (!isOpen) setIsHovered(false);
+              }, 300);
+            }
+          }}
           className={`
             fixed z-40 transition-all duration-300 overflow-hidden
             bg-white/95 backdrop-blur-md border-l border-orange-100/50 shadow-lg
@@ -420,11 +445,13 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
         {/* Context Menu - appears next to clicked item */}
         {activeMenu && (
           <div 
-            className="fixed z-50 bg-white/95 backdrop-blur-md rounded-lg shadow-xl border border-orange-100/50 py-2 min-w-48 max-w-64"
+            ref={contextMenuRef}
+            className="fixed z-50 bg-white/95 backdrop-blur-md rounded-lg shadow-xl border border-orange-100/50 py-2 w-56"
             style={{
-              top: menuPosition.top,
-              left: menuPosition.left,
-              transform: 'translateX(-100%)'
+              top: `${menuPosition.top}px`,
+              left: `${menuPosition.left}px`,
+              transform: 'translateX(-100%)',
+              maxHeight: 'calc(100vh - 60px)'
             }}
           >
             <div className="px-3 py-2 border-b border-orange-100/50 mb-1">
@@ -433,7 +460,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
               </h3>
             </div>
             
-            <div className="max-h-80 overflow-y-auto">
+            <div className="overflow-visible">
               {menuItems.find(item => item.id === activeMenu)?.subItems?.map((subItem, idx) => (
                 <NavLink
                   key={idx}
