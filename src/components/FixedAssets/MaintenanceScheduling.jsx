@@ -69,14 +69,15 @@ const MaintenanceScheduling = () => {
     const now = new Date();
     const upcomingMaintenance = getUpcomingMaintenance ? getUpcomingMaintenance(30) : [];
     const maintenanceData = assetMaintenance || [];
-    const overdueMaintenance = maintenanceData.filter(m => 
+    const statsMaintenanceData = maintenanceData;
+    const overdueMaintenance = statsMaintenanceData.filter(m => 
       m.nextDate && new Date(m.nextDate) < now && m.status === 'Scheduled'
     );
-    const completedMaintenance = maintenanceData.filter(m => m.status === 'Completed');
+    const completedMaintenance = statsMaintenanceData.filter(m => m.status === 'Completed');
     const totalCost = completedMaintenance.reduce((sum, m) => sum + (m.actualCost || 0), 0);
 
     return {
-      totalSchedules: maintenanceData.length,
+      totalSchedules: statsMaintenanceData.length,
       upcomingMaintenance: upcomingMaintenance.length,
       overdueMaintenance: overdueMaintenance.length,
       completedMaintenance: completedMaintenance.length,
@@ -89,7 +90,7 @@ const MaintenanceScheduling = () => {
     const now = new Date();
     const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     
-    return assetMaintenance
+    return (assetMaintenance || [])
       .filter(m => {
         if (!m.nextDate || m.status !== 'Scheduled') return false;
         const nextDate = new Date(m.nextDate);
