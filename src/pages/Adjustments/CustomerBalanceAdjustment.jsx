@@ -120,7 +120,7 @@ const CustomerBalanceAdjustment = () => {
                           <div className="text-right">
                             <div className="text-xs text-gray-500">الرصيد الحالي</div>
                             <div className={`font-bold ${customer.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {customer.balance} ر.س
+                              {customer.balance} ج.م
                             </div>
                           </div>
                         </div>
@@ -164,7 +164,7 @@ const CustomerBalanceAdjustment = () => {
                       <span className={`text-2xl font-bold ${
                         getCurrentBalance() >= 0 ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {getCurrentBalance()} ر.س
+                        {getCurrentBalance()} ج.م
                       </span>
                     </div>
                   </div>
@@ -228,7 +228,7 @@ const CustomerBalanceAdjustment = () => {
                         <span className={`text-2xl font-bold ${
                           getNewBalance() >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
-                          {getNewBalance()} ر.س
+                          {getNewBalance()} ج.م
                         </span>
                       </div>
                     </div>

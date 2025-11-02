@@ -120,7 +120,7 @@ const SupplierBalanceAdjustment = () => {
                           <div className="text-right">
                             <div className="text-xs text-gray-500">الرصيد الحالي</div>
                             <div className={`font-bold ${supplier.balance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                              {supplier.balance} ر.س
+                              {supplier.balance} ج.م
                             </div>
                           </div>
                         </div>
@@ -164,7 +164,7 @@ const SupplierBalanceAdjustment = () => {
                       <span className={`text-2xl font-bold ${
                         getCurrentBalance() >= 0 ? 'text-red-600' : 'text-green-600'
                       }`}>
-                        {getCurrentBalance()} ر.س
+                        {getCurrentBalance()} ج.م
                       </span>
                     </div>
                     <div className="text-xs text-gray-500 mt-2">
@@ -235,7 +235,7 @@ const SupplierBalanceAdjustment = () => {
                         <span className={`text-2xl font-bold ${
                           getNewBalance() >= 0 ? 'text-red-600' : 'text-green-600'
                         }`}>
-                          {getNewBalance()} ر.س
+                          {getNewBalance()} ج.م
                         </span>
                       </div>
                     </div>

@@ -75,7 +75,7 @@ const TreasuryAdjustment = () => {
                   <div className="flex justify-between items-center">
                     <div>
                       <div className="text-sm text-gray-600 mb-1">رصيد الخزينة الحالي</div>
-                      <div className="text-3xl font-bold text-blue-600">{currentBalance.toLocaleString()} ر.س</div>
+                      <div className="text-3xl font-bold text-blue-600">{currentBalance.toLocaleString()} ج.م</div>
                     </div>
                     <FaMoneyBillWave className="text-5xl text-blue-300" />
                   </div>
@@ -140,7 +140,7 @@ const TreasuryAdjustment = () => {
                       <span className={`text-2xl font-bold ${
                         getNewBalance() >= 0 ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {getNewBalance().toLocaleString()} ر.س
+                        {getNewBalance().toLocaleString()} ج.م
                       </span>
                     </div>
                   </div>

@@ -91,7 +91,7 @@ const SystemSettingsUpdated = () => {
     { value: 'USD', label: 'دولار أمريكي ($)' },
     { value: 'EUR', label: 'يورو (€)' },
     { value: 'GBP', label: 'جنيه إسترليني (£)' },
-    { value: 'SAR', label: 'ريال سعودي (ر.س)' },
+    { value: 'SAR', label: 'ريال سعودى (ر.س)' },
     { value: 'AED', label: 'درهم إماراتي (د.إ)' }
   ];
 

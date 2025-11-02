@@ -245,7 +245,7 @@ const AdjustmentEntries = () => {
             {!isBalanced() && getTotalDebit() > 0 && getTotalCredit() > 0 && (
               <div className="mt-4 bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-center gap-2 text-red-700">
                 <span className="font-semibold">⚠️ القيد غير متوازن!</span>
-                <span>الفرق: {Math.abs(getTotalDebit() - getTotalCredit()).toFixed(2)} ر.س</span>
+                <span>الفرق: {Math.abs(getTotalDebit() - getTotalCredit()).toFixed(2)} ج.م</span>
               </div>
             )}
 

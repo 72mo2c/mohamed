@@ -244,7 +244,7 @@ const MaterialTracking = () => {
       accessor: 'cost',
       render: (value) => (
         <div className="text-gray-900">
-          {value ? `${parseFloat(value).toFixed(2)} ر.س` : '0.00 ر.س'}
+          {value ? `${parseFloat(value).toFixed(2)} ج.م` : '0.00 ج.م'}
         </div>
       )
     },
@@ -673,7 +673,7 @@ const MaterialTracking = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                تكلفة الهدر (ر.س)
+                تكلفة الهدر (ج.م)
               </label>
               <Input
                 type="number"
