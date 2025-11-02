@@ -37,7 +37,9 @@ import {
   FaTools,
   FaExclamationTriangle,
   FaCalculator,
-  FaBookOpen
+  FaBookOpen,
+  FaClock,
+  FaCalendarAlt
 } from 'react-icons/fa';
 
 const Sidebar = ({ isOpen, closeSidebar }) => {
@@ -158,6 +160,19 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
       subItems: [
         { title: 'دليل الحسابات', icon: <FaBookOpen />, path: '/accounting/chart-of-accounts' },
         { title: 'القيود اليومية', icon: <FaFileInvoice />, path: '/accounting/journal-entry' },
+      ]
+    },
+    {
+      id: 'hr',
+      title: 'الموارد البشرية',
+      icon: <FaUsers />,
+      color: 'from-blue-500 to-blue-600',
+      subItems: [
+        { title: 'إدارة الموظفين', icon: <FaUserPlus />, path: '/hr/employees' },
+        { title: 'إدارة الأقسام', icon: <FaBuilding />, path: '/hr/organization' },
+        { title: 'الحضور والانصراف', icon: <FaClock />, path: '/hr/attendance' },
+        { title: 'إدارة الإجازات', icon: <FaCalendarAlt />, path: '/hr/leaves' },
+        { title: 'الرواتب', icon: <FaMoneyBillWave />, path: '/hr/payroll' },
       ]
     },
     {

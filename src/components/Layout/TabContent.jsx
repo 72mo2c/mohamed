@@ -82,6 +82,14 @@ import QuantityAdjustment from '../../pages/Adjustments/QuantityAdjustment';
 // Accounting
 import ChartOfAccounts from '../../pages/Accounting/ChartOfAccounts';
 import JournalEntry from '../../pages/Accounting/JournalEntry';
+
+// HR (Human Resources)
+import EmployeeManagement from '../../components/HR/EmployeeManagement';
+import OrganizationManagement from '../../components/HR/OrganizationManagement';
+// import AttendanceManagement from '../../components/HR/AttendanceManagement';
+// import LeaveManagement from '../../components/HR/LeaveManagement';
+// import PayrollManagement from '../../components/HR/PayrollManagement';
+
 import ValueAdjustment from '../../pages/Adjustments/ValueAdjustment';
 import DamagedWriteOff from '../../pages/Adjustments/DamagedWriteOff';
 import CustomerBalanceAdjustment from '../../pages/Adjustments/CustomerBalanceAdjustment';
@@ -163,6 +171,13 @@ const getComponentForPath = (path) => {
     // Accounting
     '/accounting/chart-of-accounts': ChartOfAccounts,
     '/accounting/journal-entry': JournalEntry,
+    
+    // HR (Human Resources)
+    '/hr/employees': EmployeeManagement,
+    '/hr/organization': OrganizationManagement,
+    // '/hr/attendance': AttendanceManagement,
+    // '/hr/leaves': LeaveManagement,
+    // '/hr/payroll': PayrollManagement,
     
     // Reports
     '/reports': ReportsHome,

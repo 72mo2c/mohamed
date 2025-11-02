@@ -49,6 +49,20 @@ export const DataProvider = ({ children }) => {
   const [accounts, setAccounts] = useState([]);  // دليل الحسابات
   const [journalEntries, setJournalEntries] = useState([]);  // القيود اليومية
 
+  // بيانات نظام الموارد البشرية
+  const [employees, setEmployees] = useState([]);  // الموظفين
+  const [departments, setDepartments] = useState([]);  // الأقسام  
+  const [positions, setPositions] = useState([]);  // المناصب
+  const [attendance, setAttendance] = useState([]);  // سجلات الحضور
+  const [leaveTypes, setLeaveTypes] = useState([]);  // أنواع الإجازات
+  const [employeeLeaves, setEmployeeLeaves] = useState([]);  // طلبات الإجازات
+  const [employeeLeaveBalances, setEmployeeLeaveBalances] = useState([]);  // أرصدة الإجازات
+  const [salaryComponents, setSalaryComponents] = useState([]);  // مكونات الراتب
+  const [payrollPeriods, setPayrollPeriods] = useState([]);  // فترات الرواتب
+  const [payrollDetails, setPayrollDetails] = useState([]);  // تفاصيل الرواتب
+  const [performanceMetrics, setPerformanceMetrics] = useState([]);  // معايير التقييم
+  const [performanceReviews, setPerformanceReviews] = useState([]);  // تقييمات الأداء
+
   // تحميل البيانات من LocalStorage
   useEffect(() => {
     loadAllData();
@@ -85,6 +99,20 @@ export const DataProvider = ({ children }) => {
     loadData('bero_transfers', setTransfers);
     loadData('bero_accounts', setAccounts);
     loadData('bero_journal_entries', setJournalEntries);
+    
+    // تحميل بيانات الموارد البشرية
+    loadData('bero_employees', setEmployees);
+    loadData('bero_departments', setDepartments);
+    loadData('bero_positions', setPositions);
+    loadData('bero_attendance', setAttendance);
+    loadData('bero_leave_types', setLeaveTypes);
+    loadData('bero_employee_leaves', setEmployeeLeaves);
+    loadData('bero_employee_leave_balances', setEmployeeLeaveBalances);
+    loadData('bero_salary_components', setSalaryComponents);
+    loadData('bero_payroll_periods', setPayrollPeriods);
+    loadData('bero_payroll_details', setPayrollDetails);
+    loadData('bero_performance_metrics', setPerformanceMetrics);
+    loadData('bero_performance_reviews', setPerformanceReviews);
   };
 
   // حفض البيانات في LocalStorage
@@ -1750,6 +1778,457 @@ export const DataProvider = ({ children }) => {
     getAllCustomerBalances,
     getAllSupplierBalances,
     transferProduct,
+    
+    // ==================== دوال الموارد البشرية ====================
+    
+    // إدارة الموظفين (4 دوال)
+    addEmployee: (employeeData) => {
+      const newEmployee = {
+        id: Date.now(),
+        employeeNumber: generateEmployeeNumber(),
+        ...employeeData,
+        createdAt: new Date().toISOString(),
+        createdBy: 1,
+        status: 'active'
+      };
+      const updated = [...employees, newEmployee];
+      setEmployees(updated);
+      saveData('bero_employees', updated);
+      return newEmployee;
+    },
+    
+    updateEmployee: (id, updatedData) => {
+      const employeeIndex = employees.findIndex(emp => emp.id === id);
+      if (employeeIndex === -1) {
+        throw new Error('الموظف غير موجود');
+      }
+      
+      const updated = [...employees];
+      updated[employeeIndex] = {
+        ...updated[employeeIndex],
+        ...updatedData,
+        updatedAt: new Date().toISOString(),
+        updatedBy: 1
+      };
+      
+      setEmployees(updated);
+      saveData('bero_employees', updated);
+      return updated[employeeIndex];
+    },
+    
+    deleteEmployee: (id) => {
+      const employeeIndex = employees.findIndex(emp => emp.id === id);
+      if (employeeIndex === -1) {
+        throw new Error('الموظف غير موجود');
+      }
+      
+      const updated = employees.filter(emp => emp.id !== id);
+      setEmployees(updated);
+      saveData('bero_employees', updated);
+    },
+    
+    getEmployeeProfile: (id) => {
+      const employee = employees.find(emp => emp.id === id);
+      if (!employee) {
+        throw new Error('الموظف غير موجود');
+      }
+      
+      // حساب رصيد الإجازات
+      const leaveBalance = employeeLeaveBalances.find(balance => balance.employeeId === id);
+      
+      // حساب ساعات العمل الحالية
+      const currentMonthAttendance = attendance.filter(att => {
+        const attDate = new Date(att.date);
+        const now = new Date();
+        return att.employeeId === id && 
+               attDate.getMonth() === now.getMonth() && 
+               attDate.getFullYear() === now.getFullYear();
+      });
+      
+      return {
+        ...employee,
+        leaveBalance: leaveBalance || null,
+        currentMonthAttendance,
+        totalWorkingHours: currentMonthAttendance.reduce((total, att) => total + (att.workingHours || 0), 0)
+      };
+    },
+    
+    // إدارة الأقسام (3 دوال)
+    addDepartment: (departmentData) => {
+      const newDepartment = {
+        id: Date.now(),
+        ...departmentData,
+        createdAt: new Date().toISOString(),
+        createdBy: 1
+      };
+      const updated = [...departments, newDepartment];
+      setDepartments(updated);
+      saveData('bero_departments', updated);
+      return newDepartment;
+    },
+    
+    updateDepartment: (id, updatedData) => {
+      const deptIndex = departments.findIndex(dept => dept.id === id);
+      if (deptIndex === -1) {
+        throw new Error('القسم غير موجود');
+      }
+      
+      const updated = [...departments];
+      updated[deptIndex] = {
+        ...updated[deptIndex],
+        ...updatedData,
+        updatedAt: new Date().toISOString(),
+        updatedBy: 1
+      };
+      
+      setDepartments(updated);
+      saveData('bero_departments', updated);
+      return updated[deptIndex];
+    },
+    
+    deleteDepartment: (id) => {
+      // التحقق من عدم وجود موظفين مرتبطين بالقسم
+      const employeesInDept = employees.filter(emp => emp.departmentId === id);
+      if (employeesInDept.length > 0) {
+        throw new Error('لا يمكن حذف القسم لوجود موظفين مرتبطين به');
+      }
+      
+      const updated = departments.filter(dept => dept.id !== id);
+      setDepartments(updated);
+      saveData('bero_departments', updated);
+    },
+    
+    // إدارة الحضور والانصراف (3 دوال)
+    checkIn: (employeeId, location = '') => {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // التحقق من وجود سجل دخول لهذا اليوم
+      const existingRecord = attendance.find(att => 
+        att.employeeId === employeeId && 
+        att.date.startsWith(today) && 
+        !att.checkOutTime
+      );
+      
+      if (existingRecord) {
+        throw new Error('تم تسجيل الدخول مسبقاً لهذا اليوم');
+      }
+      
+      const now = new Date().toISOString();
+      const newRecord = {
+        id: Date.now(),
+        employeeId: employeeId,
+        date: today,
+        checkInTime: now,
+        location: location,
+        status: 'present'
+      };
+      
+      const updated = [...attendance, newRecord];
+      setAttendance(updated);
+      saveData('bero_attendance', updated);
+      return newRecord;
+    },
+    
+    checkOut: (employeeId) => {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // البحث عن سجل الدخول الحالي
+      const currentRecord = attendance.find(att => 
+        att.employeeId === employeeId && 
+        att.date.startsWith(today) && 
+        !att.checkOutTime
+      );
+      
+      if (!currentRecord) {
+        throw new Error('لم يتم تسجيل الدخول لهذا اليوم');
+      }
+      
+      const now = new Date();
+      const checkInTime = new Date(currentRecord.checkInTime);
+      const workingHours = (now - checkInTime) / (1000 * 60 * 60); // بالساعات
+      
+      const updatedRecord = {
+        ...currentRecord,
+        checkOutTime: now.toISOString(),
+        workingHours: workingHours,
+        overtimeHours: Math.max(0, workingHours - 8) // ساعات إضافية بعد 8 ساعات
+      };
+      
+      const updated = attendance.map(att => 
+        att.id === currentRecord.id ? updatedRecord : att
+      );
+      
+      setAttendance(updated);
+      saveData('bero_attendance', updated);
+      return updatedRecord;
+    },
+    
+    getAttendanceReport: (employeeId, startDate, endDate) => {
+      let filteredAttendance = attendance;
+      
+      // فلترة حسب الموظف
+      if (employeeId) {
+        filteredAttendance = filteredAttendance.filter(att => att.employeeId === employeeId);
+      }
+      
+      // فلترة حسب التاريخ
+      if (startDate) {
+        filteredAttendance = filteredAttendance.filter(att => att.date >= startDate);
+      }
+      if (endDate) {
+        filteredAttendance = filteredAttendance.filter(att => att.date <= endDate);
+      }
+      
+      // حساب الإحصائيات
+      const totalDays = filteredAttendance.length;
+      const presentDays = filteredAttendance.filter(att => att.status === 'present').length;
+      const absentDays = totalDays - presentDays;
+      const totalHours = filteredAttendance.reduce((total, att) => total + (att.workingHours || 0), 0);
+      const totalOvertime = filteredAttendance.reduce((total, att) => total + (att.overtimeHours || 0), 0);
+      
+      return {
+        records: filteredAttendance,
+        summary: {
+          totalDays,
+          presentDays,
+          absentDays,
+          attendanceRate: totalDays > 0 ? (presentDays / totalDays * 100).toFixed(2) : 0,
+          totalHours: totalHours.toFixed(2),
+          totalOvertime: totalOvertime.toFixed(2)
+        }
+      };
+    },
+    
+    // نظام الإجازات (3 دوال)
+    applyForLeave: (leaveData) => {
+      const { employeeId, leaveTypeId, startDate, endDate, days, reason } = leaveData;
+      
+      // التحقق من توفر الرصيد
+      const leaveBalance = employeeLeaveBalances.find(balance => 
+        balance.employeeId === employeeId && balance.leaveTypeId === leaveTypeId
+      );
+      
+      if (!leaveBalance || leaveBalance.remainingDays < days) {
+        throw new Error('رصيد الإجازات غير كافٍ');
+      }
+      
+      const newLeaveRequest = {
+        id: Date.now(),
+        employeeId: employeeId,
+        leaveTypeId: leaveTypeId,
+        startDate: startDate,
+        endDate: endDate,
+        days: days,
+        reason: reason,
+        status: 'pending',
+        appliedAt: new Date().toISOString(),
+        appliedBy: 1
+      };
+      
+      const updated = [...employeeLeaves, newLeaveRequest];
+      setEmployeeLeaves(updated);
+      saveData('bero_employee_leaves', updated);
+      return newLeaveRequest;
+    },
+    
+    approveLeave: (leaveId, approvedBy, status = 'approved') => {
+      const leaveIndex = employeeLeaves.findIndex(leave => leave.id === leaveId);
+      if (leaveIndex === -1) {
+        throw new Error('طلب الإجازة غير موجود');
+      }
+      
+      const leaveRequest = employeeLeaves[leaveIndex];
+      const updated = [...employeeLeaves];
+      updated[leaveIndex] = {
+        ...leaveRequest,
+        status: status,
+        approvedAt: new Date().toISOString(),
+        approvedBy: approvedBy
+      };
+      
+      // إذا تمت الموافقة، خصم من الرصيد
+      if (status === 'approved') {
+        const balanceIndex = employeeLeaveBalances.findIndex(balance => 
+          balance.employeeId === leaveRequest.employeeId && 
+          balance.leaveTypeId === leaveRequest.leaveTypeId
+        );
+        
+        if (balanceIndex !== -1) {
+          const updatedBalances = [...employeeLeaveBalances];
+          const currentBalance = updatedBalances[balanceIndex];
+          updatedBalances[balanceIndex] = {
+            ...currentBalance,
+            usedDays: currentBalance.usedDays + leaveRequest.days,
+            remainingDays: currentBalance.remainingDays - leaveRequest.days,
+            updatedAt: new Date().toISOString(),
+            updatedBy: approvedBy
+          };
+          
+          setEmployeeLeaveBalances(updatedBalances);
+          saveData('bero_employee_leave_balances', updatedBalances);
+        }
+      }
+      
+      setEmployeeLeaves(updated);
+      saveData('bero_employee_leaves', updated);
+      return updated[leaveIndex];
+    },
+    
+    calculateLeaveBalance: (employeeId, leaveTypeId, year = new Date().getFullYear()) => {
+      const employee = employees.find(emp => emp.id === employeeId);
+      if (!employee) {
+        throw new Error('الموظف غير موجود');
+      }
+      
+      const leaveType = leaveTypes.find(type => type.id === leaveTypeId);
+      if (!leaveType) {
+        throw new Error('نوع الإجازة غير موجود');
+      }
+      
+      // حساب عدد أيام العمل في السنة
+      const workingDaysInYear = 365;
+      const leaveDaysPerYear = leaveType.annualAllowance || 30;
+      
+      // البحث عن رصيد موجود
+      let existingBalance = employeeLeaveBalances.find(balance => 
+        balance.employeeId === employeeId && 
+        balance.leaveTypeId === leaveTypeId &&
+        balance.year === year
+      );
+      
+      if (existingBalance) {
+        return existingBalance;
+      }
+      
+      // إنشاء رصيد جديد
+      const newBalance = {
+        id: Date.now(),
+        employeeId: employeeId,
+        leaveTypeId: leaveTypeId,
+        year: year,
+        annualAllowance: leaveDaysPerYear,
+        usedDays: 0,
+        remainingDays: leaveDaysPerYear,
+        carryForward: 0,
+        createdAt: new Date().toISOString()
+      };
+      
+      const updated = [...employeeLeaveBalances, newBalance];
+      setEmployeeLeaveBalances(updated);
+      saveData('bero_employee_leave_balances', updated);
+      return newBalance;
+    },
+    
+    // نظام الرواتب (2 دالة)
+    calculatePayroll: (periodId) => {
+      const period = payrollPeriods.find(p => p.id === periodId);
+      if (!period) {
+        throw new Error('فترة الراتب غير موجودة');
+      }
+      
+      const employeesForPeriod = employees.filter(emp => emp.status === 'active');
+      const payrollResults = [];
+      
+      employeesForPeriod.forEach(employee => {
+        // حساب الراتب الأساسي
+        const basicSalary = parseFloat(employee.basicSalary || 0);
+        
+        // البحث عن مكونات الراتب الإضافية
+        const salaryComp = salaryComponents.find(comp => 
+          comp.employeeId === employee.id && comp.periodId === periodId
+        );
+        
+        const allowances = salaryComp ? (salaryComp.allowances || {}).reduce((total, allow) => 
+          total + parseFloat(allow.amount || 0), 0) : 0;
+        
+        const deductions = salaryComp ? (salaryComp.deductions || {}).reduce((total, ded) => 
+          total + parseFloat(ded.amount || 0), 0) : 0;
+        
+        // حساب ساعات العمل الإضافية من سجلات الحضور
+        const periodAttendance = attendance.filter(att => {
+          const attDate = new Date(att.date);
+          const startDate = new Date(period.startDate);
+          const endDate = new Date(period.endDate);
+          return att.employeeId === employee.id && 
+                 attDate >= startDate && attDate <= endDate;
+        });
+        
+        const totalOvertimeHours = periodAttendance.reduce((total, att) => 
+          total + (att.overtimeHours || 0), 0);
+        const overtimePay = totalOvertimeHours * (basicSalary / 160); // 160 ساعة شهرية
+        
+        // الراتب الصافي
+        const netSalary = basicSalary + allowances + overtimePay - deductions;
+        
+        const payrollDetail = {
+          id: Date.now() + Math.random(),
+          periodId: periodId,
+          employeeId: employee.id,
+          basicSalary: basicSalary,
+          allowances: allowances,
+          overtimeHours: totalOvertimeHours,
+          overtimePay: overtimePay,
+          deductions: deductions,
+          netSalary: netSalary,
+          status: 'calculated',
+          calculatedAt: new Date().toISOString(),
+          calculatedBy: 1
+        };
+        
+        payrollResults.push(payrollDetail);
+        
+        // حفظ تفاصيل الراتب
+        const updated = [...payrollDetails, payrollDetail];
+        setPayrollDetails(updated);
+        saveData('bero_payroll_details', updated);
+      });
+      
+      return payrollResults;
+    },
+    
+    generatePayrollReport: (periodId) => {
+      const period = payrollPeriods.find(p => p.id === periodId);
+      if (!period) {
+        throw new Error('فترة الراتب غير موجودة');
+      }
+      
+      const periodDetails = payrollDetails.filter(detail => detail.periodId === periodId);
+      
+      const totalBasicSalary = periodDetails.reduce((total, detail) => total + detail.basicSalary, 0);
+      const totalAllowances = periodDetails.reduce((total, detail) => total + detail.allowances, 0);
+      const totalOvertimePay = periodDetails.reduce((total, detail) => total + detail.overtimePay, 0);
+      const totalDeductions = periodDetails.reduce((total, detail) => total + detail.deductions, 0);
+      const totalNetSalary = periodDetails.reduce((total, detail) => total + detail.netSalary, 0);
+      
+      return {
+        period: period,
+        details: periodDetails,
+        summary: {
+          totalEmployees: periodDetails.length,
+          totalBasicSalary: totalBasicSalary.toFixed(2),
+          totalAllowances: totalAllowances.toFixed(2),
+          totalOvertimePay: totalOvertimePay.toFixed(2),
+          totalDeductions: totalDeductions.toFixed(2),
+          totalNetSalary: totalNetSalary.toFixed(2)
+        }
+      };
+    },
+    
+    // دالة مساعدة لإنشاء رقم الموظف
+    generateEmployeeNumber: () => {
+      const currentYear = new Date().getFullYear();
+      const yearPrefix = currentYear.toString().slice(-2);
+      const lastEmployee = employees.find(emp => emp.employeeNumber && emp.employeeNumber.startsWith(yearPrefix));
+      
+      let sequence = 1;
+      if (lastEmployee) {
+        const lastSequence = parseInt(lastEmployee.employeeNumber.slice(-3));
+        sequence = lastSequence + 1;
+      }
+      
+      return `${yearPrefix}${sequence.toString().padStart(3, '0')}`;
+    },
+    
     // دوال المحاسبة
     accounts,
     journalEntries,
@@ -1758,7 +2237,39 @@ export const DataProvider = ({ children }) => {
     deleteAccount,
     createJournalEntry,
     getAccountTransactions,
-    getTrialBalance
+    getTrialBalance,
+    
+    // حالات نظام الموارد البشرية
+    employees,
+    departments,
+    positions,
+    attendance,
+    leaveTypes,
+    employeeLeaves,
+    employeeLeaveBalances,
+    salaryComponents,
+    payrollPeriods,
+    payrollDetails,
+    performanceMetrics,
+    performanceReviews,
+    
+    // دوال نظام الموارد البشرية
+    addEmployee,
+    updateEmployee,
+    deleteEmployee,
+    getEmployeeProfile,
+    addDepartment,
+    updateDepartment,
+    deleteDepartment,
+    checkIn,
+    checkOut,
+    getAttendanceReport,
+    applyForLeave,
+    approveLeave,
+    calculateLeaveBalance,
+    calculatePayroll,
+    generatePayrollReport,
+    generateEmployeeNumber
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
