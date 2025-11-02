@@ -3,7 +3,7 @@
 // ======================================
 
 import React from 'react';
-import { FaSync, FaWifi, FaWifiOff, FaExclamationTriangle, FaCheckCircle, FaClock } from 'react-icons/fa';
+import { FaSync, FaWifi, FaTimesCircle, FaExclamationTriangle, FaCheckCircle, FaClock } from 'react-icons/fa';
 import { useSaaS } from '../../context/SaaSContext';
 
 const SyncStatusIndicator = ({ position = 'top-right', showDetails = false }) => {
@@ -33,7 +33,7 @@ const SyncStatusIndicator = ({ position = 'top-right', showDetails = false }) =>
 
     if (!isOnline) {
       return {
-        icon: <FaWifiOff />,
+        icon: <FaTimesCircle />,
         color: 'text-red-500',
         bgColor: 'bg-red-50',
         borderColor: 'border-red-200',
@@ -122,7 +122,7 @@ const SyncStatusIndicator = ({ position = 'top-right', showDetails = false }) =>
           {isOnline ? (
             <FaWifi className="text-xs" />
           ) : (
-            <FaWifiOff className="text-xs" />
+            <FaTimesCircle className="text-xs" />
           )}
         </div>
 
