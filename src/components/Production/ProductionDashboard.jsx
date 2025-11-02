@@ -46,7 +46,7 @@ const ProductionDashboard = () => {
 
   // حساب إحصائيات متقدمة
   const calculateAdvancedStats = () => {
-    const currentMonth = new Date().getISOString().slice(0, 7); // YYYY-MM
+    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
     const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
     const currentYear = new Date().getFullYear();
 

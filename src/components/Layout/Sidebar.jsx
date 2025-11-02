@@ -194,6 +194,20 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
       ]
     },
     {
+      id: 'fixed-assets',
+      title: 'الأصول الثابتة',
+      icon: <FaBuilding />,
+      color: 'from-indigo-500 to-indigo-600',
+      subItems: [
+        { title: 'لوحة التحكم', icon: <FaTachometerAlt />, path: '/fixed-assets/dashboard' },
+        { title: 'إدارة الأصول', icon: <FaBoxes />, path: '/fixed-assets/management' },
+        { title: 'إدارة الإهلاك', icon: <FaChartLine />, path: '/fixed-assets/depreciation' },
+        { title: 'جدولة الصيانة', icon: <FaClock />, path: '/fixed-assets/maintenance' },
+        { title: 'جرد وتقييم', icon: <FaList />, path: '/fixed-assets/inventory' },
+        { title: 'التصرف في الأصول', icon: <FaExchangeAlt />, path: '/fixed-assets/disposal' },
+      ]
+    },
+    {
       id: 'reports',
       title: 'التقارير',
       icon: <FaClipboardList />,

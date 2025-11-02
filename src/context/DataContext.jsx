@@ -74,6 +74,22 @@ export const DataProvider = ({ children }) => {
   const [qualityControls, setQualityControls] = useState([]);  // ضوابط الجودة
   const [productionKPIs, setProductionKPIs] = useState([]);  // مؤشرات الأداء الإنتاجية
 
+  // بيانات نظام الأصول الثابتة
+  const [fixedAssets, setFixedAssets] = useState([]);  // الأصول الثابتة
+  const [assetCategories, setAssetCategories] = useState([]);  // فئات الأصول
+  const [assetLocations, setAssetLocations] = useState([]);  // مواقع الأصول
+  const [depreciationMethods, setDepreciationMethods] = useState([]);  // طرق الإهلاك
+  const [depreciationSchedules, setDepreciationSchedules] = useState([]);  // جداول الإهلاك
+  const [depreciationEntries, setDepreciationEntries] = useState([]);  // قيود الإهلاك
+  const [maintenanceSchedules, setMaintenanceSchedules] = useState([]);  // جداول الصيانة
+  const [maintenanceRecords, setMaintenanceRecords] = useState([]);  // سجلات الصيانة
+  const [maintenanceCosts, setMaintenanceCosts] = useState([]);  // تكاليف الصيانة
+  const [assetInventory, setAssetInventory] = useState([]);  // جرد الأصول
+  const [assetValuations, setAssetValuations] = useState([]);  // تقييمات الأصول
+  const [assetDisposals, setAssetDisposals] = useState([]);  // التصرفات في الأصول
+  const [assetTransfers, setAssetTransfers] = useState([]);  // نقل الأصول
+  const [assetAcquisitions, setAssetAcquisitions] = useState([]);  // اقتناء الأصول
+
   // تحميل البيانات من LocalStorage
   useEffect(() => {
     loadAllData();
@@ -135,6 +151,22 @@ export const DataProvider = ({ children }) => {
     loadData('bero_production_waste', setProductionWaste);
     loadData('bero_quality_controls', setQualityControls);
     loadData('bero_production_kpis', setProductionKPIs);
+
+    // تحميل بيانات الأصول الثابتة
+    loadData('bero_fixed_assets', setFixedAssets);
+    loadData('bero_asset_categories', setAssetCategories);
+    loadData('bero_asset_locations', setAssetLocations);
+    loadData('bero_depreciation_methods', setDepreciationMethods);
+    loadData('bero_depreciation_schedules', setDepreciationSchedules);
+    loadData('bero_depreciation_entries', setDepreciationEntries);
+    loadData('bero_maintenance_schedules', setMaintenanceSchedules);
+    loadData('bero_maintenance_records', setMaintenanceRecords);
+    loadData('bero_maintenance_costs', setMaintenanceCosts);
+    loadData('bero_asset_inventory', setAssetInventory);
+    loadData('bero_asset_valuations', setAssetValuations);
+    loadData('bero_asset_disposals', setAssetDisposals);
+    loadData('bero_asset_transfers', setAssetTransfers);
+    loadData('bero_asset_acquisitions', setAssetAcquisitions);
   };
 
   // حفض البيانات في LocalStorage
@@ -2701,7 +2733,649 @@ export const DataProvider = ({ children }) => {
         onTimeDeliveryRate: totalOrders > 0 ? ((onTimeDelivery / totalOrders) * 100).toFixed(2) : 0,
         completionRate: totalOrders > 0 ? ((completedOrders / totalOrders) * 100).toFixed(2) : 0
       };
-    }
+    },
+
+    // ==================== نظام الأصول الثابتة ====================
+    
+    // إدارة الأصول الثابتة
+    fixedAssets,
+    addFixedAsset: (assetData) => {
+      const newAsset = {
+        id: Date.now(),
+        ...assetData,
+        createdAt: new Date().toISOString(),
+        status: 'Active',
+        currentValue: assetData.originalCost,
+        accumulatedDepreciation: 0,
+        bookValue: assetData.originalCost,
+        lastValuationDate: null,
+        nextMaintenanceDate: null,
+        warrantyExpiry: null
+      };
+      const updated = [...fixedAssets, newAsset];
+      setFixedAssets(updated);
+      saveData('bero_fixed_assets', updated);
+      return newAsset;
+    },
+    updateFixedAsset: (id, updatedData) => {
+      const updated = fixedAssets.map(asset => 
+        asset.id === id ? { ...asset, ...updatedData, updatedAt: new Date().toISOString() } : asset
+      );
+      setFixedAssets(updated);
+      saveData('bero_fixed_assets', updated);
+    },
+    deleteFixedAsset: (id) => {
+      const updated = fixedAssets.filter(asset => asset.id !== id);
+      setFixedAssets(updated);
+      saveData('bero_fixed_assets', updated);
+    },
+    getFixedAssetById: (id) => {
+      return fixedAssets.find(asset => asset.id === id);
+    },
+    getFixedAssetsByCategory: (categoryId) => {
+      return fixedAssets.filter(asset => asset.categoryId === categoryId);
+    },
+    getFixedAssetsByLocation: (locationId) => {
+      return fixedAssets.filter(asset => asset.locationId === locationId);
+    },
+    getActiveFixedAssets: () => {
+      return fixedAssets.filter(asset => asset.status === 'Active');
+    },
+
+    // إدارة فئات الأصول
+    assetCategories,
+    addAssetCategory: (categoryData) => {
+      const newCategory = {
+        id: Date.now(),
+        ...categoryData,
+        createdAt: new Date().toISOString()
+      };
+      const updated = [...assetCategories, newCategory];
+      setAssetCategories(updated);
+      saveData('bero_asset_categories', updated);
+      return newCategory;
+    },
+    updateAssetCategory: (id, updatedData) => {
+      const updated = assetCategories.map(category => 
+        category.id === id ? { ...category, ...updatedData, updatedAt: new Date().toISOString() } : category
+      );
+      setAssetCategories(updated);
+      saveData('bero_asset_categories', updated);
+    },
+    deleteAssetCategory: (id) => {
+      // التحقق من وجود أصول مرتبطة بالفئة
+      const hasAssets = fixedAssets.some(asset => asset.categoryId === id);
+      if (hasAssets) {
+        throw new Error('لا يمكن حذف الفئة: يوجد أصول مرتبطة بها');
+      }
+      const updated = assetCategories.filter(category => category.id !== id);
+      setAssetCategories(updated);
+      saveData('bero_asset_categories', updated);
+    },
+
+    // إدارة مواقع الأصول
+    assetLocations,
+    addAssetLocation: (locationData) => {
+      const newLocation = {
+        id: Date.now(),
+        ...locationData,
+        createdAt: new Date().toISOString()
+      };
+      const updated = [...assetLocations, newLocation];
+      setAssetLocations(updated);
+      saveData('bero_asset_locations', updated);
+      return newLocation;
+    },
+    updateAssetLocation: (id, updatedData) => {
+      const updated = assetLocations.map(location => 
+        location.id === id ? { ...location, ...updatedData, updatedAt: new Date().toISOString() } : location
+      );
+      setAssetLocations(updated);
+      saveData('bero_asset_locations', updated);
+    },
+    deleteAssetLocation: (id) => {
+      // التحقق من وجود أصول مرتبطة بالموقع
+      const hasAssets = fixedAssets.some(asset => asset.locationId === id);
+      if (hasAssets) {
+        throw new Error('لا يمكن حذف الموقع: يوجد أصول مرتبطة به');
+      }
+      const updated = assetLocations.filter(location => location.id !== id);
+      setAssetLocations(updated);
+      saveData('bero_asset_locations', updated);
+    },
+
+    // إدارة طرق الإهلاك
+    depreciationMethods,
+    addDepreciationMethod: (methodData) => {
+      const newMethod = {
+        id: Date.now(),
+        ...methodData,
+        createdAt: new Date().toISOString()
+      };
+      const updated = [...depreciationMethods, newMethod];
+      setDepreciationMethods(updated);
+      saveData('bero_depreciation_methods', updated);
+      return newMethod;
+    },
+    updateDepreciationMethod: (id, updatedData) => {
+      const updated = depreciationMethods.map(method => 
+        method.id === id ? { ...method, ...updatedData, updatedAt: new Date().toISOString() } : method
+      );
+      setDepreciationMethods(updated);
+      saveData('bero_depreciation_methods', updated);
+    },
+    deleteDepreciationMethod: (id) => {
+      // التحقق من وجود أصول تستخدم هذه الطريقة
+      const hasAssets = fixedAssets.some(asset => asset.depreciationMethodId === id);
+      if (hasAssets) {
+        throw new Error('لا يمكن حذف طريقة الإهلاك: يوجد أصول تستخدمها');
+      }
+      const updated = depreciationMethods.filter(method => method.id !== id);
+      setDepreciationMethods(updated);
+      saveData('bero_depreciation_methods', updated);
+    },
+
+    // حساب الإهلاك
+    calculateDepreciation: (assetId, period = 'monthly') => {
+      const asset = fixedAssets.find(a => a.id === assetId);
+      if (!asset) {
+        throw new Error('الأصل غير موجود');
+      }
+
+      const method = depreciationMethods.find(m => m.id === asset.depreciationMethodId);
+      if (!method) {
+        throw new Error('طريقة الإهلاك غير موجودة');
+      }
+
+      let depreciationAmount = 0;
+      const currentYear = new Date().getFullYear();
+      const currentMonth = new Date().getMonth() + 1;
+
+      switch (method.type) {
+        case 'straight_line':
+          // القسط الثابت
+          const remainingLife = asset.usefulLife - asset.elapsedYears;
+          if (remainingLife <= 0) {
+            depreciationAmount = 0;
+          } else {
+            depreciationAmount = (asset.currentValue - asset.salvageValue) / remainingLife;
+          }
+          break;
+
+        case 'declining_balance':
+          // الرصيد المتناقص
+          const rate = (method.depreciationRate || 0.2); // معدل افتراضي 20%
+          depreciationAmount = asset.currentValue * rate;
+          // التأكد من عدم النزول تحت قيمة الخردة
+          if (asset.currentValue - depreciationAmount < asset.salvageValue) {
+            depreciationAmount = asset.currentValue - asset.salvageValue;
+          }
+          break;
+
+        case 'units_of_production':
+          // وحدات الإنتاج
+          const currentProduction = asset.currentProduction || 0;
+          const totalProduction = asset.totalProduction || 1;
+          const totalDepreciation = asset.originalCost - asset.salvageValue;
+          depreciationAmount = (currentProduction / totalProduction) * totalDepreciation;
+          break;
+
+        default:
+          depreciationAmount = (asset.currentValue - asset.salvageValue) / asset.usefulLife;
+      }
+
+      // تحديد الفترة الزمنية
+      let periodMonths = 1; // شهري افتراضي
+      if (period === 'yearly') periodMonths = 12;
+      if (period === 'quarterly') periodMonths = 3;
+
+      const monthlyDepreciation = depreciationAmount / periodMonths;
+
+      return {
+        assetId,
+        period,
+        periodStart: period === 'yearly' ? `${currentYear}-01-01` : `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
+        periodEnd: period === 'yearly' ? `${currentYear}-12-31` : `${currentYear}-${String(currentMonth + periodMonths - 1).padStart(2, '0')}-28`,
+        depreciationAmount: monthlyDepreciation,
+        totalDepreciation: depreciationAmount,
+        method: method.type,
+        rate: method.depreciationRate,
+        calculatedAt: new Date().toISOString()
+      };
+    },
+
+    // إدارة جداول الإهلاك
+    depreciationSchedules,
+    generateDepreciationSchedule: (assetId) => {
+      const asset = fixedAssets.find(a => a.id === assetId);
+      if (!asset) {
+        throw new Error('الأصل غير موجود');
+      }
+
+      const method = depreciationMethods.find(m => m.id === asset.depreciationMethodId);
+      if (!method) {
+        throw new Error('طريقة الإهلاك غير موجودة');
+      }
+
+      const schedule = [];
+      let currentValue = asset.originalCost;
+      let totalDepreciation = 0;
+      const startDate = new Date(asset.depreciationStartDate || asset.purchaseDate);
+      const monthsTotal = asset.usefulLife * 12;
+
+      for (let month = 1; month <= monthsTotal; month++) {
+        const periodDate = new Date(startDate);
+        periodDate.setMonth(periodDate.getMonth() + (month - 1));
+
+        let depreciationAmount = 0;
+
+        if (method.type === 'straight_line') {
+          depreciationAmount = (currentValue - asset.salvageValue) / (monthsTotal - (month - 1));
+        } else if (method.type === 'declining_balance') {
+          const rate = method.depreciationRate || 0.2;
+          depreciationAmount = currentValue * rate;
+          if (currentValue - depreciationAmount < asset.salvageValue) {
+            depreciationAmount = currentValue - asset.salvageValue;
+          }
+        }
+
+        currentValue -= depreciationAmount;
+        totalDepreciation += depreciationAmount;
+
+        schedule.push({
+          id: Date.now() + month,
+          assetId: assetId,
+          period: month,
+          periodDate: periodDate.toISOString(),
+          beginningValue: currentValue + depreciationAmount,
+          depreciationAmount: depreciationAmount,
+          accumulatedDepreciation: totalDepreciation,
+          endingValue: currentValue,
+          status: month <= 12 ? 'Current' : 'Future'
+        });
+      }
+
+      const updated = [...depreciationSchedules, ...schedule];
+      setDepreciationSchedules(updated);
+      saveData('bero_depreciation_schedules', updated);
+      return schedule;
+    },
+    getDepreciationSchedule: (assetId) => {
+      return depreciationSchedules.filter(schedule => schedule.assetId === assetId);
+    },
+
+    // إدارة قيود الإهلاك المحاسبية
+    depreciationEntries,
+    createDepreciationEntry: (entryData) => {
+      const { assetId, depreciationAmount, period, description } = entryData;
+      const asset = fixedAssets.find(a => a.id === assetId);
+      
+      if (!asset) {
+        throw new Error('الأصل غير موجود');
+      }
+
+      const newEntry = {
+        id: Date.now(),
+        assetId,
+        assetName: asset.name,
+        depreciationAmount,
+        period,
+        description: description || `إهلاك الأصل ${asset.name} لفترة ${period}`,
+        date: new Date().toISOString(),
+        status: 'Posted',
+        createdAt: new Date().toISOString()
+      };
+
+      // تحديث الأصل
+      const updatedAssets = fixedAssets.map(a => {
+        if (a.id === assetId) {
+          return {
+            ...a,
+            accumulatedDepreciation: (a.accumulatedDepreciation || 0) + depreciationAmount,
+            currentValue: a.currentValue - depreciationAmount,
+            bookValue: a.originalCost - (a.accumulatedDepreciation || 0) - depreciationAmount,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return a;
+      });
+
+      setFixedAssets(updatedAssets);
+      saveData('bero_fixed_assets', updatedAssets);
+
+      const updated = [...depreciationEntries, newEntry];
+      setDepreciationEntries(updated);
+      saveData('bero_depreciation_entries', updated);
+      return newEntry;
+    },
+    getDepreciationEntriesByAsset: (assetId) => {
+      return depreciationEntries.filter(entry => entry.assetId === assetId);
+    },
+    getDepreciationEntriesByPeriod: (period) => {
+      return depreciationEntries.filter(entry => entry.period === period);
+    },
+
+    // إدارة الصيانة
+    maintenanceSchedules,
+    addMaintenanceSchedule: (scheduleData) => {
+      const newSchedule = {
+        id: Date.now(),
+        ...scheduleData,
+        status: 'Active',
+        createdAt: new Date().toISOString()
+      };
+      const updated = [...maintenanceSchedules, newSchedule];
+      setMaintenanceSchedules(updated);
+      saveData('bero_maintenance_schedules', updated);
+      return newSchedule;
+    },
+    updateMaintenanceSchedule: (id, updatedData) => {
+      const updated = maintenanceSchedules.map(schedule => 
+        schedule.id === id ? { ...schedule, ...updatedData, updatedAt: new Date().toISOString() } : schedule
+      );
+      setMaintenanceSchedules(updated);
+      saveData('bero_maintenance_schedules', updated);
+    },
+    getMaintenanceSchedulesByAsset: (assetId) => {
+      return maintenanceSchedules.filter(schedule => schedule.assetId === assetId);
+    },
+    checkMaintenanceDue: () => {
+      const now = new Date();
+      return maintenanceSchedules.filter(schedule => {
+        const nextDate = new Date(schedule.nextMaintenanceDate);
+        const daysDiff = Math.ceil((nextDate - now) / (1000 * 60 * 60 * 24));
+        return daysDiff <= 30 && schedule.status === 'Active'; // خلال 30 يوم
+      });
+    },
+
+    // سجلات الصيانة
+    maintenanceRecords,
+    addMaintenanceRecord: (recordData) => {
+      const newRecord = {
+        id: Date.now(),
+        ...recordData,
+        createdAt: new Date().toISOString(),
+        status: 'Completed'
+      };
+      const updated = [...maintenanceRecords, newRecord];
+      setMaintenanceRecords(updated);
+      saveData('bero_maintenance_records', updated);
+      return newRecord;
+    },
+    updateMaintenanceRecord: (id, updatedData) => {
+      const updated = maintenanceRecords.map(record => 
+        record.id === id ? { ...record, ...updatedData, updatedAt: new Date().toISOString() } : record
+      );
+      setMaintenanceRecords(updated);
+      saveData('bero_maintenance_records', updated);
+    },
+    getMaintenanceRecordsByAsset: (assetId) => {
+      return maintenanceRecords.filter(record => record.assetId === assetId);
+    },
+
+    // تكاليف الصيانة
+    maintenanceCosts,
+    addMaintenanceCost: (costData) => {
+      const newCost = {
+        id: Date.now(),
+        ...costData,
+        createdAt: new Date().toISOString()
+      };
+      const updated = [...maintenanceCosts, newCost];
+      setMaintenanceCosts(updated);
+      saveData('bero_maintenance_costs', updated);
+      return newCost;
+    },
+    getMaintenanceCostsByAsset: (assetId, startDate = null, endDate = null) => {
+      let filteredCosts = maintenanceCosts.filter(cost => cost.assetId === assetId);
+      
+      if (startDate) {
+        filteredCosts = filteredCosts.filter(cost => cost.date >= startDate);
+      }
+      if (endDate) {
+        filteredCosts = filteredCosts.filter(cost => cost.date <= endDate);
+      }
+      
+      return filteredCosts;
+    },
+    getTotalMaintenanceCostByAsset: (assetId, year = null) => {
+      let filteredCosts = maintenanceCosts.filter(cost => cost.assetId === assetId);
+      
+      if (year) {
+        filteredCosts = filteredCosts.filter(cost => new Date(cost.date).getFullYear() === year);
+      }
+      
+      return filteredCosts.reduce((total, cost) => total + (cost.amount || 0), 0);
+    },
+
+    // جرد الأصول
+    assetInventory,
+    createInventory: (inventoryData) => {
+      const newInventory = {
+        id: Date.now(),
+        ...inventoryData,
+        status: 'Active',
+        createdAt: new Date().toISOString()
+      };
+      const updated = [...assetInventory, newInventory];
+      setAssetInventory(updated);
+      saveData('bero_asset_inventory', updated);
+      return newInventory;
+    },
+    addInventoryItem: (inventoryId, itemData) => {
+      const inventory = assetInventory.find(inv => inv.id === inventoryId);
+      if (!inventory) {
+        throw new Error('الجرد غير موجود');
+      }
+
+      const newItem = {
+        id: Date.now(),
+        inventoryId,
+        assetId: itemData.assetId,
+        found: itemData.found !== false,
+        actualCondition: itemData.actualCondition || 'Good',
+        actualLocation: itemData.actualLocation,
+        notes: itemData.notes,
+        checkedAt: new Date().toISOString(),
+        checkedBy: 1
+      };
+
+      // تحديث سجل الجرد
+      const updatedInventory = assetInventory.map(inv => {
+        if (inv.id === inventoryId) {
+          const currentItems = inv.items || [];
+          return {
+            ...inv,
+            items: [...currentItems, newItem]
+          };
+        }
+        return inv;
+      });
+
+      setAssetInventory(updatedInventory);
+      saveData('bero_asset_inventory', updatedInventory);
+      return newItem;
+    },
+
+    // تقييم الأصول
+    assetValuations,
+    addAssetValuation: (valuationData) => {
+      const newValuation = {
+        id: Date.now(),
+        ...valuationData,
+        createdAt: new Date().toISOString()
+      };
+      const updated = [...assetValuations, newValuation];
+      setAssetValuations(updated);
+      saveData('bero_asset_valuations', updated);
+      return newValuation;
+    },
+    getAssetValuations: (assetId) => {
+      return assetValuations.filter(valuation => valuation.assetId === assetId)
+        .sort((a, b) => new Date(b.valuationDate) - new Date(a.valuationDate));
+    },
+    getLatestAssetValuation: (assetId) => {
+      const valuations = assetValuations.filter(valuation => valuation.assetId === assetId);
+      return valuations.length > 0 ? 
+        valuations.sort((a, b) => new Date(b.valuationDate) - new Date(a.valuationDate))[0] : null;
+    },
+
+    // التصرفات في الأصول
+    assetDisposals,
+    createAssetDisposal: (disposalData) => {
+      const { assetId, disposalType, disposalDate, disposalAmount, reason } = disposalData;
+      const asset = fixedAssets.find(a => a.id === assetId);
+      
+      if (!asset) {
+        throw new Error('الأصل غير موجود');
+      }
+
+      const newDisposal = {
+        id: Date.now(),
+        assetId,
+        assetName: asset.name,
+        disposalType, // 'sale', 'scrapped', 'donated', 'stolen'
+        disposalDate,
+        disposalAmount,
+        reason,
+        status: 'Completed',
+        createdAt: new Date().toISOString()
+      };
+
+      // تحديث الأصل
+      const updatedAssets = fixedAssets.map(a => {
+        if (a.id === assetId) {
+          return {
+            ...a,
+            status: 'Disposed',
+            disposalDate: disposalDate,
+            disposalAmount: disposalAmount,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return a;
+      });
+
+      setFixedAssets(updatedAssets);
+      saveData('bero_fixed_assets', updatedAssets);
+
+      const updated = [...assetDisposals, newDisposal];
+      setAssetDisposals(updated);
+      saveData('bero_asset_disposals', updated);
+      return newDisposal;
+    },
+    getAssetDisposals: (assetId) => {
+      return assetDisposals.filter(disposal => disposal.assetId === assetId);
+    },
+
+    // نقل الأصول
+    assetTransfers,
+    createAssetTransfer: (transferData) => {
+      const { assetId, fromLocationId, toLocationId, transferDate, reason } = transferData;
+      const asset = fixedAssets.find(a => a.id === assetId);
+      
+      if (!asset) {
+        throw new Error('الأصل غير موجود');
+      }
+
+      const newTransfer = {
+        id: Date.now(),
+        assetId,
+        assetName: asset.name,
+        fromLocationId,
+        toLocationId,
+        transferDate,
+        reason,
+        status: 'Completed',
+        createdAt: new Date().toISOString()
+      };
+
+      // تحديث الأصل
+      const updatedAssets = fixedAssets.map(a => {
+        if (a.id === assetId) {
+          return {
+            ...a,
+            locationId: toLocationId,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return a;
+      });
+
+      setFixedAssets(updatedAssets);
+      saveData('bero_fixed_assets', updatedAssets);
+
+      const updated = [...assetTransfers, newTransfer];
+      setAssetTransfers(updated);
+      saveData('bero_asset_transfers', updated);
+      return newTransfer;
+    },
+    getAssetTransfers: (assetId) => {
+      return assetTransfers.filter(transfer => transfer.assetId === assetId);
+    },
+
+    // اقتناء الأصول
+    assetAcquisitions,
+    createAssetAcquisition: (acquisitionData) => {
+      const newAcquisition = {
+        id: Date.now(),
+        ...acquisitionData,
+        status: 'Active',
+        createdAt: new Date().toISOString()
+      };
+      const updated = [...assetAcquisitions, newAcquisition];
+      setAssetAcquisitions(updated);
+      saveData('bero_asset_acquisitions', updated);
+      return newAcquisition;
+    },
+    getAssetAcquisitions: (assetId) => {
+      return assetAcquisitions.filter(acquisition => acquisition.assetId === assetId);
+    },
+
+    // تقارير الأصول الثابتة
+    getFixedAssetsSummary: () => {
+      const activeAssets = fixedAssets.filter(asset => asset.status === 'Active');
+      const totalOriginalCost = activeAssets.reduce((sum, asset) => sum + (asset.originalCost || 0), 0);
+      const totalCurrentValue = activeAssets.reduce((sum, asset) => sum + (asset.currentValue || 0), 0);
+      const totalAccumulatedDepreciation = activeAssets.reduce((sum, asset) => sum + (asset.accumulatedDepreciation || 0), 0);
+      const totalBookValue = activeAssets.reduce((sum, asset) => sum + (asset.bookValue || 0), 0);
+
+      // تجميع حسب الفئات
+      const categorySummary = {};
+      activeAssets.forEach(asset => {
+        const categoryName = assetCategories.find(cat => cat.id === asset.categoryId)?.name || 'غير محدد';
+        if (!categorySummary[categoryName]) {
+          categorySummary[categoryName] = {
+            count: 0,
+            originalCost: 0,
+            currentValue: 0,
+            bookValue: 0
+          };
+        }
+        categorySummary[categoryName].count++;
+        categorySummary[categoryName].originalCost += asset.originalCost || 0;
+        categorySummary[categoryName].currentValue += asset.currentValue || 0;
+        categorySummary[categoryName].bookValue += asset.bookValue || 0;
+      });
+
+      return {
+        totalAssets: activeAssets.length,
+        totalOriginalCost,
+        totalCurrentValue,
+        totalAccumulatedDepreciation,
+        totalBookValue,
+        categorySummary,
+        averageAssetAge: activeAssets.length > 0 ? 
+          activeAssets.reduce((sum, asset) => {
+            const purchaseDate = new Date(asset.purchaseDate);
+            const currentDate = new Date();
+            const years = (currentDate - purchaseDate) / (1000 * 60 * 60 * 24 * 365);
+            return sum + years;
+          }, 0) / activeAssets.length : 0
+      };
+    },
+
+    // دوال وأقسام إضافية للأصول الثابتة مدمجة في الدوال أعلاه
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
