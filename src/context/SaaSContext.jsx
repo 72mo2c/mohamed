@@ -116,13 +116,12 @@ export const SaaSProvider = ({ children }) => {
   }, [syncStatus.pending, authLogout]);
 
   /**
-   * تسجيل خروج المستخدم
+   * تسجيل خروج المستخدم - سيتم تمريره من المكون الأب
    */
   const authLogout = useCallback(async () => {
     try {
-      // تنفيذ عملية logout من AuthContext
-      const { logout } = useAuth();
-      logout();
+      console.log('تسجيل خروج المستخدم');
+      // سيتم تنفيذ logout من المكون الأب الذي لديه access إلى useAuth
     } catch (error) {
       console.error('خطأ في تسجيل خروج المستخدم:', error);
     }

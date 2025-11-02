@@ -9,7 +9,7 @@ import { useSaaS } from '../../context/SaaSContext';
 import { useNotification } from '../../context/NotificationContext';
 import Button from '../../components/Common/Button';
 import Input from '../../components/Common/Input';
-import { FaUser, FaLock, FaShieldAlt, FaEye, FaEyeSlash, FaBuilding, FaSpinner } from 'react-icons/fa';
+import { FaUser, FaLock, FaShieldAlt, FaEye, FaEyeSlash, FaBuilding, FaSpinner, FaBox } from 'react-icons/fa';
 
 const SaaSLogin = () => {
   const navigate = useNavigate();
