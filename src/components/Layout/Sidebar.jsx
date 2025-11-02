@@ -55,6 +55,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
   const [isHovered, setIsHovered] = useState(false);
   const sidebarRef = useRef(null);
   const contextMenuRef = useRef(null);
+  const hoverTimeoutRef = useRef(null);
 
   // Close submenu when clicking outside
   useEffect(() => {
@@ -309,8 +310,40 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     setActiveMenu(activeMenu === menuId ? null : menuId);
   };
 
+  const handleMouseEnter = () => {
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = (e) => {
+    // Only collapse if not manually opened and mouse leaves to outside
+    if (!isOpen) {
+      // Check if mouse is leaving to outside the sidebar area
+      const relatedTarget = e.relatedTarget;
+      if (!sidebarRef.current?.contains(relatedTarget) && 
+          !contextMenuRef.current?.contains(relatedTarget)) {
+        hoverTimeoutRef.current = setTimeout(() => {
+          setIsHovered(false);
+          setActiveMenu(null);
+        }, 300); // Small delay for better UX
+      }
+    }
+  };
+
   // Determine if sidebar should be expanded
   const isExpanded = isOpen || isHovered;
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <>
@@ -326,16 +359,8 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
       <div className="flex relative" ref={sidebarRef}>
         {/* Main Sidebar */}
         <aside
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => {
-            setIsHovered(false);
-            // Only close sidebar on mouse leave if it's not manually opened
-            if (!isOpen) {
-              setTimeout(() => {
-                if (!isOpen) setIsHovered(false);
-              }, 300);
-            }
-          }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
           className={`
             fixed z-40 transition-all duration-300 overflow-hidden
             bg-white/95 backdrop-blur-md border-l border-orange-100/50 shadow-lg
@@ -446,6 +471,13 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
         {activeMenu && (
           <div 
             ref={contextMenuRef}
+            onMouseEnter={() => {
+              // Clear timeout when entering context menu
+              if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+              }
+            }}
+            onMouseLeave={handleMouseLeave}
             className="fixed z-50 bg-white/95 backdrop-blur-md rounded-lg shadow-xl border border-orange-100/50 py-2 w-56"
             style={{
               top: `${menuPosition.top}px`,
@@ -467,6 +499,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
                   to={subItem.path}
                   onClick={() => {
                     setActiveMenu(null);
+                    setIsHovered(false);
                     if (window.innerWidth < 1024) closeSidebar();
                   }}
                   className={({ isActive }) =>
