@@ -35,12 +35,18 @@ const FixedAssetsDashboard = () => {
   const refreshDashboard = () => {
     setRefreshing(true);
     try {
-      const data = getDepreciationSummary();
-      const maintenanceData = getUpcomingMaintenance(30);
-      const inventoryData = getInventoryStatus();
+      // إنشاء ملخص الإهلاك من البيانات المتاحة
+      const depreciationData = {
+        totalDepreciation: (depreciationEntries || []).reduce((sum, dep) => sum + (dep.depreciationAmount || 0), 0),
+        entriesCount: (depreciationEntries || []).length,
+        lastUpdate: new Date().toISOString()
+      };
+      
+      const maintenanceData = getUpcomingMaintenance ? getUpcomingMaintenance(30) : [];
+      const inventoryData = getInventoryStatus ? getInventoryStatus() : {};
       
       setDashboardData({
-        depreciation: data,
+        depreciation: depreciationData,
         maintenance: maintenanceData,
         inventory: inventoryData,
         lastUpdated: new Date().toISOString()
@@ -60,29 +66,35 @@ const FixedAssetsDashboard = () => {
   const calculateAdvancedStats = () => {
     const currentDate = new Date();
     
+    // تأكد من وجود البيانات
+    const assets = fixedAssets || [];
+    const categories = assetCategories || [];
+    const maintenance = assetMaintenance || [];
+    const depreciation = depreciationEntries || [];
+    
     // إحصائيات الأصول
-    const totalAssets = fixedAssets.length;
-    const activeAssets = fixedAssets.filter(asset => asset.status === 'Active').length;
-    const underMaintenanceAssets = fixedAssets.filter(asset => 
-      assetMaintenance.some(m => m.assetId === asset.id && m.status === 'Scheduled')
+    const totalAssets = assets.length;
+    const activeAssets = assets.filter(asset => asset.status === 'Active').length;
+    const underMaintenanceAssets = assets.filter(asset => 
+      maintenance.some(m => m.assetId === asset.id && m.status === 'Scheduled')
     ).length;
     
     // إحصائيات القيمة
-    const totalOriginalValue = fixedAssets.reduce((sum, asset) => sum + (asset.originalValue || 0), 0);
-    const totalCurrentValue = fixedAssets.reduce((sum, asset) => {
+    const totalOriginalValue = assets.reduce((sum, asset) => sum + (asset.originalValue || 0), 0);
+    const totalCurrentValue = assets.reduce((sum, asset) => {
       const depreciation = calculateDepreciation(asset.id, asset.depreciationMethod || 'straight-line');
       return sum + ((asset.originalValue || 0) - (depreciation?.totalDepreciation || 0));
     }, 0);
     
     // إحصائيات الإهلاك
-    const totalDepreciationValue = depreciationEntries.reduce((sum, dep) => sum + (dep.depreciationAmount || 0), 0);
+    const totalDepreciationValue = depreciation.reduce((sum, dep) => sum + (dep.depreciationAmount || 0), 0);
     
     // إحصائيات الصيانة
-    const upcomingMaintenance = assetMaintenance.filter(m => 
+    const upcomingMaintenance = maintenance.filter(m => 
       m.nextDate && new Date(m.nextDate) <= new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000)
     ).length;
     
-    const overdueMaintenance = assetMaintenance.filter(m => 
+    const overdueMaintenance = maintenance.filter(m => 
       m.nextDate && new Date(m.nextDate) < currentDate && m.status === 'Scheduled'
     ).length;
     
@@ -110,8 +122,11 @@ const FixedAssetsDashboard = () => {
 
   // إحصائيات حسب الفئة
   const getCategoryStats = () => {
-    return assetCategories.map(category => {
-      const categoryAssets = fixedAssets.filter(asset => asset.categoryId === category.id);
+    const categories = assetCategories || [];
+    const assets = fixedAssets || [];
+    
+    return categories.map(category => {
+      const categoryAssets = assets.filter(asset => asset.categoryId === category.id);
       const totalValue = categoryAssets.reduce((sum, asset) => sum + (asset.originalValue || 0), 0);
       const currentValue = categoryAssets.reduce((sum, asset) => {
         const depreciation = calculateDepreciation(asset.id, asset.depreciationMethod || 'straight-line');
@@ -131,10 +146,13 @@ const FixedAssetsDashboard = () => {
   // الأصول ذات الأهمية القصوى
   const getCriticalAssets = () => {
     const now = new Date();
-    return fixedAssets
+    const assets = fixedAssets || [];
+    const maintenance = assetMaintenance || [];
+    
+    return assets
       .filter(asset => {
         const isHighValue = (asset.originalValue || 0) > 100000;
-        const hasOverdueMaintenance = assetMaintenance.some(m => 
+        const hasOverdueMaintenance = maintenance.some(m => 
           m.assetId === asset.id && 
           m.nextDate && 
           new Date(m.nextDate) < now && 

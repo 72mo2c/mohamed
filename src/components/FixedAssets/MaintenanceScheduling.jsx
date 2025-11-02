@@ -51,8 +51,11 @@ const MaintenanceScheduling = () => {
   });
 
   // تصفية جداول الصيانة
-  const filteredMaintenance = assetMaintenance.filter(maintenance => {
-    const asset = fixedAssets.find(a => a.id === maintenance.assetId);
+  const maintenanceData = assetMaintenance || [];
+  const assetsData = fixedAssets || [];
+  
+  const filteredMaintenance = maintenanceData.filter(maintenance => {
+    const asset = assetsData.find(a => a.id === maintenance.assetId);
     const matchesSearch = asset?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          maintenance.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = !filterStatus || maintenance.status === filterStatus;
@@ -64,11 +67,12 @@ const MaintenanceScheduling = () => {
   // إحصائيات الصيانة
   const getMaintenanceStats = () => {
     const now = new Date();
-    const upcomingMaintenance = getUpcomingMaintenance(30);
-    const overdueMaintenance = assetMaintenance.filter(m => 
+    const upcomingMaintenance = getUpcomingMaintenance ? getUpcomingMaintenance(30) : [];
+    const maintenanceData = assetMaintenance || [];
+    const overdueMaintenance = maintenanceData.filter(m => 
       m.nextDate && new Date(m.nextDate) < now && m.status === 'Scheduled'
     );
-    const completedMaintenance = assetMaintenance.filter(m => m.status === 'Completed');
+    const completedMaintenance = maintenanceData.filter(m => m.status === 'Completed');
     const totalCost = completedMaintenance.reduce((sum, m) => sum + (m.actualCost || 0), 0);
 
     return {
@@ -559,7 +563,7 @@ const MaintenanceScheduling = () => {
                 required
               >
                 <option value="">اختر الأصل</option>
-                {fixedAssets.map(asset => (
+                {(fixedAssets || []).map(asset => (
                   <option key={asset.id} value={asset.id}>
                     {asset.name}
                   </option>
