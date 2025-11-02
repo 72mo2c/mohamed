@@ -105,4 +105,4 @@
 
 ---
 
-**تم التطوير بواسطة MiniMax Agent لنظام Bero System**
+**تم التطوير بواسطة Biruni Soft لنظام Bero System**

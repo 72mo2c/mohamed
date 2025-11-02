@@ -123,31 +123,31 @@ const Support = () => {
     {
       icon: <FaPhone className="text-blue-600" />,
       title: 'رقم الهاتف',
-      value: '+964 750 123 4567',
+      value: '+201030243840',
       description: 'متاح طوال الأسبوع 24/7'
     },
     {
       icon: <FaWhatsapp className="text-green-600" />,
       title: 'واتساب',
-      value: '+964 750 123 4567',
+      value: '+201010225231',
       description: 'دعم فوري عبر واتساب'
     },
     {
       icon: <FaEnvelope className="text-red-600" />,
       title: 'البريد الإلكتروني',
-      value: 'support@berosystem.com',
+      value: '72mo2v@gmail.com',
       description: 'نرد خلال 24 ساعة'
     },
     {
       icon: <FaGlobe className="text-purple-600" />,
       title: 'الموقع الإلكتروني',
-      value: 'www.berosystem.com',
+      value: 'www.bero-system.com',
       description: 'زر موقعنا للمزيد من المعلومات'
     },
     {
       icon: <FaMapMarkerAlt className="text-orange-600" />,
       title: 'العنوان',
-      value: 'بغداد، العراق',
+      value: 'مصر، القاهرة',
       description: 'مركز خدمة العملاء الرئيسي'
     }
   ];
@@ -272,7 +272,7 @@ const Support = () => {
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              placeholder="+964 XXX XXX XXXX"
+              placeholder="+20 XXX XXX XXXX"
             />
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">الأولوية</label>
@@ -375,34 +375,6 @@ const Support = () => {
           </div>
         </Card>
       )}
-
-      {/* Developer Info */}
-      <Card title="معلومات المطور" className="mt-6">
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">تم التطوير بواسطة MiniMax Agent</h3>
-          <p className="text-gray-700 mb-4">
-            نظام Bero System لإدارة المخازن الشامل هو حل متكامل لإدارة جميع عمليات المخزن،
-            من المشتريات والمبيعات إلى إدارة الخزينة والتقارير المالية.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <span className="px-4 py-2 bg-white rounded-lg text-sm font-medium text-gray-700 shadow-sm">
-              React 18
-            </span>
-            <span className="px-4 py-2 bg-white rounded-lg text-sm font-medium text-gray-700 shadow-sm">
-              TailwindCSS
-            </span>
-            <span className="px-4 py-2 bg-white rounded-lg text-sm font-medium text-gray-700 shadow-sm">
-              Context API
-            </span>
-            <span className="px-4 py-2 bg-white rounded-lg text-sm font-medium text-gray-700 shadow-sm">
-              React Router
-            </span>
-            <span className="px-4 py-2 bg-white rounded-lg text-sm font-medium text-gray-700 shadow-sm">
-              LocalStorage
-            </span>
-          </div>
-        </div>
-      </Card>
 
       {/* Success Modal */}
       {showSuccessModal && newTicket && (
