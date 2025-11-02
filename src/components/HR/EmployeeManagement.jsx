@@ -620,8 +620,8 @@ const EmployeeManagement = ({ onNavigate }) => {
                         value={formData.nationality}
                         onChange={(e) => setFormData({...formData, nationality: e.target.value})}
                       >
-                        <option value="saudi">سعودي</option>
-                        <option value="non_saudi">غير سعودي</option>
+                        <option value="saudi">مصري</option>
+                        <option value="non_saudi">غير مصري</option>
                       </select>
                     </div>
                   </div>
@@ -867,8 +867,8 @@ const EmployeeManagement = ({ onNavigate }) => {
                         value={formData.nationality}
                         onChange={(e) => setFormData({...formData, nationality: e.target.value})}
                       >
-                        <option value="saudi">سعودي</option>
-                        <option value="non_saudi">غير سعودي</option>
+                        <option value="saudi">مصري</option>
+                        <option value="non_saudi">غير مصري</option>
                       </select>
                     </div>
                   </div>
@@ -1085,7 +1085,7 @@ const EmployeeManagement = ({ onNavigate }) => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">الجنسية:</span>
-                        <span className="font-medium">{selectedEmployee.nationality === 'saudi' ? 'سعودي' : 'غير سعودي'}</span>
+                        <span className="font-medium">{selectedEmployee.nationality === 'saudi' ? 'مصري' : 'غير مصري'}</span>
                       </div>
                     </div>
                   </div>

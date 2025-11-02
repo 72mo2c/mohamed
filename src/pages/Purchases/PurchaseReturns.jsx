@@ -93,7 +93,7 @@ const PurchaseReturns = () => {
             <div>
               <p className="text-sm opacity-90">إجمالي المبلغ المرتجع</p>
               <p className="text-3xl font-bold mt-1">{totalAmount.toFixed(2)}</p>
-              <p className="text-xs opacity-75">دينار عراقي</p>
+              <p className="text-xs opacity-75">جنيه</p>
             </div>
             <FaFileInvoice className="text-4xl opacity-50" />
           </div>
@@ -105,7 +105,7 @@ const PurchaseReturns = () => {
               <p className="text-3xl font-bold mt-1">
                 {totalReturns > 0 ? (totalAmount / totalReturns).toFixed(2) : '0.00'}
               </p>
-              <p className="text-xs opacity-75">دينار عراقي</p>
+              <p className="text-xs opacity-75">جنيه</p>
             </div>
             <FaSearch className="text-4xl opacity-50" />
           </div>
