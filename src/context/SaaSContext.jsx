@@ -113,7 +113,7 @@ export const SaaSProvider = ({ children }) => {
       console.error('خطأ في تسجيل الخروج:', error);
       return { success: false, message: 'حدث خطأ في تسجيل الخروج' };
     }
-  }, [syncStatus.pending, authLogout]);
+  }, [syncStatus.pending]);
 
   /**
    * تسجيل خروج المستخدم - سيتم تمريره من المكون الأب
