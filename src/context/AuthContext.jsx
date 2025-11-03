@@ -3,7 +3,7 @@
 // ======================================
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { verifyPassword } from '../utils/security';
+import { hashPassword, verifyPassword } from '../utils/security';
 
 const AuthContext = createContext();
 
@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }) => {
       
       // إنشاء مستخدمين افتراضيين إذا لم يكن هناك مستخدمون
       if (users.length === 0) {
-        const { hashPassword } = require('../utils/security');
+        // تم نقل hashPassword إلى أعلى الملف مع الاستيراد
         
         // إنشاء مستخدمين للمؤسسات المختلفة
         const defaultUsers = [
