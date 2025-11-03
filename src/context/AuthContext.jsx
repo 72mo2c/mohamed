@@ -3,7 +3,7 @@
 // ======================================
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { hashPassword, verifyPassword } from './security';
+import { hashPassword, verifyPassword } from '../security';
 
 const AuthContext = createContext();
 
