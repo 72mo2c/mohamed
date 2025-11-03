@@ -1,5 +1,5 @@
 // ======================================
-// App.jsx - الملف الرئيسي للتطبيق (محدث لـ SaaS)
+// App.jsx - الملف الرئيسي للتطبيق (SaaS Version)
 // ======================================
 
 import React from 'react';
@@ -8,160 +8,122 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { DataProvider } from './context/DataContext';
 import { TabProvider } from './contexts/TabContext';
-import { SaaSProvider, useSaaS } from './context/SaaSContext';
+import { SaaSAuthProvider, useSaaSAuth } from './context/SaaSAuthContext';
 import Layout from './components/Layout/Layout';
 import Loading from './components/Common/Loading';
 import Toast from './components/Common/Toast';
-import SyncStatusIndicator from './components/Common/SyncStatusIndicator';
 
-// Auth Pages
+// Legacy Auth Pages
 import Login from './pages/Auth/Login';
-import SaaSLogin from './pages/Auth/SaaSLogin';
-import CompanySelection from './pages/Auth/CompanySelection';
 
-// SaaS Admin Panel
-import SaaSAdminPanel from './components/SaaS/SaaSAdminPanel';
+// SaaS Auth Pages
+import CompanySelectStep from './pages/Auth/CompanySelectStep';
+import CompanyLoadStep from './pages/Auth/CompanyLoadStep';
+import PasswordInputStep from './pages/Auth/PasswordInputStep';
 
 // مكون حماية المسارات - يتطلب تسجيل دخول
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
-  const { hasActiveTenant } = useSaaS();
 
   if (loading) {
     return <Loading fullScreen message="جاري التحميل..." />;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/saas-login" replace />;
   }
 
-  if (!hasActiveTenant) {
-    return <Navigate to="/company-selection" replace />;
-  }
-
-  return (
-    <>
-      <Layout />
-      <SyncStatusIndicator position="top-right" showDetails={false} />
-    </>
-  );
+  return <Layout />;
 };
 
-// مكون مسار تسجيل الدخول
+// مكون مسار تسجيل الدخول العادي
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
-  const { hasActiveTenant } = useSaaS();
 
   if (loading) {
     return <Loading fullScreen message="جاري التحميل..." />;
   }
 
-  // إذا كان المستخدم مسجل دخول ولديه مؤسسة نشطة
-  if (isAuthenticated && hasActiveTenant) {
+  if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
-  }
-
-  // إذا كان المستخدم مسجل دخول ولكن لا توجد مؤسسة
-  if (isAuthenticated && !hasActiveTenant) {
-    return <Navigate to="/company-selection" replace />;
   }
 
   return children;
 };
 
-// مكون مسار اختيار المؤسسة
-const CompanySelectionRoute = ({ children }) => {
+// مكون SaaS Routes
+const SaaSRoute = () => {
+  const { currentStep } = useSaaSAuth();
+
+  switch (currentStep) {
+    case 'company-load':
+      return <CompanyLoadStep />;
+    case 'password-input':
+      return <PasswordInputStep />;
+    default:
+      return <CompanySelectStep />;
+  }
+};
+
+// مكون حماية مسار SaaS
+const SaaSProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
-  const { hasActiveTenant, loading: saasLoading } = useSaaS();
-
-  if (loading || saasLoading) {
-    return <Loading fullScreen message="جاري التحميل..." />;
-  }
-
-  // إذا كان المستخدم مسجل دخول ولديه مؤسسة نشطة
-  if (isAuthenticated && hasActiveTenant) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  // إذا كان المستخدم غير مسجل دخول
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return children;
-};
-
-// مكون مسار لوحة إدارة SaaS
-const SaaSAdminRoute = ({ children }) => {
-  const { isAdmin, loading } = useAuth();
 
   if (loading) {
     return <Loading fullScreen message="جاري التحميل..." />;
   }
 
-  if (!isAdmin()) {
+  // إذا كان مسجل الدخول، توجيه للداشبورد
+  if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return (
-    <>
-      {children}
-      <SyncStatusIndicator position="top-right" showDetails={true} />
-    </>
-  );
+  return children;
 };
 
 function App() {
   return (
     <Router>
-      <AuthProvider>
+      <SaaSAuthProvider>
+        <AuthProvider>
         <NotificationProvider>
           <DataProvider>
             <TabProvider>
-              <SaaSProvider>
-                {/* Toast Component - عرض الإشعارات المنبثقة */}
-                <Toast />
-              
-                <Routes>
-                  {/* مسارات المصادقة */}
+              {/* Toast Component - عرض الإشعارات المنبثقة */}
+              <Toast />
+            
+            <Routes>
+                  {/* المسارات الرئيسية */}
+                  <Route path="/" element={<Navigate to="/saas-login" replace />} />
+                  
+                  {/* مسار تسجيل الدخول العادي (نسخة احتياطية) */}
                   <Route
-                    path="/login"
+                    path="/legacy-login"
                     element={
                       <PublicRoute>
-                        <SaaSLogin />
+                        <Login />
                       </PublicRoute>
                     }
                   />
-                  
+
+                  {/* مسار تسجيل الدخول SaaS */}
                   <Route
-                    path="/company-selection"
+                    path="/saas-login"
                     element={
-                      <CompanySelectionRoute>
-                        <CompanySelection />
-                      </CompanySelectionRoute>
+                      <SaaSProtectedRoute>
+                        <SaaSRoute />
+                      </SaaSProtectedRoute>
                     }
                   />
 
-                  {/* لوحة إدارة SaaS (للمدراء فقط) */}
-                  <Route
-                    path="/saas-admin"
-                    element={
-                      <SaaSAdminRoute>
-                        <div className="min-h-screen bg-gray-50">
-                          <SaaSAdminPanel />
-                        </div>
-                      </SaaSAdminRoute>
-                    }
-                  />
-
-                  {/* جميع المسارات المحمية */}
-                  <Route path="/*" element={<ProtectedRoute />} />
-                </Routes>
-              </SaaSProvider>
+              {/* جميع المسارات المحمية */}
+              <Route path="/*" element={<ProtectedRoute />} />
+            </Routes>
             </TabProvider>
           </DataProvider>
         </NotificationProvider>
-      </AuthProvider>
+        </AuthProvider>
+      </SaaSAuthProvider>
     </Router>
   );
 }

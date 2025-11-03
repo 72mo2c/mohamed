@@ -58,23 +58,66 @@ export const AuthProvider = ({ children }) => {
         }
       }
       
-      // إنشاء مستخدم افتراضي إذا لم يكن هناك مستخدمون
+      // إنشاء مستخدمين افتراضيين إذا لم يكن هناك مستخدمون
       if (users.length === 0) {
         const { hashPassword } = require('../utils/security');
-        const defaultUser = {
-          id: 1,
-          username: 'admin',
-          password: hashPassword('admin123'),
-          name: 'المدير العام',
-          email: 'admin@berosystem.com',
-          phone: '+20 XXX XXX XXXX',
-          role: 'admin',
-          status: 'active',
-          createdAt: new Date().toISOString()
-        };
-        users = [defaultUser];
+        
+        // إنشاء مستخدمين للمؤسسات المختلفة
+        const defaultUsers = [
+          {
+            id: 1,
+            username: 'admin',
+            password: hashPassword('admin123'),
+            name: 'المدير العام - النسخة العادية',
+            email: 'admin@berosystem.com',
+            phone: '+20 XXX XXX XXXX',
+            role: 'admin',
+            status: 'active',
+            company: 'system',
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: 2,
+            username: 'alpha_admin',
+            password: hashPassword('admin123'),
+            name: 'مدير شركة ألفا',
+            email: 'admin@alpha-co.com',
+            phone: '+20 XXX XXX XXXX',
+            role: 'admin',
+            status: 'active',
+            company: 'alpha',
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: 3,
+            username: 'beta_admin',
+            password: hashPassword('admin123'),
+            name: 'مدير شركة بيتا',
+            email: 'admin@beta-industries.com',
+            phone: '+20 XXX XXX XXXX',
+            role: 'admin',
+            status: 'active',
+            company: 'beta',
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: 4,
+            username: 'gamma_admin',
+            password: hashPassword('admin123'),
+            name: 'مدير شركة جاما',
+            email: 'admin@gamma-services.com',
+            phone: '+20 XXX XXX XXXX',
+            role: 'admin',
+            status: 'active',
+            company: 'gamma',
+            createdAt: new Date().toISOString()
+          }
+        ];
+        
+        users = defaultUsers;
         localStorage.setItem('bero_system_users', JSON.stringify(users));
         
+        console.log('👥 تم إنشاء المستخدمين الافتراضيين للمؤسسات المختلفة');
       }
 
       // البحث عن المستخدم
