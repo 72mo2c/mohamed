@@ -1,20 +1,23 @@
 // ======================================
-// إنشاء المستخدمين الافتراضيين
+// إصلاح النظام - تشغيل بمجرد واحد
 // ======================================
 
+console.log('🔧 بدء إصلاح نظام Bero SaaS...');
+
+// 1. مسح جميع البيانات
+localStorage.removeItem('saas_auth_state');
+localStorage.removeItem('bero_user');
+localStorage.removeItem('bero_system_users');
+localStorage.removeItem('current_company');
+
+console.log('🧹 تم مسح جميع البيانات السابقة');
+
+// 2. إنشاء المستخدمين الافتراضيين
 import { hashPassword } from './security';
 
-export const createDefaultUsers = () => {
-  console.log('🚀 إنشاء المستخدمين الافتراضيين...');
+const createDefaultUsers = () => {
+  console.log('👥 إنشاء المستخدمين الافتراضيين...');
   
-  // التحقق من وجود مستخدمين مسبقا
-  const existingUsers = localStorage.getItem('bero_system_users');
-  if (existingUsers) {
-    console.log('✅ المستخدمون موجودون مسبقاً');
-    return JSON.parse(existingUsers);
-  }
-
-  // إنشاء المستخدمين الافتراضيين
   const defaultUsers = [
     {
       id: 1,
@@ -22,7 +25,6 @@ export const createDefaultUsers = () => {
       password: hashPassword('admin123'),
       name: 'المدير العام - النسخة العادية',
       email: 'admin@berosystem.com',
-      phone: '+20 XXX XXX XXXX',
       role: 'admin',
       status: 'active',
       company: 'system',
@@ -34,7 +36,6 @@ export const createDefaultUsers = () => {
       password: hashPassword('admin123'),
       name: 'مدير شركة ألفا',
       email: 'admin@alpha-co.com',
-      phone: '+20 XXX XXX XXXX',
       role: 'admin',
       status: 'active',
       company: 'alpha',
@@ -46,7 +47,6 @@ export const createDefaultUsers = () => {
       password: hashPassword('admin123'),
       name: 'مدير شركة بيتا',
       email: 'admin@beta-industries.com',
-      phone: '+20 XXX XXX XXXX',
       role: 'admin',
       status: 'active',
       company: 'beta',
@@ -58,7 +58,6 @@ export const createDefaultUsers = () => {
       password: hashPassword('admin123'),
       name: 'مدير شركة جاما',
       email: 'admin@gamma-services.com',
-      phone: '+20 XXX XXX XXXX',
       role: 'admin',
       status: 'active',
       company: 'gamma',
@@ -66,7 +65,6 @@ export const createDefaultUsers = () => {
     }
   ];
 
-  // حفظ المستخدمين في localStorage
   localStorage.setItem('bero_system_users', JSON.stringify(defaultUsers));
   
   console.log('✅ تم إنشاء المستخدمين الافتراضيين:');
@@ -77,14 +75,13 @@ export const createDefaultUsers = () => {
   return defaultUsers;
 };
 
-// إنشاء دالة سريعة للاختبار
-export const setupTestUsers = () => {
-  // إنشاء المستخدمين
-  const users = createDefaultUsers();
-  
-  // إظهار رسالة ترحيبية
-  console.log(`
-🎯 النظام جاهز للاختبار!
+// 3. تشغيل الإصلاح
+const fixSystem = () => {
+  try {
+    createDefaultUsers();
+    
+    console.log(`
+🎉 تم إصلاح النظام بنجاح!
 
 💡 بيانات الدخول:
 • شركة ألفا: alpha_admin / admin123
@@ -92,15 +89,30 @@ export const setupTestUsers = () => {
 • شركة جاما: gamma_admin / admin123
 • النظام العادي: admin / admin123
 
-🧪 لبدء الاختبار:
-1. افتح /saas-login في المتصفح
-2. أدخل معرف الشركة: alpha (أو beta أو gamma)
-3. انتظر التحميل
-4. أدخل كلمة المرور: admin123
-5. انتقل للنظام الرئيسي!
+🧪 للاختبار:
+1. اذهب إلى: /saas-login
+2. أدخل معرف الشركة: alpha
+3. أدخل كلمة المرور: admin123
+4. ادخل النظام!
 
-🚀 للاختبار السريع: saasTest.autoLogin('alpha')
+🚀 أو استخدم الاختبار التلقائي:
+   saasTest.autoLogin('alpha')
 `);
-  
-  return users;
+    
+    // إعادة توجيه للصفحة الصحيحة
+    if (window.location.pathname !== '/saas-login') {
+      console.log('📍 إعادة توجيه لصفحة تسجيل الدخول...');
+      window.location.href = '/saas-login';
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('❌ خطأ في الإصلاح:', error);
+    return false;
+  }
 };
+
+// تشغيل الإصلاح
+fixSystem();
+
+export default fixSystem;

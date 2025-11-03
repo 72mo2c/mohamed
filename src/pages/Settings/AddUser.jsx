@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
-import { hashPassword } from '../../security';
+import { hashPassword } from '../../utils/security';
 import Card from '../../components/Common/Card';
 import Input from '../../components/Common/Input';
 import Select from '../../components/Common/Select';
