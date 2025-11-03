@@ -2,7 +2,7 @@
 // إنشاء المستخدمين الافتراضيين
 // ======================================
 
-import { hashPassword } from './security';
+import { hashPassword } from '../security';
 
 export const createDefaultUsers = () => {
   console.log('🚀 إنشاء المستخدمين الافتراضيين...');
