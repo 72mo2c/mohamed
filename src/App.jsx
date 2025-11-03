@@ -1,25 +1,40 @@
 // ======================================
-// App.jsx - الملف الرئيسي للتطبيق (SaaS Version)
+// App.jsx - الملف الرئيسي للتطبيق
 // ======================================
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
+// Providers
+import { CompanyProvider, useCompany } from './contexts/CompanyContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { DataProvider } from './context/DataContext';
 import { TabProvider } from './contexts/TabContext';
-import { SaaSAuthProvider, useSaaSAuth } from './context/SaaSAuthContext';
+
+// Components
 import Layout from './components/Layout/Layout';
 import Loading from './components/Common/Loading';
 import Toast from './components/Common/Toast';
 
-// Legacy Auth Pages
+// Pages
 import Login from './pages/Auth/Login';
+import CompanySelectionPage from './pages/CompanySelectionPage';
 
-// SaaS Auth Pages
-import CompanySelectStep from './pages/Auth/CompanySelectStep';
-import CompanyLoadStep from './pages/Auth/CompanyLoadStep';
-import PasswordInputStep from './pages/Auth/PasswordInputStep';
+// مكون حماية المسارات - يتطلب اختيار شركة
+const CompanyRoute = ({ children }) => {
+  const { selectedCompany, isLoading } = useCompany();
+
+  if (isLoading) {
+    return <Loading fullScreen message="جاري التحميل..." />;
+  }
+
+  if (!selectedCompany) {
+    return <Navigate to="/company-select" replace />;
+  }
+
+  return children;
+};
 
 // مكون حماية المسارات - يتطلب تسجيل دخول
 const ProtectedRoute = ({ children }) => {
@@ -30,13 +45,13 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/saas-login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return <Layout />;
 };
 
-// مكون مسار تسجيل الدخول العادي
+// مكون مسار تسجيل الدخول
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -51,30 +66,15 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
-// مكون SaaS Routes
-const SaaSRoute = () => {
-  const { currentStep } = useSaaSAuth();
+// مكون مسار اختيار الشركة
+const CompanySelectionRoute = ({ children }) => {
+  const { selectedCompany, isLoading } = useCompany();
 
-  switch (currentStep) {
-    case 'company-load':
-      return <CompanyLoadStep />;
-    case 'password-input':
-      return <PasswordInputStep />;
-    default:
-      return <CompanySelectStep />;
-  }
-};
-
-// مكون حماية مسار SaaS
-const SaaSProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
-
-  if (loading) {
+  if (isLoading) {
     return <Loading fullScreen message="جاري التحميل..." />;
   }
 
-  // إذا كان مسجل الدخول، توجيه للداشبورد
-  if (isAuthenticated) {
+  if (selectedCompany) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -84,46 +84,52 @@ const SaaSProtectedRoute = ({ children }) => {
 function App() {
   return (
     <Router>
-      <SaaSAuthProvider>
+      <CompanyProvider>
         <AuthProvider>
-        <NotificationProvider>
-          <DataProvider>
-            <TabProvider>
-              {/* Toast Component - عرض الإشعارات المنبثقة */}
-              <Toast />
-            
-            <Routes>
-                  {/* المسارات الرئيسية */}
-                  <Route path="/" element={<Navigate to="/saas-login" replace />} />
-                  
-                  {/* مسار تسجيل الدخول العادي (نسخة احتياطية) */}
+          <NotificationProvider>
+            <DataProvider>
+              <TabProvider>
+                {/* Toast Component - عرض الإشعارات المنبثقة */}
+                <Toast />
+              
+                <Routes>
+                  {/* مسار اختيار الشركة - العام */}
                   <Route
-                    path="/legacy-login"
+                    path="/company-select"
                     element={
-                      <PublicRoute>
-                        <Login />
-                      </PublicRoute>
+                      <CompanySelectionRoute>
+                        <CompanySelectionPage />
+                      </CompanySelectionRoute>
                     }
                   />
 
-                  {/* مسار تسجيل الدخول SaaS */}
+                  {/* مسار تسجيل الدخول - يتطلب اختيار شركة */}
                   <Route
-                    path="/saas-login"
+                    path="/login"
                     element={
-                      <SaaSProtectedRoute>
-                        <SaaSRoute />
-                      </SaaSProtectedRoute>
+                      <CompanyRoute>
+                        <PublicRoute>
+                          <Login />
+                        </PublicRoute>
+                      </CompanyRoute>
                     }
                   />
 
-              {/* جميع المسارات المحمية */}
-              <Route path="/*" element={<ProtectedRoute />} />
-            </Routes>
-            </TabProvider>
-          </DataProvider>
-        </NotificationProvider>
+                  {/* جميع المسارات المحمية - تتطلب اختيار شركة + تسجيل دخول */}
+                  <Route
+                    path="/*"
+                    element={
+                      <CompanyRoute>
+                        <ProtectedRoute />
+                      </CompanyRoute>
+                    }
+                  />
+                </Routes>
+              </TabProvider>
+            </DataProvider>
+          </NotificationProvider>
         </AuthProvider>
-      </SaaSAuthProvider>
+      </CompanyProvider>
     </Router>
   );
 }

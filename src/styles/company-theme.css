@@ -1,0 +1,313 @@
+/* متغيرات CSS للشركات -Company Variables CSS */
+
+/* متغيرات الألوان الأساسية */
+:root {
+  --primary-color: #3B82F6; /* أزرق افتراضي */
+  --secondary-color: #64748B; /* رمادي افتراضي */
+  --accent-color: #F59E0B; /* برتقالي للعناصر المميزة */
+  --success-color: #059669; /* أخضر للنجاح */
+  --warning-color: #D97706; /* أصفر للتحذير */
+  --error-color: #DC2626; /* أحمر للأخطاء */
+  --info-color: #0284C7; /* أزرق فاتح للمعلومات */
+}
+
+/* الوضع الفاتح (Default Light Theme) */
+.light-theme {
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F8FAFC;
+  --bg-tertiary: #F1F5F9;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-tertiary: #64748B;
+  --border-color: #E2E8F0;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --hover-bg: #F1F5F9;
+}
+
+/* الوضع الداكن (Dark Theme) */
+.dark-theme {
+  --bg-primary: #1E293B;
+  --bg-secondary: #334155;
+  --bg-tertiary: #475569;
+  --text-primary: #F1F5F9;
+  --text-secondary: #CBD5E1;
+  --text-tertiary: #94A3B8;
+  --border-color: #475569;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --hover-bg: #334155;
+}
+
+/* الخلفية الأساسية */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* الألوان الأساسية المستخدمة في المكونات */
+.bg-primary { background-color: var(--primary-color); }
+.bg-secondary { background-color: var(--secondary-color); }
+.bg-accent { background-color: var(--accent-color); }
+.bg-success { background-color: var(--success-color); }
+.bg-warning { background-color: var(--warning-color); }
+.bg-error { background-color: var(--error-color); }
+.bg-info { background-color: var(--info-color); }
+
+/* ألوان النصوص */
+.text-primary { color: var(--primary-color); }
+.text-secondary { color: var(--secondary-color); }
+.text-success { color: var(--success-color); }
+.text-warning { color: var(--warning-color); }
+.text-error { color: var(--error-color); }
+.text-info { color: var(--info-color); }
+
+/* ألوان الحدود */
+.border-primary { border-color: var(--primary-color); }
+.border-secondary { border-color: var(--secondary-color); }
+.border-success { border-color: var(--success-color); }
+.border-warning { border-color: var(--warning-color); }
+.border-error { border-color: var(--error-color); }
+.border-info { border-color: var(--info-color); }
+
+/* تأثيرات hover */
+.hover-primary:hover { background-color: var(--primary-color); color: white; }
+.hover-secondary:hover { background-color: var(--secondary-color); color: white; }
+.hover-success:hover { background-color: var(--success-color); color: white; }
+.hover-warning:hover { background-color: var(--warning-color); color: white; }
+.hover-error:hover { background-color: var(--error-color); color: white; }
+.hover-info:hover { background-color: var(--info-color); color: white; }
+
+/* مكونات عامة تستخدم الألوان */
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-color);
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  border-color: var(--secondary-color);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: var(--secondary-color);
+  opacity: 0.9;
+}
+
+/* الكروت والبطاقات */
+.card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px var(--shadow-color);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px var(--shadow-color);
+  transform: translateY(-2px);
+}
+
+/* النماذج (Forms) */
+.form-input {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+.form-label {
+  color: var(--text-secondary);
+}
+
+/* التنقل والقوائم */
+.nav-link {
+  color: var(--text-secondary);
+  transition: color 0.3s ease, background-color 0.3s ease;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: var(--primary-color);
+  background-color: var(--hover-bg);
+}
+
+/* العناوين */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+}
+
+.text-muted {
+  color: var(--text-tertiary);
+}
+
+/* الجداول */
+.table {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+}
+
+.table th {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table td {
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table tbody tr:hover {
+  background-color: var(--bg-tertiary);
+}
+
+/* المقاييس والإحصائيات */
+.stat-card {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: scale(1.02);
+}
+
+/* اللوغو والهوية */
+.company-logo {
+  max-height: 50px;
+  max-width: 150px;
+  object-fit: contain;
+}
+
+.company-header {
+  background-color: var(--bg-secondary);
+  border-bottom: 2px solid var(--primary-color);
+}
+
+/* الإشعارات والتنبيهات */
+.alert-success {
+  background-color: var(--success-color);
+  color: white;
+  border-color: var(--success-color);
+}
+
+.alert-warning {
+  background-color: var(--warning-color);
+  color: white;
+  border-color: var(--warning-color);
+}
+
+.alert-error {
+  background-color: var(--error-color);
+  color: white;
+  border-color: var(--error-color);
+}
+
+.alert-info {
+  background-color: var(--info-color);
+  color: white;
+  border-color: var(--info-color);
+}
+
+/* مؤشرات التحميل */
+.loading-spinner {
+  border-color: var(--primary-color);
+  border-top-color: transparent;
+}
+
+/* أشرطة التقدم */
+.progress-bar {
+  background-color: var(--primary-color);
+}
+
+.progress-bar-success {
+  background-color: var(--success-color);
+}
+
+.progress-bar-warning {
+  background-color: var(--warning-color);
+}
+
+.progress-bar-error {
+  background-color: var(--error-color);
+}
+
+/* الوضع المضغوط للمكونات */
+.compact {
+  padding: 0.5rem;
+}
+
+/* وضع الشاشة الكاملة */
+.fullscreen {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* الانتقالات العامة */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* التخصيص للشركات حسب المظهر */
+.company-light-theme {
+  --primary-color: var(--primary-color, #3B82F6);
+  --secondary-color: var(--secondary-color, #64748B);
+}
+
+.company-dark-theme {
+  --primary-color: var(--primary-color, #3B82F6);
+  --secondary-color: var(--secondary-color, #64748B);
+  --bg-primary: #1E293B;
+  --bg-secondary: #334155;
+  --bg-tertiary: #475569;
+  --text-primary: #F1F5F9;
+  --text-secondary: #CBD5E1;
+  --text-tertiary: #94A3B8;
+  --border-color: #475569;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --hover-bg: #334155;
+}
+
+/* توافق مع Tailwind CSS */
+.bg-primary-tailwind { @apply bg-blue-600; }
+.bg-secondary-tailwind { @apply bg-gray-600; }
+.text-primary-tailwind { @apply text-blue-600; }
+.text-secondary-tailwind { @apply text-gray-600; }
+
+/* استجابة للأجهزة المختلفة */
+@media (max-width: 768px) {
+  .company-logo {
+    max-height: 40px;
+    max-width: 120px;
+  }
+  
+  .stat-card {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .company-logo {
+    max-height: 35px;
+    max-width: 100px;
+  }
+  
+  .card {
+    margin: 0.5rem;
+  }
+}

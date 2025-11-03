@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* استيراد متغيرات CSS الخاصة بالشركات */
+@import './styles/company-theme.css';
+
 /* ======================================
    Premium Orange Theme - Bero System
    ====================================== */
