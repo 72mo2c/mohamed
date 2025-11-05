@@ -197,6 +197,33 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
       ]
     },
     {
+      id: 'production',
+      title: 'نظام الإنتاج',
+      icon: <FaIndustry />,
+      color: 'from-orange-500 to-red-600',
+      subItems: [
+        { title: 'لوحة الإنتاجية', icon: <FaTachometerAlt />, path: '/production/dashboard' },
+        { title: 'إدارة أوامر الإنتاج', icon: <FaClipboardList />, path: '/production/orders' },
+        { title: 'تخطيط الإنتاج', icon: <FaCogs />, path: '/production/planning' },
+        { title: 'تتبع المواد الخام', icon: <FaBoxes />, path: '/production/materials' },
+        { title: 'مراقبة الجودة', icon: <FaCheckCircle />, path: '/production/quality' },
+      ]
+    },
+    {
+      id: 'fixed-assets',
+      title: 'الأصول الثابتة',
+      icon: <FaBuilding />,
+      color: 'from-indigo-500 to-indigo-600',
+      subItems: [
+        { title: 'لوحة التحكم', icon: <FaTachometerAlt />, path: '/fixed-assets/dashboard' },
+        { title: 'إدارة الأصول', icon: <FaBoxes />, path: '/fixed-assets/management' },
+        { title: 'إدارة الإهلاك', icon: <FaChartLine />, path: '/fixed-assets/depreciation' },
+        { title: 'جدولة الصيانة', icon: <FaClock />, path: '/fixed-assets/maintenance' },
+        { title: 'جرد وتقييم', icon: <FaList />, path: '/fixed-assets/inventory' },
+        { title: 'التصرف في الأصول', icon: <FaExchangeAlt />, path: '/fixed-assets/disposal' },
+      ]
+    },
+    {
       id: 'reports',
       title: 'التقارير',
       icon: <FaClipboardList />,
