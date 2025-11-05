@@ -90,22 +90,7 @@ import AttendanceManagement from '../../components/HR/AttendanceManagement';
 import LeaveManagement from '../../components/HR/LeaveManagement';
 import SalaryManagement from '../../components/HR/SalaryManagement';
 
-// Production System
-import ProductionMain from '../../pages/Production/ProductionMain';
-import ProductionOrders from '../../pages/Production/ProductionOrders';
-import ProductionPlanningPage from '../../pages/Production/ProductionPlanningPage';
-import MaterialTrackingPage from '../../pages/Production/MaterialTrackingPage';
-import QualityControlPage from '../../pages/Production/QualityControlPage';
-import ProductionDashboardPage from '../../pages/Production/ProductionDashboardPage';
 
-// Fixed Assets System
-import FixedAssetsMain from '../../pages/FixedAssets/FixedAssetsMain';
-import FixedAssetsDashboardPage from '../../pages/FixedAssets/FixedAssetsDashboardPage';
-import AssetManagementPage from '../../pages/FixedAssets/AssetManagementPage';
-import DepreciationManagementPage from '../../pages/FixedAssets/DepreciationManagementPage';
-import MaintenanceSchedulingPage from '../../pages/FixedAssets/MaintenanceSchedulingPage';
-import AssetInventoryPage from '../../pages/FixedAssets/AssetInventoryPage';
-import AssetDisposalPage from '../../pages/FixedAssets/AssetDisposalPage';
 
 import ValueAdjustment from '../../pages/Adjustments/ValueAdjustment';
 import DamagedWriteOff from '../../pages/Adjustments/DamagedWriteOff';
@@ -196,23 +181,6 @@ const getComponentForPath = (path) => {
     '/hr/leaves': LeaveManagement,
     '/hr/payroll': SalaryManagement,
 
-    // Production System
-    '/production': ProductionMain,
-    '/production/orders': ProductionOrders,
-    '/production/planning': ProductionPlanningPage,
-    '/production/materials': MaterialTrackingPage,
-    '/production/quality': QualityControlPage,
-    '/production/dashboard': ProductionDashboardPage,
-    
-    // Fixed Assets System
-    '/fixed-assets': FixedAssetsMain,
-    '/fixed-assets/dashboard': FixedAssetsDashboardPage,
-    '/fixed-assets/management': AssetManagementPage,
-    '/fixed-assets/depreciation': DepreciationManagementPage,
-    '/fixed-assets/maintenance': MaintenanceSchedulingPage,
-    '/fixed-assets/inventory': AssetInventoryPage,
-    '/fixed-assets/disposal': AssetDisposalPage,
-    
     // Reports
     '/reports': ReportsHome,
     '/reports/inventory': InventoryReport,

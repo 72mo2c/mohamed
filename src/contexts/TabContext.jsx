@@ -109,12 +109,6 @@ export const TabProvider = ({ children }) => {
       '/adjustments/treasury': 'تسويات الخزينة',
       '/adjustments/entries': 'قيود التسوية',
       '/adjustments/history': 'سجل التسويات',
-      '/production': 'نظام الإنتاج',
-      '/production/orders': 'إدارة أوامر الإنتاج',
-      '/production/planning': 'تخطيط الإنتاج',
-      '/production/materials': 'تتبع المواد الخام',
-      '/production/quality': 'مراقبة الجودة',
-      '/production/dashboard': 'لوحة الإنتاجية',
     };
     return titles[path] || 'صفحة';
   };
@@ -133,7 +127,6 @@ export const TabProvider = ({ children }) => {
     if (path.includes('settings')) return '⚙️';
     if (path.includes('integrations')) return '🔗';
     if (path.includes('adjustments')) return '🛠️';
-    if (path.includes('production')) return '🏭';
     return '📄';
   };
 
