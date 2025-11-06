@@ -27,19 +27,22 @@ const NewSalesInvoice = () => {
   const [items, setItems] = useState([{
     productId: '',
     productName: '',
-    price: 0, // السعر محدد تلقائياً بناءً على نوع الفاتورة
+    directPrice: 0,
+    wholesalePrice: 0,
+    wholesalePrice10: 0,
+    price: 0, // السعر الحالي حسب نوع الشريحة العام
     quantity: 0,
     subQuantity: 0,
     discount: 0
   }]);
 
-  // مراجع للبحث والحفظ
+  // البحث في العملاء والمنتجات
   const [customerSearch, setCustomerSearch] = useState('');
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
   const [productSearches, setProductSearches] = useState(['']);
   const [showProductSuggestions, setShowProductSuggestions] = useState([false]);
-
-  // حالات الأخطاء
+  
+  // حالات الخطأ
   const [customerError, setCustomerError] = useState(false);
   const [productErrors, setProductErrors] = useState([false]);
   const [quantityErrors, setQuantityErrors] = useState([false]);
@@ -97,23 +100,25 @@ const NewSalesInvoice = () => {
     }
   };
 
+  // حساب الإجمالي بعد الخصم
   const calculateTotal = () => {
     const subTotal = calculateSubTotal();
     const discountAmount = calculateDiscountAmount();
     return Math.max(0, subTotal - discountAmount);
   };
 
+  // الحصول على تحذيرات نوع الدفع
   const getPaymentTypeWarning = () => {
-    if (formData.paymentType === 'main') return null;
-    
-    const balance = getSelectedCustomerBalance();
-    if (balance !== null && balance < 0) {
-      return 'تنبيه: رصيد العميل مدين!';
-    }
+    // تم إخفاء التحذيرات المالية لحماية المعلومات
     return null;
   };
 
   const paymentWarning = getPaymentTypeWarning();
+
+  // التركيز التلقائي عند التحميل
+  useEffect(() => {
+    customerInputRef.current?.focus();
+  }, []);
 
   // معالجة اختصارات الكيبورد
   useEffect(() => {
@@ -137,13 +142,6 @@ const NewSalesInvoice = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [items]);
 
-  // تحديث أسعار المنتجات عند تغيير نوع الفاتورة
-  useEffect(() => {
-    if (formData.invoiceType) {
-      updateAllItemPrices(formData.invoiceType);
-    }
-  }, [formData.invoiceType, products]);
-
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -151,42 +149,49 @@ const NewSalesInvoice = () => {
     });
   };
 
+  // البحث في العملاء
   const handleCustomerSearch = (value) => {
     setCustomerSearch(value);
+    // إظهار القائمة فقط عند وجود نص
     setShowCustomerSuggestions(value.trim().length > 0);
-    setCustomerError(false);
   };
 
   const selectCustomer = (customer) => {
-    setFormData({
-      ...formData,
-      customerId: customer.id
+    setFormData({ 
+      ...formData, 
+      customerId: customer.id,
+      agentType: customer.agentType || '' // تحديد الوكيل تلقائياً من بيانات العميل
     });
     setCustomerSearch(customer.name);
     setShowCustomerSuggestions(false);
-    setCustomerError(false);
   };
-
+  
+  // إخفاء قائمة العملاء عند الخروج من الحقل
   const handleCustomerBlur = () => {
     setTimeout(() => {
       setShowCustomerSuggestions(false);
     }, 200);
   };
 
+  // ===== دوال العميل السريع =====
+  // فتح modal إضافة العميل السريع
   const openQuickCustomerModal = () => {
-    setShowQuickCustomerModal(true);
-  };
-
-  const closeQuickCustomerModal = () => {
-    setShowQuickCustomerModal(false);
     setQuickCustomerForm({
       name: '',
       phone1: '',
       address: '',
       agentType: 'general'
     });
+    setShowQuickCustomerModal(true);
   };
 
+  // إغلاق modal العميل السريع
+  const closeQuickCustomerModal = () => {
+    setShowQuickCustomerModal(false);
+    setQuickCustomerLoading(false);
+  };
+
+  // تحديث بيانات نموذج العميل السريع
   const handleQuickCustomerChange = (e) => {
     setQuickCustomerForm({
       ...quickCustomerForm,
@@ -194,39 +199,38 @@ const NewSalesInvoice = () => {
     });
   };
 
+  // إضافة عميل سريع جديد
   const handleAddQuickCustomer = async () => {
-    if (!quickCustomerForm.name.trim()) {
-      showError('يرجى إدخال اسم العميل');
-      return;
-    }
-
-    if (!quickCustomerForm.phone1.trim()) {
-      showError('يرجى إدخال رقم الهاتف');
+    if (!quickCustomerForm.name.trim() || !quickCustomerForm.phone1.trim()) {
+      showError('يجب إدخال الاسم ورقم الهاتف');
       return;
     }
 
     setQuickCustomerLoading(true);
 
     try {
+      // إضافة العميل الجديد
       const newCustomer = addCustomer({
-        name: quickCustomerForm.name.trim(),
-        phone1: quickCustomerForm.phone1.trim(),
-        phone2: '',
-        address: quickCustomerForm.address.trim(),
-        agentType: quickCustomerForm.agentType,
-        balance: 0
+        ...quickCustomerForm,
+        createdAt: new Date().toISOString(),
+        status: 'active'
       });
 
-      showSuccess('تم إضافة العميل بنجاح!');
-      closeQuickCustomerModal();
-
-      // تحديد العميل الجديد تلقائياً
-      setFormData({
-        ...formData,
-        customerId: newCustomer.id
+      showSuccess(`تم إضافة العميل "${newCustomer.name}" بنجاح`);
+      
+      // اختيار العميل الجديد فوراً في الفاتورة
+      setFormData({ 
+        ...formData, 
+        customerId: newCustomer.id,
+        agentType: newCustomer.agentType || ''
       });
+      
+      // تحديث نص البحث ليعكس اسم العميل الجديد
       setCustomerSearch(newCustomer.name);
       
+      // إغلاق المودال
+      closeQuickCustomerModal();
+
     } catch (error) {
       showError('حدث خطأ في إضافة العميل');
     } finally {
@@ -238,52 +242,44 @@ const NewSalesInvoice = () => {
     c.name.toLowerCase().includes(customerSearch.toLowerCase())
   );
 
+  // البحث في المنتجات
   const handleProductSearch = (index, value) => {
     const newSearches = [...productSearches];
     newSearches[index] = value;
     setProductSearches(newSearches);
 
+    // إظهار القائمة فقط عند وجود نص
     const newShowSuggestions = [...showProductSuggestions];
     newShowSuggestions[index] = value.trim().length > 0;
     setShowProductSuggestions(newShowSuggestions);
   };
 
-  // دالة التسعير التلقائي بناءً على نوع الفاتورة
-  const getPriceByInvoiceType = (product, invoiceType) => {
-    switch (invoiceType) {
-      case 'direct':
-        return parseFloat(product.directPrice) || 0;
-      case 'wholesale':
-        return parseFloat(product.wholesalePrice) || 0;
-      case 'wholesale10':
-        return parseFloat(product.wholesalePrice10) || 0;
-      default:
-        return parseFloat(product.directPrice) || 0;
-    }
-  };
-
-  // دالة تحديث جميع أسعار المنتجات عند تغيير نوع الفاتورة
-  const updateAllItemPrices = (invoiceType) => {
-    const newItems = items.map(item => {
-      const product = products.find(p => p.id === item.productId);
-      if (product) {
-        return {
-          ...item,
-          price: getPriceByInvoiceType(product, invoiceType)
-        };
-      }
-      return item;
-    });
-    setItems(newItems);
-  };
-
   const selectProduct = (index, product) => {
     const newItems = [...items];
+    
+    // تحديد السعر حسب نوع الشريحة العام المحدد
+    const currentInvoiceType = formData.invoiceType || 'direct';
+    let appliedPrice = parseFloat(product.directPrice) || 0; // افتراضي: بيع مباشر
+    
+    switch(currentInvoiceType) {
+      case 'wholesale':
+        appliedPrice = parseFloat(product.wholesalePrice) || 0;
+        break;
+      case 'wholesale10':
+        appliedPrice = parseFloat(product.wholesalePrice10) || 0;
+        break;
+      default:
+        appliedPrice = parseFloat(product.directPrice) || 0;
+    }
+    
     newItems[index] = {
       ...newItems[index],
       productId: product.id,
       productName: product.name,
-      price: getPriceByInvoiceType(product, formData.invoiceType),
+      directPrice: parseFloat(product.directPrice) || 0,
+      wholesalePrice: parseFloat(product.wholesalePrice) || 0,
+      wholesalePrice10: parseFloat(product.wholesalePrice10) || 0,
+      price: appliedPrice, // السعر المطبق حسب نوع الشريحة العام
       quantity: 1, // افتراضي كمية 1
       subQuantity: 0,
       discount: 0
@@ -298,11 +294,13 @@ const NewSalesInvoice = () => {
     newShowSuggestions[index] = false;
     setShowProductSuggestions(newShowSuggestions);
 
+    // التركيز على حقل الكمية
     setTimeout(() => {
       quantityInputRefs.current[index]?.focus();
     }, 100);
   };
-
+  
+  // إخفاء قائمة المنتجات عند الخروج من الحقل
   const handleProductBlur = (index) => {
     setTimeout(() => {
       const newShowSuggestions = [...showProductSuggestions];
@@ -312,61 +310,112 @@ const NewSalesInvoice = () => {
   };
 
   const getFilteredProducts = (index) => {
-    const search = productSearches[index] || '';
+    const searchTerm = productSearches[index] || '';
     return products.filter(p =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.code.toLowerCase().includes(search.toLowerCase())
+      p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   };
 
   const handleItemChange = (index, field, value) => {
     const newItems = [...items];
-    newItems[index] = {
-      ...newItems[index],
-      [field]: value
-    };
+    
+    // تحديث نوع الشريحة العام وتطبيق السعر على جميع المنتجات
+    if (field === 'invoiceType') {
+      setFormData(prev => ({ ...prev, invoiceType: value }));
+      
+      // تطبيق السعر الجديد على جميع المنتجات
+      newItems.forEach((item, itemIndex) => {
+        if (item.productId) {
+          switch(value) {
+            case 'wholesale':
+              newItems[itemIndex].price = parseFloat(item.wholesalePrice) || 0;
+              break;
+            case 'wholesale10':
+              newItems[itemIndex].price = parseFloat(item.wholesalePrice10) || 0;
+              break;
+            default:
+              newItems[itemIndex].price = parseFloat(item.directPrice) || 0;
+          }
+        }
+      });
+    } else {
+      newItems[index][field] = value;
+    }
+    
     setItems(newItems);
+    
+    // التحقق الفوري من الكميات والأسعار والخصم
+    if (field === 'quantity' || field === 'subQuantity') {
+      const newQuantityErrors = [...quantityErrors];
+      if (field === 'quantity') {
+        newQuantityErrors[index] = value < 0;
+      }
+      setQuantityErrors(newQuantityErrors);
+    }
+    
+    if (field === 'price' || field === 'subPrice') {
+      const newPriceErrors = [...priceErrors];
+      if (field === 'price') {
+        newPriceErrors[index] = value < 0;
+      }
+      setPriceErrors(newPriceErrors);
+    }
+
+    if (field === 'discount') {
+      const newDiscountErrors = [...discountErrors];
+      newDiscountErrors[index] = value < 0;
+      setDiscountErrors(newDiscountErrors);
+    }
   };
 
   const addItem = () => {
-    setItems([
-      ...items,
-      {
-        productId: '',
-        productName: '',
-        price: 0,
-        quantity: 0,
-        subQuantity: 0,
-        discount: 0
-      }
-    ]);
+    setItems([...items, { 
+      productId: '', 
+      productName: '',
+      directPrice: 0,
+      wholesalePrice: 0,
+      wholesalePrice10: 0,
+      price: 0,
+      quantity: 0, 
+      subQuantity: 0,
+      discount: 0
+    }]);
     setProductSearches([...productSearches, '']);
     setShowProductSuggestions([...showProductSuggestions, false]);
+    setProductErrors([...productErrors, false]);
+    setQuantityErrors([...quantityErrors, false]);
+    setPriceErrors([...priceErrors, false]);
+    setDiscountErrors([...discountErrors, false]);
 
+    // التركيز على حقل المنتج الجديد
     setTimeout(() => {
-      productInputRefs.current[items.length]?.focus();
+      const lastIndex = items.length;
+      productInputRefs.current[lastIndex]?.focus();
     }, 100);
   };
 
   const removeItem = (index) => {
     if (items.length > 1) {
-      const newItems = items.filter((_, i) => i !== index);
-      setItems(newItems);
-      
-      const newSearches = productSearches.filter((_, i) => i !== index);
-      setProductSearches(newSearches);
-      
-      const newShowSuggestions = showProductSuggestions.filter((_, i) => i !== index);
-      setShowProductSuggestions(newShowSuggestions);
+      setItems(items.filter((_, i) => i !== index));
+      setProductSearches(productSearches.filter((_, i) => i !== index));
+      setShowProductSuggestions(showProductSuggestions.filter((_, i) => i !== index));
+      setProductErrors(productErrors.filter((_, i) => i !== index));
+      setQuantityErrors(quantityErrors.filter((_, i) => i !== index));
+      setPriceErrors(priceErrors.filter((_, i) => i !== index));
+      setDiscountErrors(discountErrors.filter((_, i) => i !== index));
     }
   };
 
+  // الحصول على المخزون المتاح للمنتج
   const getAvailableQuantity = (productId) => {
     const product = products.find(p => p.id === productId);
     if (!product) return 0;
+    
+    // إرجاع الكمية الأساسية فقط (نظام الشرائح لا يستخدم الكمية الفرعية)
     return product.mainQuantity || 0;
   };
 
+  // عرض تحذير عن الكمية المطلوبة
   const getQuantityWarning = (index) => {
     const item = items[index];
     if (!item.productId) return null;
@@ -451,29 +500,33 @@ const NewSalesInvoice = () => {
         newPriceErrors[index] = false;
       }
       
-      // التحقق من السعر
+      // التحقق من السعر المختار
       if (item.productId && item.price <= 0) {
-        errors[`price_${index}`] = 'يجب إدخال سعر صحيح';
+        errors[`price_${index}`] = 'يجب إدخال سعر للشريحة المختارة';
       }
-      
-      // التحقق من الخصم
+
+      // التحقق من خصم العنصر
       if (item.discount < 0) {
-        errors[`discount_${index}`] = 'الخصم لا يمكن أن يكون سالباً';
+        errors[`discount_${index}`] = 'خصم العنصر لا يمكن أن يكون سالباً';
+        newDiscountErrors[index] = true;
+      } else if (item.discount > calculateItemTotalWithoutDiscount(item)) {
+        errors[`discount_${index}`] = 'خصم العنصر لا يمكن أن يزيد عن إجماليه';
         newDiscountErrors[index] = true;
       } else {
         newDiscountErrors[index] = false;
       }
 
-      // التحقق من الكمية المتوفرة
-      if (item.productId) {
-        const product = products.find(p => p.id === parseInt(item.productId));
-        if (product) {
-          const requestedQty = parseInt(item.quantity) || 0;
-          const availableQty = getAvailableQuantity(item.productId);
-          
-          if (requestedQty > availableQty) {
-            errors[`quantity_${index}`] = `الكمية المطلوبة (${requestedQty}) أكبر من المتوفر (${availableQty})`;
-          }
+      // التحقق من توفر المخزون
+      const product = products.find(p => p.id === parseInt(item.productId));
+      if (product) {
+        const requestedQty = parseInt(item.quantity) || 0;
+        const availableQty = product.mainQuantity || 0;
+        
+        if (requestedQty > availableQty) {
+          errors[`stock_${index}`] = `الكمية المطلوبة (${requestedQty}) تتجاوز المتوفر (${availableQty})`;
+          newQuantityErrors[index] = true;
+        } else {
+          newQuantityErrors[index] = false;
         }
       }
     });
@@ -482,6 +535,12 @@ const NewSalesInvoice = () => {
     setPriceErrors(newPriceErrors);
     setDiscountErrors(newDiscountErrors);
     setValidationErrors(errors);
+    
+    // التحقق من المجموع الكلي
+    const total = calculateTotal();
+    if (total <= 0) {
+      errors.total = 'المجموع الكلي يجب أن يكون أكبر من صفر';
+    }
     
     return Object.keys(errors).length === 0;
   };
@@ -502,14 +561,14 @@ const NewSalesInvoice = () => {
     }
 
     try {
-      // تحويل البيانات للصيغة المتوافقة مع النظام مع الحفاظ على البيانات الفرعية
+      // تحويل البيانات للصيغة المتوافقة مع النظام
       const convertedItems = items.map(item => ({
         productId: item.productId,
         productName: item.productName,
         quantity: item.quantity || 0,
-        subQuantity: item.subQuantity || 0,
-        mainPrice: item.price || 0,
-        subPrice: item.subPrice || 0,
+        subQuantity: 0, // لم يعد يستخدم مع نظام الشرائح
+        mainPrice: item.price || 0, // السعر المطبق حسب نوع الشريحة العام
+        subPrice: 0, // لم يعد يستخدم مع نظام الشرائح
         discount: item.discount || 0,
         total: calculateItemTotal(item)
       }));
@@ -558,7 +617,7 @@ const NewSalesInvoice = () => {
       time: new Date().toTimeString().slice(0, 5),
       paymentType: 'main',
       agentType: '',
-      invoiceType: 'direct',
+      invoiceType: 'direct', // بيع مباشر، جملة، جملة الجملة
       notes: '',
       discountType: 'percentage',
       discountValue: 0
@@ -566,6 +625,9 @@ const NewSalesInvoice = () => {
     setItems([{ 
       productId: '', 
       productName: '',
+      directPrice: 0,
+      wholesalePrice: 0,
+      wholesalePrice10: 0,
       price: 0,
       quantity: 0, 
       subQuantity: 0,
@@ -623,98 +685,37 @@ const NewSalesInvoice = () => {
                     onClick={() => selectCustomer(customer)}
                     className="px-4 py-2.5 hover:bg-blue-100 cursor-pointer border-b last:border-b-0 transition-colors"
                   >
-                    <div className="font-medium text-sm text-gray-800">{customer.name}</div>
-                    <div className="text-xs text-gray-600">{customer.phone1}</div>
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-sm text-gray-800">{customer.name}</span>
+                      <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">{customer.phone}</span>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
-            {validationErrors.customer && (
-              <p className="mt-1 text-xs text-red-600">{validationErrors.customer}</p>
-            )}
-          </div>
-
-          {/* التاريخ */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              التاريخ
-            </label>
-            <input
-              type="date"
-              name="date"
-              value={formData.date}
-              onChange={handleChange}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            {validationErrors.date && (
-              <p className="mt-1 text-xs text-red-600">{validationErrors.date}</p>
-            )}
-          </div>
-
-          {/* الوقت */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              الوقت
-            </label>
-            <input
-              type="time"
-              name="time"
-              value={formData.time}
-              onChange={handleChange}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
           </div>
 
           {/* نوع الفاتورة */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              طريقة الدفع
-            </label>
             <select
               name="paymentType"
               value={formData.paymentType}
               onChange={handleChange}
               className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
             >
-              <option value="main">نقدي - حساب رئيسي</option>
+              <option value="main">اختر نوع الفاتورة</option>
               <option value="cash">نقدي</option>
-              <option value="credit">آجل</option>
-            </select>
-            {paymentWarning && (
-              <p className="mt-1 text-xs text-orange-600">{paymentWarning}</p>
-            )}
-          </div>
-        </div>
-
-        {/* الصف الثاني: نوع الفاتورة الشريحة التسعيرية */}
-        <div className="grid grid-cols-4 gap-3 mb-4 pb-4 border-b">
-          {/* نوع الفاتورة (التوكيل) */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              نوع الفاتورة
-            </label>
-            <select
-              name="agentType"
-              value={formData.agentType}
-              onChange={handleChange}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">اختر نوع الفاتورة</option>
-              <option value="main">فاتورة رئيسية</option>
-              <option value="agent1">وكيل 1</option>
-              <option value="agent2">وكيل 2</option>
+              <option value="deferred">آجل</option>
+              <option value="partial">جزئي</option>
             </select>
           </div>
 
-          {/* الشريحة التسعيرية */}
+          {/* نوع الشريحة */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              الشريحة التسعيرية
-            </label>
             <select
               name="invoiceType"
-              value={formData.invoiceType}
-              onChange={handleChange}
+              value={formData.invoiceType || 'direct'}
+              onChange={(e) => handleItemChange(0, 'invoiceType', e.target.value)}
               className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
             >
               <option value="direct">💚 بيع مباشر</option>
@@ -723,64 +724,87 @@ const NewSalesInvoice = () => {
             </select>
           </div>
 
-          {/* المبلغ الإجمالي */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              المبلغ الإجمالي
-            </label>
-            <div className="w-full px-2 py-1.5 text-sm bg-gray-50 border border-gray-300 rounded-md text-gray-700">
-              {calculateTotal().toFixed(2)} ج.م
+          {/* تحذيرات نوع الدفع */}
+          {paymentWarning && (
+            <div className={`p-4 rounded-lg mb-4 ${
+              paymentWarning.type === 'error' ? 'bg-red-100 border border-red-300 text-red-700' :
+              paymentWarning.type === 'warning' ? 'bg-yellow-100 border border-yellow-300 text-yellow-700' :
+              'bg-blue-100 border border-blue-300 text-blue-700'
+            }`}>
+              <div className="flex items-center gap-2">
+                {paymentWarning.type === 'error' && <FaExclamationTriangle />}
+                {paymentWarning.type === 'warning' && <FaExclamationTriangle />}
+                {paymentWarning.type === 'info' && <FaInfoCircle />}
+                <span className="text-sm font-medium">{paymentWarning.message}</span>
+              </div>
             </div>
+          )}
+
+          {/* الوكيل */}
+          <div>
+            <select
+              name="agentType"
+              value={formData.agentType}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">اختر نوع الوكيل / المندوب</option>
+              <option value="general">عام</option>
+              <option value="fatora">فاتورة</option>
+              <option value="kartona">كرتونة</option>
+            </select>
           </div>
 
-          {/* الرصيد */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              رصيد العميل
-            </label>
-            <div className="w-full px-2 py-1.5 text-sm bg-gray-50 border border-gray-300 rounded-md text-gray-700">
-              {getSelectedCustomerBalance() !== null ? (
-                <span className={getSelectedCustomerBalance() < 0 ? 'text-red-600' : 'text-green-600'}>
-                  {getSelectedCustomerBalance().toFixed(2)} ج.م
-                </span>
-              ) : 'غير محدد'}
-            </div>
+          {/* التاريخ والوقت */}
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="date"
+              name="date"
+              value={formData.date}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+              type="time"
+              name="time"
+              value={formData.time}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            />
           </div>
         </div>
 
         {/* جدول المنتجات */}
-        <div className="overflow-x-auto mb-4">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="px-2 py-2 text-right font-medium text-gray-700">#</th>
-                <th className="px-2 py-2 text-right font-medium text-gray-700">المنتج</th>
-                <th className="px-2 py-2 text-right font-medium text-gray-700">الكمية</th>
-                <th className="px-2 py-2 text-right font-medium text-gray-700">السعر</th>
-                <th className="px-2 py-2 text-right font-medium text-gray-700">الخصم</th>
-                <th className="px-2 py-2 text-right font-medium text-gray-700">الإجمالي</th>
-                <th className="px-2 py-2 text-right font-medium text-gray-700">حذف</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, index) => (
-                <tr key={index} className="border-t">
-                  <td className="px-2 py-2 text-gray-600">{index + 1}</td>
-                  
-                  {/* المنتج */}
-                  <td className="px-2 py-2" style={{ minWidth: '200px' }}>
-                    <div className="relative">
-                      <input
-                        ref={(el) => (productInputRefs.current[index] = el)}
-                        type="text"
-                        value={productSearches[index]}
-                        onChange={(e) => handleProductSearch(index, e.target.value)}
-                        onBlur={() => handleProductBlur(index)}
-                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                        placeholder="ابحث عن المنتج..."
-                      />
-                      <FaSearch className="absolute left-2 top-2.5 text-gray-400 text-xs" />
-                      
+        <div className="mb-4 relative">
+          <div className="overflow-x-auto overflow-y-visible">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-100 border-b">
+                  <th className="px-2 py-2 text-right text-xs font-semibold text-gray-700">المنتج</th>
+                  <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-20">الكمية</th>
+                  <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-24">السعر</th>
+                  <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-24">الخصم</th>
+                  <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-24">الإجمالي</th>
+                  <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-16">حذف</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {items.map((item, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    {/* المنتج */}
+                    <td className="px-2 py-2 static">
+                      <div className="relative z-[10]">
+                        <input
+                          ref={(el) => (productInputRefs.current[index] = el)}
+                          type="text"
+                          value={productSearches[index] || ''}
+                          onChange={(e) => handleProductSearch(index, e.target.value)}
+                          onBlur={() => handleProductBlur(index)}
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                          placeholder="ابحث عن المنتج..."
+                        />
+                        <FaSearch className="absolute left-2 top-2.5 text-gray-400 text-xs" />
+                      </div>
                       {showProductSuggestions[index] && productSearches[index]?.trim().length > 0 && getFilteredProducts(index).length > 0 && (
                         <div className="absolute z-[9999] left-0 w-full mt-1 bg-white border-2 border-blue-400 rounded-lg shadow-2xl max-h-64 overflow-y-auto">
                           {getFilteredProducts(index).map((product) => {
@@ -796,267 +820,272 @@ const NewSalesInvoice = () => {
                                     <span className="font-semibold text-sm text-gray-800">{product.name}</span>
                                     <span className="text-xs text-gray-600 mr-2">({warehouse?.name || 'غير محدد'} - {product.category})</span>
                                   </div>
-                                  <div className="text-right">
-                                    <div className="text-sm font-medium text-gray-700">
-                                      {getPriceByInvoiceType(product, formData.invoiceType).toFixed(2)} ج.م
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                      متوفر: {getAvailableQuantity(product.id)}
-                                    </div>
-                                  </div>
+                                  <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded">
+                                    أساسي: {product.mainQuantity || 0}, فرعي: {product.subQuantity || 0}
+                                  </span>
                                 </div>
                               </div>
                             );
                           })}
                         </div>
                       )}
-                    </div>
-                    {validationErrors[`product_${index}`] && (
-                      <p className="mt-1 text-xs text-red-600">{validationErrors[`product_${index}`]}</p>
-                    )}
-                  </td>
-                  
-                  {/* الكمية الأساسية */}
+                      {/* رسالة تحذير المخزون */}
+                      {getQuantityWarning(index)}
+                    </td>
+
+
+
+                    {/* الكمية الأساسية */}
+                    <td className="px-2 py-2">
+                      <input
+                        ref={(el) => (quantityInputRefs.current[index] = el)}
+                        type="number"
+                        name={`quantity-${index}`}
+                        value={item.quantity}
+                        onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
+                        className={`w-full px-2 py-1.5 text-sm text-center border rounded-md focus:ring-2 focus:ring-blue-500 ${
+                          quantityErrors[index] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
+                        min="0"
+                      />
+                    </td>
+
+                    {/* السعر */}
+                    <td className="px-2 py-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={item.price}
+                        onChange={(e) => handleItemChange(index, 'price', parseFloat(e.target.value) || 0)}
+                        className={`w-full px-2 py-1.5 text-sm text-center border rounded-md focus:ring-2 focus:ring-blue-500 ${
+                          priceErrors[index] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
+                        min="0"
+                      />
+
+                    {/* الخصم  */}
                   <td className="px-2 py-2">
                     <input
-                      ref={(el) => (quantityInputRefs.current[index] = el)}
                       type="number"
-                      name={`quantity-${index}`}
-                      value={item.quantity}
-                      onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
-                      className={`w-full px-2 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-blue-500 ${
-                        quantityErrors[index] || validationErrors[`quantity_${index}`] 
-                          ? 'border-red-500 bg-red-50' 
-                          : 'border-gray-300'
-                      }`}
-                      min="0"
-                      placeholder="0"
-                    />
-                    {getQuantityWarning(index)}
-                    {validationErrors[`quantity_${index}`] && (
-                      <p className="mt-1 text-xs text-red-600">{validationErrors[`quantity_${index}`]}</p>
-                    )}
-                  </td>
-                  
-                  {/* السعر */}
-                  <td className="px-2 py-2">
-                    <input
-                      type="number"
-                      value={item.price}
-                      onChange={(e) => handleItemChange(index, 'price', parseFloat(e.target.value) || 0)}
-                      className={`w-full px-2 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-blue-500 ${
-                        priceErrors[index] || validationErrors[`price_${index}`] 
-                          ? 'border-red-500 bg-red-50' 
-                          : 'border-gray-300'
-                      }`}
-                      min="0"
                       step="0.01"
-                    />
-                    
-                    {/* عرض نوع الفاتورة الحالي */}
-                    {item.productId && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        {formData.invoiceType === 'direct' && '💚 بيع مباشر'}
-                        {formData.invoiceType === 'wholesale' && '🧡 جملة'}
-                        {formData.invoiceType === 'wholesale10' && '💜 جملة الجملة'}
-                      </div>
-                    )}
-                  </td>
-                  
-                  {/* الخصم */}
-                  <td className="px-2 py-2">
-                    <input
-                      type="number"
                       value={item.discount}
                       onChange={(e) => handleItemChange(index, 'discount', parseFloat(e.target.value) || 0)}
-                      className={`w-full px-2 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-blue-500 ${
-                        discountErrors[index] || validationErrors[`discount_${index}`] 
-                          ? 'border-red-500 bg-red-50' 
-                          : 'border-gray-300'
+                      className={`w-full px-2 py-1.5 text-sm text-center border rounded-md focus:ring-2 focus:ring-blue-500 ${
+                        discountErrors[index] ? 'border-red-500 bg-red-50' : 'border-gray-300'
                       }`}
                       min="0"
-                      step="0.01"
                     />
                   </td>
-                  
-                  {/* الإجمالي */}
-                  <td className="px-2 py-2">
-                    <div className="text-sm font-medium text-gray-700">
-                      {calculateItemTotal(item).toFixed(2)} ج.م
-                    </div>
-                  </td>
-                  
-                  {/* حذف */}
-                  <td className="px-2 py-2">
-                    <button
-                      type="button"
-                      onClick={() => removeItem(index)}
-                      className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
-                      title="حذف العنصر"
-                      disabled={items.length === 1}
-                    >
-                      <FaTrash className="text-xs" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
 
-        {/* أزرار إضافة العنصر */}
-        <div className="flex justify-center mb-4">
-          <button
-            type="button"
-            onClick={addItem}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <FaPlus className="text-sm" />
-            إضافة منتج جديد
-          </button>
-        </div>
+                    {/* الإجمالي */}
+                    <td className="px-2 py-2 text-center">
+                      <span className="font-semibold text-blue-600">
+                        {calculateItemTotal(item).toFixed(2)}
+                      </span>
+                    </td>
 
-        {/* الصف الأخير: الخصم والإجمالي */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          {/* ملاحظات */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              ملاحظات
-            </label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-              rows="3"
-              placeholder="أي ملاحظات إضافية..."
-            />
+                    {/* حذف */}
+                    <td className="px-2 py-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() => removeItem(index)}
+                        disabled={items.length === 1}
+                        className="text-red-600 hover:text-red-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+                      >
+                        <FaTrash />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        </div>
 
-          {/* إجمالي الفاتورة */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>المجموع الجزئي:</span>
-                <span>{calculateSubTotal().toFixed(2)} ج.م</span>
-              </div>
-              
-              <div className="flex justify-between items-center text-sm">
-                <div className="flex items-center gap-2">
-                  <FaPercent className="text-gray-500" />
-                  <span>الخصم:</span>
+        {/* زر إضافة منتج */}
+        <button
+          type="button"
+          onClick={addItem}
+          className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors text-sm font-medium"
+        >
+          + إضافة منتج جديد (Enter)
+        </button>
+
+        {/* الجزء السفلي */}
+        <div className="mt-4 pt-4 border-t">
+          <div className="grid grid-cols-3 gap-4 items-start">
+            {/* ملاحظات */}
+            <div className="col-span-2">
+              <textarea
+                name="notes"
+                value={formData.notes}
+                onChange={handleChange}
+                rows="2"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                placeholder="أدخل ملاحظات إضافية..."
+              />
+            </div>
+
+            {/* الخصم والمجموع */}
+            <div className="space-y-3">
+              {/* قسم الخصم */}
+              <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <FaPercent className="text-yellow-600" />
+                  <span className="text-sm font-semibold text-gray-700">الخصم</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="grid grid-cols-2 gap-2 mb-2">
                   <select
                     name="discountType"
                     value={formData.discountType}
                     onChange={handleChange}
-                    className="px-2 py-1 text-xs border border-gray-300 rounded"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="percentage">%</option>
-                    <option value="fixed">ج.م</option>
+                    <option value="percentage">نسبة مئوية %</option>
+                    <option value="fixed">مبلغ ثابت</option>
                   </select>
                   <input
                     type="number"
                     name="discountValue"
                     value={formData.discountValue}
                     onChange={handleChange}
-                    className="w-20 px-2 py-1 text-xs border border-gray-300 rounded"
+                    className="w-full px-2 py-1.5 text-sm text-center border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                     min="0"
-                    step="0.01"
+                    step={formData.discountType === 'percentage' ? '0.1' : '0.01'}
+                    placeholder={formData.discountType === 'percentage' ? '0.0%' : '0.00'}
                   />
                 </div>
+                {formData.discountValue > 0 && (
+                  <div className="text-xs text-gray-600 text-center">
+                    قيمة الخصم: {calculateDiscountAmount().toFixed(2)} ج.م
+                  </div>
+                )}
               </div>
-              
-              {validationErrors.discount && (
-                <p className="text-xs text-red-600">{validationErrors.discount}</p>
-              )}
-              
-              <div className="flex justify-between text-sm font-medium text-red-600">
-                <span>قيمة الخصم:</span>
-                <span>{calculateDiscountAmount().toFixed(2)} ج.م</span>
-              </div>
-              
-              <hr className="my-2" />
-              
-              <div className="flex justify-between text-lg font-bold">
-                <span>الإجمالي:</span>
-                <span>{calculateTotal().toFixed(2)} ج.م</span>
+
+              {/* المجموع */}
+              <div className="w-full bg-blue-50 p-3 rounded-lg border border-blue-200">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-gray-700">المجموع الفرعي:</span>
+                    <span className="text-sm font-medium text-gray-600">{calculateSubTotal().toFixed(2)} ج.م</span>
+                  </div>
+                  
+                  {formData.discountValue > 0 && (
+                    <div className="flex justify-between items-center pt-1 border-t border-blue-200">
+                      <span className="text-sm font-semibold text-gray-700">الخصم:</span>
+                      <span className="text-sm font-medium text-red-600">-{calculateDiscountAmount().toFixed(2)} ج.م</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between items-center pt-2 border-t border-blue-200">
+                    <span className="text-sm font-semibold text-gray-700">المجموع الكلي:</span>
+                    <span className="text-lg font-bold text-blue-700">{calculateTotal().toFixed(2)} ج.م</span>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-500 text-center mt-2">
+                  عدد المنتجات: {items.length}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* أزرار الحفظ والطباعة */}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={(e) => handleSubmit(e, true)}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-2"
-          >
-            <FaPrint />
-            حفظ وطباعة
-          </button>
-          
-          <button
-            type="button"
-            onClick={(e) => handleSubmit(e)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <FaSave />
-            حفظ الفاتورة
-          </button>
+        {/* الأزرار */}
+        <div className="mt-6 pt-4 border-t">
+          <div className="flex justify-center gap-3">
+            <button
+              type="button"
+              onClick={resetForm}
+              className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg transition-colors font-medium"
+              title="إعادة تعيين الفاتورة بالكامل"
+            >
+              <FaTrash /> إعادة تعيين
+            </button>
+            <button
+              type="button"
+              onClick={(e) => handleSubmit(e, false)}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-colors font-medium"
+            >
+              <FaSave /> حفظ الفاتورة
+            </button>
+            <button
+              type="button"
+              onClick={(e) => handleSubmit(e, true)}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors font-medium"
+            >
+              <FaPrint /> حفظ وطباعة
+            </button>
+          </div>
+        </div>
+
+        {/* اختصارات الكيبورد */}
+        <div className="mt-4 pt-3 border-t text-xs text-gray-500 text-center">
+          <span className="inline-block mx-2">💡 اختصارات: </span>
+          <span className="inline-block mx-2">Ctrl+S = حفظ</span>
+          <span className="inline-block mx-2">Enter = صف جديد</span>
+          <span className="inline-block mx-2">Tab = التنقل</span>
         </div>
       </div>
 
-      {/* نافذة إضافة عميل سريع */}
+      {/* Modal إضافة العميل السريع */}
       {showQuickCustomerModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">إضافة عميل جديد سريع</h3>
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+            {/* رأس المودال */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <div className="flex items-center gap-3">
+                <div className="bg-green-100 rounded-full p-2">
+                  <FaUserPlus className="text-green-600 text-lg" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-800">إضافة عميل جديد سريع</h2>
+              </div>
               <button
                 onClick={closeQuickCustomerModal}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                type="button"
               >
-                <FaTimes />
+                <FaTimes className="text-xl" />
               </button>
             </div>
-            
-            <form onSubmit={(e) => { e.preventDefault(); handleAddQuickCustomer(); }}>
-              <div className="space-y-4">
+
+            {/* محتوى المودال */}
+            <div className="p-6">
+              <form onSubmit={(e) => { e.preventDefault(); handleAddQuickCustomer(); }} className="space-y-4">
+                {/* اسم العميل */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    اسم العميل *
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    اسم العميل <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="name"
                     value={quickCustomerForm.name}
                     onChange={handleQuickCustomerChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="اسم العميل"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="أدخل اسم العميل"
                     required
                   />
                 </div>
-                
+
+                {/* رقم الهاتف */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    رقم الهاتف *
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    رقم الهاتف <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
                     name="phone1"
                     value={quickCustomerForm.phone1}
                     onChange={handleQuickCustomerChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="رقم الهاتف"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="+20 XXX XXX XXXX"
                     required
                   />
                 </div>
-                
+
+                {/* العنوان */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     العنوان
                   </label>
                   <input
@@ -1064,55 +1093,70 @@ const NewSalesInvoice = () => {
                     name="address"
                     value={quickCustomerForm.address}
                     onChange={handleQuickCustomerChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="العنوان"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="أدخل العنوان (اختياري)"
                   />
                 </div>
-                
+
+                {/* نوع الوكيل */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    نوع العميل
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    نوع الوكيل / المندوب
                   </label>
                   <select
                     name="agentType"
                     value={quickCustomerForm.agentType}
                     onChange={handleQuickCustomerChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   >
-                    <option value="general">عادي</option>
-                    <option value="wholesale">جملة</option>
-                    <option value="retail">قطاعي</option>
+                    <option value="general">عام</option>
+                    <option value="fatora">فاتورة</option>
+                    <option value="kartona">كرتونة</option>
                   </select>
                 </div>
-              </div>
-              
-              <div className="flex justify-end gap-2 mt-6">
-                <button
-                  type="button"
-                  onClick={closeQuickCustomerModal}
-                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  disabled={quickCustomerLoading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
-                  {quickCustomerLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      جاري الإضافة...
-                    </>
-                  ) : (
-                    <>
-                      <FaUserPlus className="text-sm" />
-                      إضافة العميل
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
+
+                {/* معلومات إضافية */}
+                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                  <div className="flex items-start gap-2">
+                    <FaInfoCircle className="text-blue-600 text-sm mt-0.5" />
+                    <div className="text-xs text-blue-700">
+                      <p className="font-semibold mb-1">ملاحظة سريعة:</p>
+                      <p>• سيتم إضافة العميل مباشرة لفاتورة المبيعات الحالية</p>
+                      <p>• يمكنك تعديل البيانات لاحقاً من صفحة إدارة العملاء</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* أزرار المودال */}
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={closeQuickCustomerModal}
+                    className="flex-1 px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    disabled={quickCustomerLoading}
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    disabled={quickCustomerLoading || !quickCustomerForm.name.trim() || !quickCustomerForm.phone1.trim()}
+                  >
+                    {quickCustomerLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        جاري الإضافة...
+                      </>
+                    ) : (
+                      <>
+                        <FaUserPlus className="text-sm" />
+                        إضافة العميل
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
