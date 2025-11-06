@@ -15,14 +15,9 @@ import {
   FaTimes, 
   FaSearch,
   FaFilter,
-  FaDownload,
   FaWarehouse,
   FaBarcode,
-  FaMoneyBillWave,
-  FaTags,
-  FaChartBar,
-  FaExclamationTriangle,
-  FaTools
+  FaExclamationTriangle
 } from 'react-icons/fa';
 
 const ManageProducts = () => {
@@ -57,27 +52,6 @@ const ManageProducts = () => {
   // فحص الصلاحيات
   const canEdit = hasPermission('edit_product');
   const canDelete = hasPermission('delete_product');
-  const canExport = hasPermission('export_data');
-  const canViewInventory = hasPermission('view_inventory');
-
-  // الإحصائيات
-  const stats = useMemo(() => {
-    const totalProducts = products.length;
-    const totalValue = products.reduce((sum, p) => {
-      // حساب القيمة الإجمالية مع مراعاة unitsInMain
-      const totalSubQuantity = (p.mainQuantity || 0) * (p.unitsInMain || 0) + (p.subQuantity || 0);
-      return sum + (p.mainPrice * totalSubQuantity);
-    }, 0);
-    const lowStock = products.filter(p => (p.mainQuantity || 0) < 10).length;
-    const categoriesCount = [...new Set(products.map(p => p.category))].length;
-    
-    return {
-      totalProducts,
-      totalValue,
-      lowStock,
-      categoriesCount
-    };
-  }, [products]);
 
   // فلترة المنتجات
   const filteredProducts = useMemo(() => {
@@ -153,42 +127,6 @@ const ManageProducts = () => {
     }
   };
 
-  // تصدير البيانات إلى CSV
-  const exportToCSV = () => {
-    if (!canExport) {
-      showError('ليس لديك صلاحية لتصدير البيانات');
-      return;
-    }
-    
-    const headers = ['الاسم', 'الفئة', 'المخزن', 'الكمية الأساسية', 'السعر الأساسي', 'القيمة الإجمالية', 'الباركود'];
-    
-    const rows = filteredProducts.map(product => {
-      const warehouse = warehouses.find(w => w.id === product.warehouseId);
-      return [
-        product.name,
-        product.category,
-        warehouse?.name || '-',
-        product.mainQuantity,
-        product.mainPrice,
-        product.mainPrice * product.mainQuantity,
-        product.barcode || '-'
-      ];
-    });
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
-
-    const blob = new Blob([`\ufeff${csvContent}`], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `products_${new Date().toLocaleDateString('ar-EG')}.csv`;
-    link.click();
-    
-    showSuccess('تم تصدير البيانات بنجاح');
-  };
-
   // الحصول على اسم المخزن
   const getWarehouseName = (warehouseId) => {
     const id = typeof warehouseId === 'string' ? parseInt(warehouseId) : warehouseId;
@@ -215,125 +153,6 @@ const ManageProducts = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-4 space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-gray-800">إدارة وسجل البضائع</h2>
-        {canExport && (
-          <button
-            onClick={exportToCSV}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-semibold"
-          >
-            <FaDownload /> تصدير CSV
-          </button>
-        )}
-      </div>
-
-      {/* الإحصائيات المحسّنة */}
-      {!canViewInventory ? (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center gap-3">
-          <FaExclamationTriangle className="text-yellow-600 text-xl" />
-          <div>
-            <p className="text-yellow-800 font-semibold">
-              ليس لديك صلاحية لعرض إحصائيات المخزون
-            </p>
-            <p className="text-yellow-700 text-sm">يرجى التواصل مع المدير للحصول على الصلاحية</p>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-5 text-white shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-blue-100 text-sm font-medium">إجمالي المنتجات</p>
-              <h3 className="text-3xl font-bold mt-1">{stats.totalProducts}</h3>
-              <p className="text-blue-200 text-xs mt-1">منتج</p>
-            </div>
-            <FaBox className="text-4xl opacity-80" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-5 text-white shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-green-100 text-sm font-medium">قيمة المخزون</p>
-              <h3 className="text-3xl font-bold mt-1">{formatCurrency(stats.totalValue)}</h3>
-              <p className="text-green-200 text-xs mt-1">{settings?.currency || 'EGP'}</p>
-            </div>
-            <FaMoneyBillWave className="text-4xl opacity-80" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-5 text-white shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-orange-100 text-sm font-medium">مخزون منخفض</p>
-              <h3 className="text-3xl font-bold mt-1">{stats.lowStock}</h3>
-              <p className="text-orange-200 text-xs mt-1">منتج</p>
-            </div>
-            <FaExclamationTriangle className="text-4xl opacity-80" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-5 text-white shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-100 text-sm font-medium">عدد الفئات</p>
-              <h3 className="text-3xl font-bold mt-1">{stats.categoriesCount}</h3>
-              <p className="text-purple-200 text-xs mt-1">فئة</p>
-            </div>
-            <FaTags className="text-4xl opacity-80" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-5 text-white shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-red-100 text-sm font-medium">كميات سالبة</p>
-              <h3 className="text-3xl font-bold mt-1">
-                {products.filter(p => (p.mainQuantity || 0) < 0).length}
-              </h3>
-              <p className="text-red-200 text-xs mt-1">منتج</p>
-            </div>
-            <FaExclamationTriangle className="text-4xl opacity-80" />
-          </div>
-        </div>
-      </div>
-      )}
-
-      {/* رسائل تنبيه */}
-      {stats.lowStock > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center gap-3">
-          <FaExclamationTriangle className="text-yellow-600 text-xl" />
-          <div>
-            <p className="text-yellow-800 font-semibold">
-              تنبيه: يوجد {stats.lowStock} منتج بمخزون منخفض
-            </p>
-            <p className="text-yellow-700 text-sm">يُنصح بمراجعة المخزون وإعادة التزويد</p>
-          </div>
-        </div>
-      )}
-
-      {products.filter(p => (p.mainQuantity || 0) < 0).length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
-          <FaExclamationTriangle className="text-red-600 text-xl" />
-          <div className="flex-1">
-            <p className="text-red-800 font-semibold">
-              خطأ حرج: يوجد منتجات بكميات سالبة
-            </p>
-            <p className="text-red-700 text-sm">يتطلب إصلاح فوري</p>
-          </div>
-          <button
-            onClick={() => {
-              // التنقل إلى أداة الإصلاح
-              const event = new CustomEvent('navigate', { detail: '/tools/fix-negative-quantities' });
-              window.dispatchEvent(event);
-            }}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-semibold flex items-center gap-2"
-          >
-            <FaTools />
-            أدوات الإصلاح
-          </button>
-        </div>
-      )}
           
 
       {/* البحث والفلترة */}
