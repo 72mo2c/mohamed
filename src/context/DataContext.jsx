@@ -778,7 +778,7 @@ export const DataProvider = ({ children }) => {
         if (productIndex !== -1) {
           const product = updatedProducts[productIndex];
           const { mainQuantity = 0, subQuantity = 0, unitsInMain = 0 } = product;
-          const mainSale = parseInt(item.quantity) || 0; // الكمية الأساسية المباعة
+          const mainSale = parseInt(item.mainQuantity) || 0; // الكمية الأساسية المباعة
           const subSale = parseInt(item.subQuantity) || 0; // الكمية الفرعية المباعة
           
           let newMainQuantity = mainQuantity;
