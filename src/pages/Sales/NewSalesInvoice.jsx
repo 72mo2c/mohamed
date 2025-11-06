@@ -762,7 +762,7 @@ const NewSalesInvoice = () => {
                 onChange={handleChange}
                 className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500"
               >
-                <option value="">🚛 الشاحنة (اختياري)</option>
+                <option value="">الشاحنة (اختياري)</option>
                 {availableVehicles.filter(v => v.id).map(vehicle => (
                   <option key={vehicle.id} value={vehicle.id}>
                     {vehicle.name} - {vehicle.driver} ({vehicle.status})
@@ -779,9 +779,9 @@ const NewSalesInvoice = () => {
                 onChange={handleChange}
                 className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
               >
-                <option value="retail">🛒 البيع المباشر</option>
-                <option value="wholesale">📦 الجملة</option>
-                <option value="bulk">🚛 جملة الجملة</option>
+                <option value="retail">البيع المباشر</option>
+                <option value="wholesale">الجملة</option>
+                <option value="bulk">جملة الجملة</option>
               </select>
             </div>
           </div>
@@ -802,25 +802,8 @@ const NewSalesInvoice = () => {
             </div>
           )}
 
-          {/* الوكيل */}
-          <div>
-            <select
-              name="agentType"
-              value={formData.agentType}
-              onChange={handleChange}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">اختر نوع الوكيل / المندوب</option>
-              <option value="general">عام</option>
-              <option value="fatora">فاتورة</option>
-              <option value="kartona">كرتونة</option>
-            </select>
-          </div>
-
-
-
-          {/* التاريخ والوقت - بحجم مضغوط */}
-          <div className="grid grid-cols-2 gap-2">
+          {/* التاريخ والوقت والوكيل - بحجم مضغوط */}
+          <div className="grid grid-cols-3 gap-2">
             <input
               type="date"
               name="date"
@@ -835,6 +818,17 @@ const NewSalesInvoice = () => {
               onChange={handleChange}
               className="w-full px-1 py-1 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500"
             />
+            <select
+              name="agentType"
+              value={formData.agentType}
+              onChange={handleChange}
+              className="w-full px-1 py-1 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">الوكيل/المندوب</option>
+              <option value="general">عام</option>
+              <option value="fatora">فاتورة</option>
+              <option value="kartona">كرتونة</option>
+            </select>
           </div>
         </div>
 
