@@ -714,54 +714,6 @@ export const DataProvider = ({ children }) => {
 
   // ==================== دوال فواتير المبيعات ====================
   
-  // دالة التحقق الذكي من توفر الكمية
-  const checkSmartQuantityAvailability = (product, mainSale, subSale) => {
-    const { mainQuantity = 0, subQuantity = 0, unitsInMain = 0 } = product;
-    
-    // إذا لم توجد تحويلات، استخدم المنطق التقليدي
-    if (unitsInMain === 0) {
-      return mainQuantity >= mainSale && subQuantity >= subSale;
-    }
-    
-    let tempMainQuantity = mainQuantity;
-    let tempSubQuantity = subQuantity;
-    
-    // الخطوة 1: خصم الكمية الأساسية أولاً
-    if (mainSale > 0) {
-      if (tempMainQuantity < mainSale) {
-        return false; // لا توجد كمية أساسية كافية
-      }
-      
-      tempMainQuantity = Math.max(0, mainQuantity - mainSale);
-      
-      // تحويل الكمية المباعة من أساسي إلى فرعي وإضافتها للمطلوب
-      const mainToSub = mainSale * unitsInMain;
-      const totalSubRequired = subSale + mainToSub;
-      
-      // الخطوة 2: التحقق من الكمية الفرعية
-      if (subQuantity >= totalSubRequired) {
-        return true; // الكمية الفرعية كافية
-      } else {
-        // الكمية الفرعية غير كافية - خذ من الأساسي
-        const subShortage = totalSubRequired - subQuantity;
-        const additionalMainNeeded = Math.ceil(subShortage / unitsInMain);
-        
-        return tempMainQuantity >= additionalMainNeeded;
-      }
-    } else {
-      // لا يوجد خصم في أساسي، فقط فرعي
-      if (subQuantity >= subSale) {
-        return true; // الكمية الفرعية كافية
-      } else {
-        // كمية فرعية غير كافية - خذ من الأساسي
-        const subShortage = subSale - subQuantity;
-        const additionalMainNeeded = Math.ceil(subShortage / unitsInMain);
-        
-        return tempMainQuantity >= additionalMainNeeded;
-      }
-    }
-  };
-  
   const addSalesInvoice = (invoice) => {
     // التحقق من توفر الكميات قبل البيع (فصل أساسي وفرعي)
     if (invoice.items && Array.isArray(invoice.items)) {
@@ -771,19 +723,29 @@ export const DataProvider = ({ children }) => {
           throw new Error(`المنتج غير موجود`);
         }
         
-        // فصل الكميات
-        const mainQty = parseInt(item.mainQuantity) || 0;
+        // فصل الكميات (يدعم mainQuantity و quantity)
+        const mainQty = parseInt(item.mainQuantity || item.quantity) || 0;
         const subQty = parseInt(item.subQuantity) || 0;
         const availableMainQty = product.mainQuantity || 0;
         const availableSubQty = product.subQuantity || 0;
         
         // المنطق الذكي للتحقق من توفر المخزون
-        const isQuantityAvailable = checkSmartQuantityAvailability(product, mainQty, subQty);
+        let requiredSubQty = 0;
+        if (mainQty > 0) {
+          // تحويل الكمية المباعة من أساسي إلى فرعي
+          const mainToSub = mainQty * (product.unitsInMain || 0);
+          requiredSubQty = subQty + mainToSub;
+        } else {
+          requiredSubQty = subQty;
+        }
         
-        if (!isQuantityAvailable) {
+        // حساب الكمية الإجمالية بالوحدات الفرعية
+        const totalAvailableSub = (product.mainQuantity || 0) * (product.unitsInMain || 0) + (product.subQuantity || 0);
+        
+        if (requiredSubQty > totalAvailableSub) {
           throw new Error(
-            `الكمية المطلوبة من "${product.name}" غير متوفرة في المخزون.\n` +
-            `النظام الذكي غير قادر على تلبية هذا الطلب بالكمية المتاحة`
+            `الكمية المطلوبة من "${product.name}" غير متوفرة.\n` +
+            `إجمالي المتوفر: ${totalAvailableSub} قطعة، المطلوب: ${requiredSubQty} قطعة`
           );
         }
       }
@@ -816,25 +778,21 @@ export const DataProvider = ({ children }) => {
         if (productIndex !== -1) {
           const product = updatedProducts[productIndex];
           const { mainQuantity = 0, subQuantity = 0, unitsInMain = 0 } = product;
-          const mainSale = parseInt(item.mainQuantity) || 0; // الكمية الأساسية المباعة
+          const mainSale = parseInt(item.mainQuantity || item.quantity) || 0; // الكمية الأساسية المباعة
           const subSale = parseInt(item.subQuantity) || 0; // الكمية الفرعية المباعة
           
           let newMainQuantity = mainQuantity;
           let newSubQuantity = subQuantity;
           
-          // تطبيق المنطق الذكي المحدث: استخدام نفس منطق checkSmartQuantityAvailability
-          if (mainSale > 0) {
-            if (newMainQuantity < mainSale) {
-              throw new Error(`الكمية غير كافية في المخزون للمنتج "${product.name}"`);
-            }
-            
+          // تطبيق المنطق الذكي للخصم
+          if (mainSale > 0 && subSale > 0) {
+            // بيع أساسي وفرعي معاً
             newMainQuantity = Math.max(0, mainQuantity - mainSale);
             
-            // تحويل الكمية المباعة من أساسي إلى فرعي وإضافتها للمطلوب
+            // تحويل المطلوب إلى فرعي لفحص إذا كان كافي
             const mainToSub = mainSale * unitsInMain;
-            const totalSubRequired = subSale + mainToSub;
+            const totalSubRequired = mainToSub + subSale;
             
-            // خصم الكمية الفرعية
             if (subQuantity >= totalSubRequired) {
               // الكمية الفرعية كافية
               newSubQuantity = subQuantity - totalSubRequired;
@@ -847,15 +805,21 @@ export const DataProvider = ({ children }) => {
                 newMainQuantity -= additionalMainNeeded;
                 newSubQuantity = subQuantity + (additionalMainNeeded * unitsInMain) - totalSubRequired;
               } else {
-                throw new Error(`الكمية غير كافية في المخزون للمنتج "${product.name}"`);
+                throw new Error(
+                  `الكمية غير كافية في المخزون للمنتج "${product.name}"`
+                );
               }
             }
-          } else {
-            // لا يوجد خصم في أساسي، فقط فرعي
+          } else if (mainSale > 0 && subSale === 0) {
+            // بيع أساسي فقط
+            newMainQuantity = Math.max(0, mainQuantity - mainSale);
+            newSubQuantity = subQuantity; // لا تغيير في الفرعي
+          } else if (mainSale === 0 && subSale > 0) {
+            // بيع فرعي فقط
             if (subQuantity >= subSale) {
               newSubQuantity = subQuantity - subSale;
             } else {
-              // كمية فرعية غير كافية - خذ من الأساسي
+              // كميحة فرعية غير كافية - خذ من الأساسي
               const subShortage = subSale - subQuantity;
               const additionalMainNeeded = Math.ceil(subShortage / unitsInMain);
               
@@ -863,7 +827,9 @@ export const DataProvider = ({ children }) => {
                 newMainQuantity -= additionalMainNeeded;
                 newSubQuantity = subQuantity + (additionalMainNeeded * unitsInMain) - subSale;
               } else {
-                throw new Error(`الكمية غير كافية في المخزون للمنتج "${product.name}"`);
+                throw new Error(
+                  `الكمية غير كافية في المخزون للمنتج "${product.name}"`
+                );
               }
             }
           }

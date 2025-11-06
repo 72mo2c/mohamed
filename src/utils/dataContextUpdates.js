@@ -188,61 +188,6 @@ export const checkStockAvailability = (product, requiredQuantity, quantityType =
 };
 
 /**
- * دالة التحقق الذكي من توفر الكمية مع إمكانية التحويل
- * تستخدم نفس منطق updateStockWithConversion للتحقق من إمكانية الخصم
- * @param {Object} product - المنتج
- * @param {number} mainSale - الكمية الرئيسية المطلوبة
- * @param {number} subSale - الكمية الفرعية المطلوبة
- * @returns {boolean} - true إذا كانت متوفرة
- */
-export const isSmartQuantityAvailable = (product, mainSale, subSale) => {
-  const { mainQuantity = 0, subQuantity = 0, unitsInMain = 0 } = product;
-  
-  // إذا لم توجد تحويلات، استخدم المنطق التقليدي
-  if (unitsInMain === 0) {
-    return mainQuantity >= mainSale && subQuantity >= subSale;
-  }
-  
-  let tempMainQuantity = mainQuantity;
-  let tempSubQuantity = subQuantity;
-  
-  // الخطوة 1: خصم الكمية الأساسية أولاً
-  if (mainSale > 0) {
-    if (tempMainQuantity < mainSale) {
-      return false; // لا توجد كمية أساسية كافية
-    }
-    
-    tempMainQuantity = Math.max(0, mainQuantity - mainSale);
-    
-    // تحويل الكمية المباعة من أساسي إلى فرعي وإضافتها للمطلوب
-    const mainToSub = mainSale * unitsInMain;
-    const totalSubRequired = subSale + mainToSub;
-    
-    // الخطوة 2: التحقق من الكمية الفرعية
-    if (subQuantity >= totalSubRequired) {
-      return true; // الكمية الفرعية كافية
-    } else {
-      // الكمية الفرعية غير كافية - خذ من الأساسي
-      const subShortage = totalSubRequired - subQuantity;
-      const additionalMainNeeded = Math.ceil(subShortage / unitsInMain);
-      
-      return tempMainQuantity >= additionalMainNeeded;
-    }
-  } else {
-    // لا يوجد خصم في أساسي، فقط فرعي
-    if (subQuantity >= subSale) {
-      return true; // الكمية الفرعية كافية
-    } else {
-      // كمية فرعية غير كافية - خذ من الأساسي
-      const subShortage = subSale - subQuantity;
-      const additionalMainNeeded = Math.ceil(subShortage / unitsInMain);
-      
-      return tempMainQuantity >= additionalMainNeeded;
-    }
-  }
-};
-
-/**
  * دالة حساب القيمة الإجمالية للمنتج
  * @param {Object} product - المنتج
  * @returns {number} - القيمة الإجمالية
@@ -278,7 +223,6 @@ export default {
   loadProductsWithUnits,
   updateStockWithConversion,
   checkStockAvailability,
-  isSmartQuantityAvailable,
   calculateProductTotalValue,
   exportProductsWithUnits
 };

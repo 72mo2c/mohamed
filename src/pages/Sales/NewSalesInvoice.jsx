@@ -369,28 +369,40 @@ const NewSalesInvoice = () => {
     };
   };
 
-  // عرض تحذير عن الكمية المطلوبة
+  // عرض تحذير عن الكمية المطلوبة مع المنطق الذكي
   const getQuantityWarning = (index) => {
     const item = items[index];
     if (!item.productId) return null;
     
+    const product = products.find(p => p.id === parseInt(item.productId));
+    if (!product) return null;
+    
     const requestedMainQty = parseInt(item.quantity) || 0;
     const requestedSubQty = parseInt(item.subQuantity) || 0;
     
-    const availableQuantity = getAvailableQuantity(item.productId);
-    const availableMainQty = availableQuantity.mainQuantity;
-    const availableSubQty = availableQuantity.subQuantity;
+    const availableMainQty = product.mainQuantity || 0;
+    const availableSubQty = product.subQuantity || 0;
+    const unitsInMain = product.unitsInMain || 0;
     
-    // التحقق من كل نوع كمية منفصل
-    if (requestedMainQty > availableMainQty || requestedSubQty > availableSubQty) {
+    // استخدام المنطق الذكي للتحقق من توفر الكمية
+    const totalRequestedSubUnits = (requestedMainQty * unitsInMain) + requestedSubQty;
+    const totalAvailableSubUnits = (availableMainQty * unitsInMain) + availableSubQty;
+    
+    if (totalRequestedSubUnits > totalAvailableSubUnits) {
+      // تحويل إجمالي المطلوب إلى وحدة أساسية + فرعية للرسالة
+      const mainUnitsNeeded = Math.floor(totalRequestedSubUnits / unitsInMain);
+      const subUnitsNeeded = totalRequestedSubUnits % unitsInMain;
+      const mainUnitsAvailable = Math.floor(totalAvailableSubUnits / unitsInMain);
+      const subUnitsAvailable = totalAvailableSubUnits % unitsInMain;
+      
       return (
         <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
-          ⚠️ الكمية المطلوبة: أساسي {requestedMainQty}، فرعي {requestedSubQty}
+          ⚠️ الكمية المطلوبة إجمالاً: {mainUnitsNeeded} وحدة أساسية + {subUnitsNeeded} قطعة فرعية
           <br />
-          المتوفر: أساسي {availableMainQty}، فرعي {availableSubQty}
+          المتوفر: {mainUnitsAvailable} وحدة أساسية + {subUnitsAvailable} قطعة فرعية
           <br />
-          {requestedMainQty > availableMainQty && `الأساسي زائد بـ ${requestedMainQty - availableMainQty}`}
-          {requestedSubQty > availableSubQty && `الفرعي زائد بـ ${requestedSubQty - availableSubQty}`}
+          {requestedMainQty > availableMainQty && `الوحدات الأساسية زائدة بـ ${requestedMainQty - availableMainQty}`}
+          {requestedSubQty > availableSubQty && `القطع الفرعية زائدة بـ ${requestedSubQty - availableSubQty}`}
         </div>
       );
     }
@@ -477,7 +489,7 @@ const NewSalesInvoice = () => {
         newDiscountErrors[index] = false;
       }
 
-      // التحقق من توفر المخزون (فصل أساسي وفرعي)
+      // التحقق من توفر المخزون مع المنطق الذكي للتحويل
       const product = products.find(p => p.id === parseInt(item.productId));
       if (product) {
         const requestedMainQty = parseInt(item.quantity) || 0;
@@ -485,13 +497,20 @@ const NewSalesInvoice = () => {
         
         const availableMainQty = product.mainQuantity || 0;
         const availableSubQty = product.subQuantity || 0;
+        const unitsInMain = product.unitsInMain || 0; // عدد القطع في الوحدة الأساسية
         
-        // التحقق من كل نوع كمية منفصل
-        if (requestedMainQty > availableMainQty) {
-          errors[`stock_${index}`] = `الكمية الأساسية المطلوبة (${requestedMainQty}) تتجاوز المتوفر (${availableMainQty})`;
-          newQuantityErrors[index] = true;
-        } else if (requestedSubQty > availableSubQty) {
-          errors[`stock_${index}`] = `الكمية الفرعية المطلوبة (${requestedSubQty}) تتجاوز المتوفر (${availableSubQty})`;
+        // استخدام المنطق الذكي للتحقق من توفر الكمية
+        const totalRequestedSubUnits = (requestedMainQty * unitsInMain) + requestedSubQty;
+        const totalAvailableSubUnits = (availableMainQty * unitsInMain) + availableSubQty;
+        
+        if (totalRequestedSubUnits > totalAvailableSubUnits) {
+          // تحويل إجمالي المطلوب إلى وحدة أساسية + فرعية للرسالة
+          const mainUnitsNeeded = Math.floor(totalRequestedSubUnits / unitsInMain);
+          const subUnitsNeeded = totalRequestedSubUnits % unitsInMain;
+          const mainUnitsAvailable = Math.floor(totalAvailableSubUnits / unitsInMain);
+          const subUnitsAvailable = totalAvailableSubUnits % unitsInMain;
+          
+          errors[`stock_${index}`] = `الكمية المطلوبة إجمالاً: ${mainUnitsNeeded} وحدة أساسية + ${subUnitsNeeded} قطعة فرعية`;
           newQuantityErrors[index] = true;
         } else {
           newQuantityErrors[index] = false;
