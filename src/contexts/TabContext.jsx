@@ -83,6 +83,13 @@ export const TabProvider = ({ children }) => {
       '/treasury/movement': 'حركة الخزينة',
       '/treasury/customer-balances': 'أرصدة العملاء',
       '/treasury/supplier-balances': 'أرصدة الموردين',
+      '/accounting/chart-of-accounts': 'دليل الحسابات',
+      '/accounting/journal-entry': 'القيود اليومية',
+      '/hr/employees': 'إدارة الموظفين',
+      '/hr/organization': 'إدارة الأقسام',
+      '/hr/attendance': 'الحضور والانصراف',
+      '/hr/leaves': 'إدارة الإجازات',
+      '/hr/payroll': 'الرواتب',
       '/reports/inventory': 'تقرير المخزون',
       '/reports/low-stock': 'المخزون المنخفض',
       '/reports/product-movement': 'حركة المنتجات',
@@ -109,12 +116,6 @@ export const TabProvider = ({ children }) => {
       '/adjustments/treasury': 'تسويات الخزينة',
       '/adjustments/entries': 'قيود التسوية',
       '/adjustments/history': 'سجل التسويات',
-      '/production': 'نظام الإنتاج',
-      '/production/orders': 'إدارة أوامر الإنتاج',
-      '/production/planning': 'تخطيط الإنتاج',
-      '/production/materials': 'تتبع المواد الخام',
-      '/production/quality': 'مراقبة الجودة',
-      '/production/dashboard': 'لوحة الإنتاجية',
     };
     return titles[path] || 'صفحة';
   };
@@ -128,12 +129,13 @@ export const TabProvider = ({ children }) => {
     if (path.includes('customers')) return '👥';
     if (path.includes('suppliers')) return '🚚';
     if (path.includes('treasury')) return '💵';
+    if (path.includes('accounting')) return '📚';
+    if (path.includes('hr')) return '👨‍💼';
     if (path.includes('reports')) return '📊';
     if (path.includes('notifications')) return '🔔';
     if (path.includes('settings')) return '⚙️';
     if (path.includes('integrations')) return '🔗';
     if (path.includes('adjustments')) return '🛠️';
-    if (path.includes('production')) return '🏭';
     return '📄';
   };
 
@@ -151,6 +153,34 @@ export const TabProvider = ({ children }) => {
     setTabs(prev => [...prev, newTab]);
     setActiveTabId(newTabId);
     navigate('/dashboard');
+  };
+
+  // فتح صفحة مباشرة في تبويب جديد
+  const openPageInNewTab = (path, title, icon) => {
+    // فحص إذا كان هناك تبويبة مفتوحة بالفعل لهذا المسار
+    const existingTab = tabs.find(tab => tab.path === path);
+    
+    if (existingTab) {
+      // إذا كانت التبويبة موجودة، التحويل إليها
+      setActiveTabId(existingTab.id);
+      navigate(path);
+      return existingTab.id;
+    } else {
+      // إنشاء تبويبة جديدة
+      const newTabId = `tab-${Date.now()}`;
+      const newTab = {
+        id: newTabId,
+        path: path,
+        title: title,
+        icon: icon,
+        isMain: false
+      };
+
+      setTabs(prev => [...prev, newTab]);
+      setActiveTabId(newTabId);
+      navigate(path);
+      return newTabId;
+    }
   };
 
   // إغلاق تبويب
@@ -192,6 +222,7 @@ export const TabProvider = ({ children }) => {
     tabs,
     activeTabId,
     openNewTab,
+    openPageInNewTab,
     closeTab,
     switchTab,
     getActiveTab,

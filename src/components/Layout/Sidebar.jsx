@@ -45,6 +45,7 @@ import {
 const Sidebar = ({ isOpen, closeSidebar }) => {
   const location = useLocation();
   const { isAdmin } = useAuth();
+  const { openPageInNewTab } = useTab();
   const [activeMenu, setActiveMenu] = useState(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [isHovered, setIsHovered] = useState(false);
@@ -317,15 +318,6 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     }
   };
 
-  const handleSubItemClick = () => {
-    // إغلاق القائمة الفرعية فوراً عند النقر على عنصر داخلي
-    setActiveMenu(null);
-    setIsHovered(false);
-    if (window.innerWidth < 1024) {
-      closeSidebar();
-    }
-  };
-
   // إغلاق القائمة الفرعية عند تغيير المسار
   useEffect(() => {
     setActiveMenu(null);
@@ -414,46 +406,36 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
                     </button>
                   </div>
                 ) : (
-                  // Simple menu item
-                  <NavLink
-                    to={item.path}
-                    onClick={() => {
-                      setActiveMenu(null);
-                      if (window.innerWidth < 1024) closeSidebar();
-                    }}
-                    className={({ isActive }) =>
-                      `flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group relative ${
-                        isActive
-                          ? 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-md'
-                          : 'hover:bg-orange-50'
-                      }`
-                    }
+                  // Simple menu item - فتح في تبويب
+                  <button
+                    onClick={() => openMainItemInTab(item)}
+                    className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group relative ${
+                      location.pathname === item.path
+                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-md'
+                        : 'hover:bg-orange-50'
+                    }`}
                     title={!isExpanded ? item.title : ''}
                   >
-                    {({ isActive }) => (
-                      <>
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          isActive 
-                            ? 'bg-white/20 text-white' 
-                            : `bg-gradient-to-br ${item.color} text-white shadow-sm`
-                        }`}>
-                          <span className="text-sm">{item.icon}</span>
-                        </div>
-                        {isExpanded && (
-                          <span className={`flex-1 text-xs font-semibold text-right truncate ${
-                            isActive ? 'text-white' : 'text-gray-700'
-                          }`}>
-                            {item.title}
-                          </span>
-                        )}
-                        
-                        {/* Active indicator for collapsed state */}
-                        {!isExpanded && isActive && (
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-orange-500 rounded-r-full" />
-                        )}
-                      </>
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      location.pathname === item.path
+                        ? 'bg-white/20 text-white' 
+                        : `bg-gradient-to-br ${item.color} text-white shadow-sm`
+                    }`}>
+                      <span className="text-sm">{item.icon}</span>
+                    </div>
+                    {isExpanded && (
+                      <span className={`flex-1 text-xs font-semibold text-right truncate ${
+                        location.pathname === item.path ? 'text-white' : 'text-gray-700'
+                      }`}>
+                        {item.title}
+                      </span>
                     )}
-                  </NavLink>
+                    
+                    {/* Active indicator for collapsed state */}
+                    {!isExpanded && location.pathname === item.path && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-orange-500 rounded-r-full" />
+                    )}
+                  </button>
                 )}
               </div>
             ))}
@@ -491,23 +473,33 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
             
             <div className="overflow-visible">
               {menuItems.find(item => item.id === activeMenu)?.subItems?.map((subItem, idx) => (
-                <NavLink
+                <button
                   key={idx}
-                  to={subItem.path}
-                  onClick={handleSubItemClick}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 transition-all hover:bg-orange-50 hover:text-orange-600 group ${
-                      isActive
-                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-sm'
-                        : 'text-gray-600'
-                    }`
-                  }
+                  onClick={() => {
+                    // تحديد الأيقونة المناسبة
+                    const iconString = subItem.icon?.toString() || '📄';
+                    
+                    // فتح الصفحة في تبويب جديد أو التحويل لتبويب موجود
+                    openPageInNewTab(subItem.path, subItem.title, iconString);
+                    
+                    // إغلاق القائمة وإغلاق الشريط في الأجهزة المحمولة
+                    setActiveMenu(null);
+                    setIsHovered(false);
+                    if (window.innerWidth < 1024) {
+                      closeSidebar();
+                    }
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all hover:bg-orange-50 hover:text-orange-600 group ${
+                    location.pathname === subItem.path
+                      ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-sm'
+                      : 'text-gray-600'
+                  }`}
                 >
                   <span className="text-sm flex-shrink-0 group-hover:scale-110 transition-transform">
                     {subItem.icon}
                   </span>
                   <span className="truncate font-medium text-xs">{subItem.title}</span>
-                </NavLink>
+                </button>
               ))}
             </div>
             
