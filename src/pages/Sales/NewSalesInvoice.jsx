@@ -267,15 +267,20 @@ const NewSalesInvoice = () => {
   const selectProduct = (index, product) => {
     const newItems = [...items];
     
-    // اختيار السعر المناسب من الشريحة المختارة
-    const tierPrice = product.tierPrices?.[formData.saleType] || { basicPrice: 0, subPrice: 0 };
+    // الحصول على الأسعار الصحيحة من خصائص المنتج المباشرة
+    const tierPrices = {
+      retail: { base: product.retailBasePrice || 0, sub: product.retailSubPrice || 0 },
+      wholesale: { base: product.wholesaleBasePrice || 0, sub: product.wholesaleSubPrice || 0 },
+      bulk: { base: product.bulkBasePrice || 0, sub: product.bulkSubPrice || 0 }
+    };
+    const tierPrice = tierPrices[formData.saleType] || { base: 0, sub: 0 };
     
     newItems[index] = {
       ...newItems[index],
       productId: product.id,
       productName: product.name,
-      price: parseFloat(tierPrice.basicPrice) || 0, // السعر الأساسي للشريحة
-      subPrice: parseFloat(tierPrice.subPrice) || 0, // السعر الفرعي للشريحة
+      price: parseFloat(tierPrice.base) || 0, // السعر الأساسي للشريحة
+      subPrice: parseFloat(tierPrice.sub) || 0, // السعر الفرعي للشريحة
       saleType: formData.saleType, // حفظ نوع البيع المختار
       discount: 0
     };
@@ -299,9 +304,9 @@ const NewSalesInvoice = () => {
   const updateSaleType = (index) => {
     // قائمة منسدلة للاختيار (يمكن تحسينها لاحقاً)
     const saleTypes = [
-      { value: 'retail', label: '🛒 البيع المباشر', color: 'orange' },
-      { value: 'wholesale', label: '📦 الجملة', color: 'blue' },
-      { value: 'bulk', label: '🚛 جملة الجملة', color: 'purple' }
+      { value: 'retail', label: 'البيع المباشر', color: 'orange' },
+      { value: 'wholesale', label: 'الجملة', color: 'blue' },
+      { value: 'bulk', label: 'جملة الجملة', color: 'purple' }
     ];
 
     // إنشاء modal بسيط للاختيار
@@ -318,14 +323,21 @@ const NewSalesInvoice = () => {
     if (newSaleType && items[index].productId) {
       // العثور على المنتج وتحديث الأسعار
       const product = products.find(p => p.id === items[index].productId);
-      if (product && product.tierPrices?.[newSaleType]) {
-        const tierPrice = product.tierPrices[newSaleType];
+      if (product) {
+        // الحصول على الأسعار الصحيحة من خصائص المنتج المباشرة
+        const tierPrices = {
+          retail: { base: product.retailBasePrice || 0, sub: product.retailSubPrice || 0 },
+          wholesale: { base: product.wholesaleBasePrice || 0, sub: product.wholesaleSubPrice || 0 },
+          bulk: { base: product.bulkBasePrice || 0, sub: product.bulkSubPrice || 0 }
+        };
+        const tierPrice = tierPrices[newSaleType] || { base: 0, sub: 0 };
+        
         const newItems = [...items];
         newItems[index] = {
           ...newItems[index],
           saleType: newSaleType,
-          price: parseFloat(tierPrice.basicPrice) || 0,
-          subPrice: parseFloat(tierPrice.subPrice) || 0
+          price: parseFloat(tierPrice.base) || 0,
+          subPrice: parseFloat(tierPrice.sub) || 0
         };
         setItems(newItems);
         showSuccess(`تم تحديث نوع البيع إلى ${saleTypes.find(t => t.value === newSaleType)?.label}`);
@@ -384,7 +396,7 @@ const NewSalesInvoice = () => {
       productName: '',
       quantity: 0, 
       subQuantity: 0,
-      mainPrice: 0,
+      price: 0,
       subPrice: 0,
       discount: 0
     }]);
@@ -611,7 +623,7 @@ const NewSalesInvoice = () => {
         productName: item.productName,
         quantity: item.quantity || 0,
         subQuantity: item.subQuantity || 0,
-        mainPrice: item.price || 0,
+        price: item.price || 0,
         subPrice: item.subPrice || 0,
         discount: item.discount || 0,
         saleType: item.saleType || 'retail', // نوع البيع
@@ -671,7 +683,7 @@ const NewSalesInvoice = () => {
       productName: '',
       quantity: 0, 
       subQuantity: 0,
-      mainPrice: 0,
+      price: 0,
       subPrice: 0,
       discount: 0
     }]);
@@ -928,9 +940,9 @@ const NewSalesInvoice = () => {
                         }`}
                         title="انقر للتغيير"
                       >
-                        {item.saleType === 'retail' && '🛒 مباشر'}
-                        {item.saleType === 'wholesale' && '📦 جملة'}
-                        {item.saleType === 'bulk' && '🚛 جملة كبيرة'}
+                        {item.saleType === 'retail' && 'البيع المباشر'}
+                        {item.saleType === 'wholesale' && 'الجملة'}
+                        {item.saleType === 'bulk' && 'جملة الجملة'}
                         {!item.saleType && 'غير محدد'}
                       </button>
                     </td>
