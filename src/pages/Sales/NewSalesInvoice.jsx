@@ -708,93 +708,6 @@ const NewSalesInvoice = () => {
             </select>
           </div>
 
-          {/* قسم الشحن */}
-          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-            <div className="flex items-center gap-2 mb-3">
-              <input
-                type="checkbox"
-                id="shippingRequired"
-                name="shippingRequired"
-                checked={formData.shippingRequired}
-                onChange={handleChange}
-                className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-              />
-              <label htmlFor="shippingRequired" className="text-sm font-medium text-gray-700">
-                يتطلب شحن وتوصيل
-              </label>
-            </div>
-
-            {formData.shippingRequired && (
-              <div className="space-y-3">
-                {/* اختيار الشاحنة */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    اختيار الشاحنة/السيارة
-                  </label>
-                  <select
-                    name="selectedVehicle"
-                    value={formData.selectedVehicle}
-                    onChange={handleChange}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500"
-                  >
-                    {availableVehicles.map(vehicle => (
-                      <option key={vehicle.id} value={vehicle.id}>
-                        {vehicle.name} - {vehicle.driver} ({vehicle.status})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* عنوان التوصيل */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    عنوان التوصيل
-                  </label>
-                  <input
-                    type="text"
-                    name="shippingAddress"
-                    value={formData.shippingAddress}
-                    onChange={handleChange}
-                    placeholder="العنوان التفصيلي للتوصيل"
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500"
-                  />
-                </div>
-
-                {/* تكلفة الشحن */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    تكلفة الشحن (جنيه)
-                  </label>
-                  <input
-                    type="number"
-                    name="shippingCost"
-                    value={formData.shippingCost}
-                    onChange={handleChange}
-                    placeholder="0"
-                    min="0"
-                    step="0.01"
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500"
-                  />
-                </div>
-
-                {/* ملاحظات الشحن */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    ملاحظات الشحن
-                  </label>
-                  <textarea
-                    name="shippingNotes"
-                    value={formData.shippingNotes}
-                    onChange={handleChange}
-                    placeholder="ملاحظات خاصة بالتوصيل..."
-                    rows={2}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 resize-none"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
 
 
           {/* تحذيرات نوع الدفع */}
@@ -826,6 +739,99 @@ const NewSalesInvoice = () => {
               <option value="fatora">فاتورة</option>
               <option value="kartona">كرتونة</option>
             </select>
+          </div>
+
+          {/* قسم الشحن - في مكان أكثر منطقية */}
+          <div className="col-span-1 lg:col-span-2">
+            <div className="bg-white border-2 border-dashed border-orange-200 rounded-lg p-4 hover:border-orange-300 transition-colors">
+              <div className="flex items-center gap-3 mb-4">
+                <input
+                  type="checkbox"
+                  id="shippingRequired"
+                  name="shippingRequired"
+                  checked={formData.shippingRequired}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
+                />
+                <label htmlFor="shippingRequired" className="text-sm font-semibold text-orange-700 flex items-center gap-2">
+                  🚛 يتطلب شحن وتوصيل
+                </label>
+              </div>
+
+              {formData.shippingRequired && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* اختيار الشاحنة */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-medium text-gray-700">
+                      🚚 الشاحنة/السيارة
+                    </label>
+                    <select
+                      name="selectedVehicle"
+                      value={formData.selectedVehicle}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    >
+                      <option value="">اختر الشاحنة</option>
+                      {availableVehicles.filter(v => v.id).map(vehicle => (
+                        <option key={vehicle.id} value={vehicle.id}>
+                          {vehicle.name} - {vehicle.driver}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* عنوان التوصيل */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-medium text-gray-700">
+                      📍 عنوان التوصيل
+                    </label>
+                    <input
+                      type="text"
+                      name="shippingAddress"
+                      value={formData.shippingAddress}
+                      onChange={handleChange}
+                      placeholder="العنوان التفصيلي..."
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    />
+                  </div>
+
+                  {/* تكلفة الشحن */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-medium text-gray-700">
+                      💰 تكلفة الشحن
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        name="shippingCost"
+                        value={formData.shippingCost}
+                        onChange={handleChange}
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                        className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">ج.م</span>
+                    </div>
+                  </div>
+
+                  {/* ملاحظات الشحن */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-medium text-gray-700">
+                      📝 ملاحظات
+                    </label>
+                    <textarea
+                      name="shippingNotes"
+                      value={formData.shippingNotes}
+                      onChange={handleChange}
+                      placeholder="ملاحظات خاصة بالتوصيل..."
+                      rows={2}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* التاريخ والوقت */}
