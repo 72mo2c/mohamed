@@ -737,15 +737,15 @@ const NewSalesInvoice = () => {
             )}
           </div>
 
-          {/* نوع الفاتورة والشحن ونوع البيع */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* الأقسام العلوية - صف واحد */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
             {/* نوع الفاتورة */}
-            <div>
+            <div className="lg:col-span-1">
               <select
                 name="paymentType"
                 value={formData.paymentType}
                 onChange={handleChange}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                className="w-full px-2 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 transition-colors"
               >
                 <option value="main">اختر نوع الفاتورة</option>
                 <option value="cash">نقدي</option>
@@ -755,12 +755,12 @@ const NewSalesInvoice = () => {
             </div>
 
             {/* الشاحنة */}
-            <div>
+            <div className="lg:col-span-1">
               <select
                 name="selectedVehicle"
                 value={formData.selectedVehicle}
                 onChange={handleChange}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500"
+                className="w-full px-2 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 transition-colors"
               >
                 <option value="">الشاحنة (اختياري)</option>
                 {availableVehicles.filter(v => v.id).map(vehicle => (
@@ -772,12 +772,12 @@ const NewSalesInvoice = () => {
             </div>
 
             {/* نوع البيع - الشرائح السعرية */}
-            <div>
+            <div className="lg:col-span-1">
               <select
                 name="saleType"
                 value={formData.saleType}
                 onChange={handleChange}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
+                className="w-full px-2 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 transition-colors"
               >
                 <option value="retail">البيع المباشر</option>
                 <option value="wholesale">الجملة</option>
@@ -785,22 +785,41 @@ const NewSalesInvoice = () => {
               </select>
             </div>
 
-            {/* التاريخ والوقت - في نهاية السطر بحجم طبيعي */}
-            <div className="grid grid-cols-2 gap-2">
+            {/* التاريخ */}
+            <div className="lg:col-span-1">
               <input
                 type="date"
                 name="date"
                 value={formData.date}
                 onChange={handleChange}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                className="w-full px-2 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 transition-colors"
               />
+            </div>
+
+            {/* الوقت */}
+            <div className="lg:col-span-1">
               <input
                 type="time"
                 name="time"
                 value={formData.time}
                 onChange={handleChange}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                className="w-full px-2 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 transition-colors"
               />
+            </div>
+
+            {/* الوكيل */}
+            <div className="lg:col-span-1">
+              <select
+                name="agentType"
+                value={formData.agentType}
+                onChange={handleChange}
+                className="w-full px-2 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 transition-colors"
+              >
+                <option value="">الوكيل/المندوب</option>
+                <option value="general">عام</option>
+                <option value="fatora">فاتورة</option>
+                <option value="kartona">كرتونة</option>
+              </select>
             </div>
           </div>
 
@@ -820,20 +839,7 @@ const NewSalesInvoice = () => {
             </div>
           )}
 
-          {/* الوكيل - بحجم مضغوط قليلاً */}
-          <div>
-            <select
-              name="agentType"
-              value={formData.agentType}
-              onChange={handleChange}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">اختر نوع الوكيل / المندوب</option>
-              <option value="general">عام</option>
-              <option value="fatora">فاتورة</option>
-              <option value="kartona">كرتونة</option>
-            </select>
-          </div>
+
         </div>
 
         {/* جدول المنتجات */}
