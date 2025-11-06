@@ -97,40 +97,62 @@ export const loadProductsWithUnits = () => {
 };
 
 /**
- * دالة محدثة لإدارة المخزون مع التحويل الذكي
+ * دالة محدثة لإدارة المخزون مع التحويل الذكي - المنطق الذكي للخصم
  * @param {Array} products - قائمة المنتجات
  * @param {number} productId - معرف المنتج
- * @param {Object} quantityChange - تغيير الكمية
+ * @param {Object} saleData - بيانات البيع { mainSale, subSale }
  * @returns {Array} - قائمة محدثة
  */
-export const updateStockWithConversion = (products, productId, quantityChange) => {
+export const updateStockWithConversion = (products, productId, saleData) => {
   return products.map(product => {
     if (product.id === productId) {
-      // حساب الكمية الجديدة مع التحويل الذكي
       const { mainQuantity = 0, subQuantity = 0, unitsInMain = 0 } = product;
-      const { change = 0, type = 'sub' } = quantityChange; // type: 'main' or 'sub'
+      const { mainSale = 0, subSale = 0 } = saleData;
       
       let newMainQuantity = mainQuantity;
       let newSubQuantity = subQuantity;
       
-      if (type === 'main') {
-        // تغيير في الكمية الأساسية
-        newMainQuantity = Math.max(0, mainQuantity + change);
-      } else {
-        // تغيير في الكمية الفرعية
-        const newTotalSub = mainQuantity * unitsInMain + subQuantity + change;
+      // الخطوة 1: خصم الكمية الأساسية أولاً
+      if (mainSale > 0) {
+        newMainQuantity = Math.max(0, mainQuantity - mainSale);
         
-        if (newTotalSub < 0) {
-          // لا يمكن أن تكون الكمية سالبة
-          return product; // لا تغيير
-        }
+        // تحويل الكمية المباعة من أساسي إلى فرعي وإضافتها للمطلوب
+        const mainToSub = mainSale * unitsInMain;
+        const totalSubRequired = subSale + mainToSub;
         
-        // تحويل إلى أساسي + فرعي
-        if (unitsInMain > 0) {
-          newMainQuantity = Math.floor(newTotalSub / unitsInMain);
-          newSubQuantity = newTotalSub % unitsInMain;
+        // الخطوة 2: خصم الكمية الفرعية
+        if (subQuantity >= totalSubRequired) {
+          // الكمية الفرعية كافية
+          newSubQuantity = subQuantity - totalSubRequired;
         } else {
-          newSubQuantity = newTotalSub;
+          // الكمية الفرعية غير كافية - خذ من الأساسي
+          const subShortage = totalSubRequired - subQuantity;
+          const additionalMainNeeded = Math.ceil(subShortage / unitsInMain);
+          
+          if (newMainQuantity >= additionalMainNeeded) {
+            newMainQuantity -= additionalMainNeeded;
+            newSubQuantity = subQuantity + (additionalMainNeeded * unitsInMain) - totalSubRequired;
+          } else {
+            // لا توجد كمية كافية
+            return product; // لا تغيير
+          }
+        }
+      } else {
+        // لا يوجد خصم في أساسي، فقط فرعي
+        if (subQuantity >= subSale) {
+          newSubQuantity = subQuantity - subSale;
+        } else {
+          // كميحة فرعية غير كافية - خذ من الأساسي
+          const subShortage = subSale - subQuantity;
+          const additionalMainNeeded = Math.ceil(subShortage / unitsInMain);
+          
+          if (newMainQuantity >= additionalMainNeeded) {
+            newMainQuantity -= additionalMainNeeded;
+            newSubQuantity = subQuantity + (additionalMainNeeded * unitsInMain) - subSale;
+          } else {
+            // لا توجد كمية كافية
+            return product; // لا تغيير
+          }
         }
       }
       

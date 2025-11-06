@@ -729,17 +729,23 @@ export const DataProvider = ({ children }) => {
         const availableMainQty = product.mainQuantity || 0;
         const availableSubQty = product.subQuantity || 0;
         
-        if (mainQty > availableMainQty) {
-          throw new Error(
-            `الكمية الأساسية المتوفرة غير كافية للمنتج "${product.name}".\n` +
-            `المتوفر: ${availableMainQty}، المطلوب: ${mainQty}`
-          );
+        // المنطق الذكي للتحقق من توفر المخزون
+        let requiredSubQty = 0;
+        if (mainQty > 0) {
+          // تحويل الكمية المباعة من أساسي إلى فرعي
+          const mainToSub = mainQty * (product.unitsInMain || 0);
+          requiredSubQty = subQty + mainToSub;
+        } else {
+          requiredSubQty = subQty;
         }
         
-        if (subQty > availableSubQty) {
+        // حساب الكمية الإجمالية بالوحدات الفرعية
+        const totalAvailableSub = (product.mainQuantity || 0) * (product.unitsInMain || 0) + (product.subQuantity || 0);
+        
+        if (requiredSubQty > totalAvailableSub) {
           throw new Error(
-            `الكمية الفرعية المتوفرة غير كافية للمنتج "${product.name}".\n` +
-            `المتوفر: ${availableSubQty}، المطلوب: ${subQty}`
+            `الكمية المطلوبة من "${product.name}" غير متوفرة.\n` +
+            `إجمالي المتوفر: ${totalAvailableSub} قطعة، المطلوب: ${requiredSubQty} قطعة`
           );
         }
       }
@@ -763,31 +769,71 @@ export const DataProvider = ({ children }) => {
     };
     const updated = [...salesInvoices, newInvoice];
     
-    // تحديث كميات المنتجات (فصل الكميات المباعة من المخزون)
+    // تحديث كميات المنتجات (الذكي - يحول من أساسي عند الحاجة)
     if (invoice.items && Array.isArray(invoice.items)) {
       const updatedProducts = [...products];
       
       invoice.items.forEach(item => {
         const productIndex = updatedProducts.findIndex(p => p.id === parseInt(item.productId));
         if (productIndex !== -1) {
-          // فصل الكميات
-          const mainQty = parseInt(item.quantity) || 0;
-          const subQty = parseInt(item.subQuantity) || 0;
+          const product = updatedProducts[productIndex];
+          const { mainQuantity = 0, subQuantity = 0, unitsInMain = 0 } = product;
+          const mainSale = parseInt(item.quantity) || 0; // الكمية الأساسية المباعة
+          const subSale = parseInt(item.subQuantity) || 0; // الكمية الفرعية المباعة
           
-          const newMainQty = (updatedProducts[productIndex].mainQuantity || 0) - mainQty;
-          const newSubQty = (updatedProducts[productIndex].subQuantity || 0) - subQty;
+          let newMainQuantity = mainQuantity;
+          let newSubQuantity = subQuantity;
           
-          // تأكيد نهائي لمنع الكميات السالبة
-          if (newMainQty < 0 || newSubQty < 0) {
-            throw new Error(
-              `خطأ: الكمية أصبحت سالبة للمنتج ${updatedProducts[productIndex].name}`
-            );
+          // تطبيق المنطق الذكي: خصم الكمية الأساسية أولاً
+          if (mainSale > 0) {
+            newMainQuantity = Math.max(0, mainQuantity - mainSale);
+            
+            // تحويل الكمية المباعة من أساسي إلى فرعي
+            const mainToSub = mainSale * unitsInMain;
+            const totalSubRequired = subSale + mainToSub;
+            
+            // خصم الكمية الفرعية
+            if (subQuantity >= totalSubRequired) {
+              // الكمية الفرعية كافية
+              newSubQuantity = subQuantity - totalSubRequired;
+            } else {
+              // الكمية الفرعية غير كافية - خذ من الأساسي
+              const subShortage = totalSubRequired - subQuantity;
+              const additionalMainNeeded = Math.ceil(subShortage / unitsInMain);
+              
+              if (newMainQuantity >= additionalMainNeeded) {
+                newMainQuantity -= additionalMainNeeded;
+                newSubQuantity = subQuantity + (additionalMainNeeded * unitsInMain) - totalSubRequired;
+              } else {
+                throw new Error(
+                  `الكمية غير كافية في المخزون للمنتج "${product.name}"`
+                );
+              }
+            }
+          } else {
+            // لا يوجد خصم في أساسي، فقط فرعي
+            if (subQuantity >= subSale) {
+              newSubQuantity = subQuantity - subSale;
+            } else {
+              // كميحة فرعية غير كافية - خذ من الأساسي
+              const subShortage = subSale - subQuantity;
+              const additionalMainNeeded = Math.ceil(subShortage / unitsInMain);
+              
+              if (newMainQuantity >= additionalMainNeeded) {
+                newMainQuantity -= additionalMainNeeded;
+                newSubQuantity = subQuantity + (additionalMainNeeded * unitsInMain) - subSale;
+              } else {
+                throw new Error(
+                  `الكمية غير كافية في المخزون للمنتج "${product.name}"`
+                );
+              }
+            }
           }
           
           updatedProducts[productIndex] = {
             ...updatedProducts[productIndex],
-            mainQuantity: newMainQty,
-            subQuantity: newSubQty
+            mainQuantity: newMainQuantity,
+            subQuantity: newSubQuantity
           };
         }
       });

@@ -212,18 +212,22 @@ const SmartSalesInvoice = () => {
         errors[`item_${index}_quantity`] = 'يجب إدخال كمية';
       }
       
-      // التحقق من توفر المخزون
+      // التحقق من توفر المخزون باستخدام المنطق الذكي
       const product = getSelectedProduct(item);
       if (product) {
-        const totalSubQuantity = (item.mainQuantity || 0) * (product.unitsInMain || 0) + (item.subQuantity || 0);
-        const currentStock = {
-          mainQuantity: product.mainQuantity || 0,
-          subQuantity: product.subQuantity || 0,
-          unitsInMain: product.unitsInMain || 0
-        };
+        const mainQty = item.mainQuantity || 0;
+        const subQty = item.subQuantity || 0;
+        const unitsInMain = product.unitsInMain || 0;
         
-        if (!checkStockAvailability(currentStock, totalSubQuantity, 'sub')) {
-          errors[`item_${index}_stock`] = `الكمية المطلوبة من ${product.name} غير متوفرة`;
+        // حساب الكمية المطلوبة بالوحدات الفرعية
+        const requiredSubQuantity = mainQty * unitsInMain + subQty;
+        
+        // حساب الكمية المتاحة بالوحدات الفرعية
+        const totalAvailableSub = (product.mainQuantity || 0) * unitsInMain + (product.subQuantity || 0);
+        
+        if (requiredSubQuantity > totalAvailableSub) {
+          errors[`item_${index}_stock`] = `الكمية المطلوبة من ${product.name} غير متوفرة.\n` +
+            `إجمالي المتوفر: ${totalAvailableSub} قطعة، المطلوب: ${requiredSubQuantity} قطعة`;
         }
       }
     });
