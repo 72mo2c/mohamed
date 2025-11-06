@@ -12,7 +12,7 @@ import {
   isSubQuantityAvailable,
   getStockDetail 
 } from '../../utils/unitConversion';
-import { checkStockAvailability, updateStockWithConversion } from '../../utils/dataContextUpdates';
+import { checkStockAvailability, updateStockWithConversion, isSmartQuantityAvailable } from '../../utils/dataContextUpdates';
 
 const SmartSalesInvoice = () => {
   const { customers, products, warehouses, addSalesInvoice, getCustomerBalance } = useData();
@@ -68,28 +68,20 @@ const SmartSalesInvoice = () => {
     return products.find(p => p.id === parseInt(item.productId)) || null;
   };
 
-  // التحقق من توفر الكمية عند إدخالها
+  // التحقق من توفر الكمية عند إدخالها باستخدام المنطق الذكي
   const checkStockAvailabilityForItem = (index, item) => {
     const product = getSelectedProduct(item);
     if (!product) return;
 
-    const mainQty = item.mainQuantity || 0;
-    const subQty = item.subQuantity || 0;
-    const unitsInMain = product.unitsInMain || 0;
-    
-    // حساب الكمية المطلوبة بالوحدات الفرعية
-    const requiredSubQuantity = mainQty * unitsInMain + subQty;
-    
-    // حساب الكمية المتاحة بالوحدات الفرعية
-    const availableSubQuantity = (product.mainQuantity || 0) * unitsInMain + (product.subQuantity || 0);
-    
-    // التحقق من التوفر
-    const isAvailable = requiredSubQuantity <= availableSubQuantity;
+    const mainSale = item.mainQuantity || 0;
+    const subSale = item.subQuantity || 0;
+
+    // استخدام المنطق الذكي للتحقق من توفر الكمية
+    const isAvailable = isSmartQuantityAvailable(product, mainSale, subSale);
     
     setStockWarnings(prev => ({
       ...prev,
-      [index]: isAvailable ? null : `الكمية المطلوبة غير متوفرة في المخزون\n` +
-        `المتاح: ${availableSubQuantity} قطعة، المطلوب: ${requiredSubQuantity} قطعة`
+      [index]: isAvailable ? null : 'الكمية المطلوبة غير متوفرة في المخزون'
     }));
   };
 
@@ -220,20 +212,15 @@ const SmartSalesInvoice = () => {
       // التحقق من توفر المخزون باستخدام المنطق الذكي
       const product = getSelectedProduct(item);
       if (product) {
-        const mainQty = item.mainQuantity || 0;
-        const subQty = item.subQuantity || 0;
-        const unitsInMain = product.unitsInMain || 0;
+        const mainSale = item.mainQuantity || 0;
+        const subSale = item.subQuantity || 0;
         
-        // حساب الكمية المطلوبة بالوحدات الفرعية
-        const requiredSubQuantity = mainQty * unitsInMain + subQty;
+        // استخدام المنطق الذكي للتحقق من توفر الكمية
+        const isAvailable = isSmartQuantityAvailable(product, mainSale, subSale);
         
-        // حساب الكمية المتاحة بالوحدات الفرعية
-        const availableSubQuantity = (product.mainQuantity || 0) * unitsInMain + (product.subQuantity || 0);
-        
-        if (requiredSubQuantity > availableSubQuantity) {
-          errors[`item_${index}_stock`] = `الكمية المطلوبة من ${product.name} غير متوفرة.\n` +
-            `المتاح: ${availableSubQuantity} قطعة، المطلوب: ${requiredSubQuantity} قطعة\n` +
-            `النظام سيتمكن من التحويل الذكي عند البيع`;
+        if (!isAvailable) {
+          errors[`item_${index}_stock`] = `الكمية المطلوبة من ${product.name} غير متوفرة في المخزون.\n` +
+            `النظام الذكي غير قادر على تلبية هذا الطلب بالكمية المتاحة`;
         }
       }
     });
