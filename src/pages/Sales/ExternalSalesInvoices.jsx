@@ -16,7 +16,6 @@ import {
   FaCheckCircle,
   FaTimesCircle,
   FaHistory,
-  FaReceipt,
   FaUserPlus,
   FaSync,
   FaInfoCircle
@@ -289,124 +288,108 @@ const ExternalSalesInvoices = () => {
     fetchInvoicesFromAPI();
   };
 
-  // حساب الإحصائيات
-  const stats = {
-    pending: pendingInvoices.length,
-    accepted: acceptedInvoices.length,
-    rejected: rejectedInvoices.length,
-    pendingTotal: pendingInvoices.reduce((sum, inv) => sum + inv.total, 0)
-  };
 
-  // رسم بطاقة الفاتورة
+
+  // رسم بطاقة الفاتورة بتصميم أفقي
   const InvoiceCard = ({ invoice, status }) => {
     const platformIcon = invoice.platform === 'invoice' ? <FaFileInvoice /> : <FaBox />;
     const platformColor = invoice.platform === 'invoice' ? 'blue' : 'purple';
 
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
-        {/* رأس البطاقة */}
-        <div className="flex justify-between items-start mb-3">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg bg-gradient-to-br from-${platformColor}-500 to-${platformColor}-600 flex items-center justify-center text-white`}>
-              {platformIcon}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-3 hover:shadow-md transition-shadow w-full">
+        <div className="flex items-center gap-4">
+          {/* أيقونة المنصة */}
+          <div className={`w-8 h-8 rounded bg-gradient-to-br from-${platformColor}-500 to-${platformColor}-600 flex items-center justify-center text-white flex-shrink-0`}>
+            {platformIcon}
+          </div>
+          
+          {/* معلومات الفاتورة */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="font-semibold text-gray-800 truncate">{invoice.customerName}</div>
+              <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold ${
+                invoice.agentType === 'invoice' 
+                  ? 'bg-blue-100 text-blue-700' 
+                  : 'bg-purple-100 text-purple-700'
+              }`}>
+                {invoice.agentType === 'invoice' ? 'فاتورة' : 'كرتونة'}
+              </div>
             </div>
-            <div>
-              <div className="font-bold text-gray-800">{invoice.customerName}</div>
-              <div className="text-xs text-gray-500">{invoice.platformName}</div>
+            <div className="text-xs text-gray-500 flex items-center gap-2">
+              <span>{invoice.platformName}</span>
+              <span>•</span>
+              <span>{invoice.receivedDate} {invoice.receivedTime}</span>
+              <span>•</span>
+              <span>{invoice.items.length} أصناف</span>
             </div>
           </div>
-          <div className="text-left">
-            <div className="text-sm font-semibold text-gray-600">{invoice.receivedDate}</div>
-            <div className="text-xs text-gray-500">{invoice.receivedTime}</div>
-          </div>
-        </div>
 
-        {/* تفاصيل الفاتورة */}
-        <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
-          <div>
-            <span className="text-gray-600">عدد الأصناف:</span>
-            <span className="font-semibold mr-2">{invoice.items.length}</span>
-          </div>
-          <div>
-            <span className="text-gray-600">نوع الدفع:</span>
-            <span className="font-semibold mr-2">
+          {/* الإجمالي */}
+          <div className="text-right flex-shrink-0">
+            <div className="text-lg font-bold text-green-600">
+              {invoice.total.toLocaleString()} ج.م
+            </div>
+            <div className="text-xs text-gray-500">
               {invoice.paymentType === 'cash' ? 'نقدي' : invoice.paymentType === 'deferred' ? 'آجل' : 'جزئي'}
-            </span>
+            </div>
           </div>
-        </div>
 
-        {/* نوع الوكيل */}
-        <div className="mb-3">
-          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold ${
-            invoice.agentType === 'invoice' 
-              ? 'bg-blue-100 text-blue-700' 
-              : 'bg-purple-100 text-purple-700'
-          }`}>
-            {invoice.agentType === 'invoice' ? <FaFileInvoice /> : <FaBox />}
-            {invoice.agentType === 'invoice' ? 'فاتورة' : 'كرتونة'}
-          </span>
-        </div>
-
-        {/* الإجمالي */}
-        <div className="mb-4 p-3 bg-green-50 rounded-lg">
-          <div className="text-xs text-gray-600 mb-1">الإجمالي</div>
-          <div className="text-2xl font-bold text-green-600">
-            {invoice.total.toLocaleString()} <span className="text-sm">ج.م</span>
+          {/* الأزرار */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {status === 'pending' && (
+              <>
+                <button
+                  onClick={() => handleAcceptInvoice(invoice)}
+                  disabled={isLoading}
+                  className="p-1.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded text-xs transition-colors"
+                  title="قبول"
+                >
+                  <FaCheck className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => analyzeInvoice(invoice)}
+                  className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors"
+                  title="تحليل"
+                >
+                  <FaInfoCircle className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => openRejectModal(invoice)}
+                  disabled={isLoading}
+                  className="p-1.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded text-xs transition-colors"
+                  title="رفض"
+                >
+                  <FaTimes className="w-3 h-3" />
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => viewInvoiceDetails(invoice)}
+              className="p-1.5 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs transition-colors"
+              title="تفاصيل"
+            >
+              <FaEye className="w-3 h-3" />
+            </button>
           </div>
-        </div>
-
-        {/* الأزرار */}
-        <div className="flex gap-2">
-          {status === 'pending' && (
-            <>
-              <button
-                onClick={() => handleAcceptInvoice(invoice)}
-                disabled={isLoading}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-semibold transition-colors"
-              >
-                <FaCheck /> قبول
-              </button>
-              <button
-                onClick={() => analyzeInvoice(invoice)}
-                className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors"
-                title="تحليل"
-              >
-                <FaInfoCircle />
-              </button>
-              <button
-                onClick={() => openRejectModal(invoice)}
-                disabled={isLoading}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-semibold transition-colors"
-              >
-                <FaTimes /> رفض
-              </button>
-            </>
-          )}
-          <button
-            onClick={() => viewInvoiceDetails(invoice)}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors"
-          >
-            <FaEye /> تفاصيل
-          </button>
         </div>
 
         {/* معلومات إضافية للمقبولة والمرفوضة */}
         {status === 'accepted' && invoice.acceptedDate && (
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <div className="flex items-center gap-2 text-xs text-green-600">
-              <FaCheckCircle />
+          <div className="mt-2 pt-2 border-t border-gray-100">
+            <div className="flex items-center gap-1 text-xs text-green-600">
+              <FaCheckCircle className="w-3 h-3" />
               <span>تم القبول في {invoice.acceptedDate} - {invoice.acceptedTime}</span>
             </div>
           </div>
         )}
         {status === 'rejected' && invoice.rejectedDate && (
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <div className="flex items-center gap-2 text-xs text-red-600 mb-1">
-              <FaTimesCircle />
+          <div className="mt-2 pt-2 border-t border-gray-100">
+            <div className="flex items-center gap-1 text-xs text-red-600 mb-1">
+              <FaTimesCircle className="w-3 h-3" />
               <span>تم الرفض في {invoice.rejectedDate} - {invoice.rejectedTime}</span>
             </div>
             {invoice.rejectionReason && (
-              <div className="text-xs text-gray-600 mr-5">السبب: {invoice.rejectionReason}</div>
+              <div className="text-xs text-gray-600 ml-4">السبب: {invoice.rejectionReason}</div>
             )}
           </div>
         )}
@@ -416,10 +399,9 @@ const ExternalSalesInvoices = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-4">
-      {/* العنوان والإحصائيات */}
+      {/* زر التحديث */}
       <div className="mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-gray-800">فواتير المبيعات الخارجية</h1>
+        <div className="flex justify-end">
           <button
             onClick={refreshInvoices}
             disabled={isLoading}
@@ -428,41 +410,6 @@ const ExternalSalesInvoices = () => {
             <FaSync className={isLoading ? 'animate-spin' : ''} />
             {isLoading ? 'جاري التحميل...' : 'تحديث'}
           </button>
-        </div>
-        
-        {/* بطاقات الإحصائيات */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-2">
-              <FaExclamationTriangle className="text-2xl" />
-              <div className="text-3xl font-bold">{stats.pending}</div>
-            </div>
-            <div className="text-sm opacity-90">فواتير معلقة</div>
-          </div>
-
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-2">
-              <FaCheckCircle className="text-2xl" />
-              <div className="text-3xl font-bold">{stats.accepted}</div>
-            </div>
-            <div className="text-sm opacity-90">فواتير مقبولة</div>
-          </div>
-
-          <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-2">
-              <FaTimesCircle className="text-2xl" />
-              <div className="text-3xl font-bold">{stats.rejected}</div>
-            </div>
-            <div className="text-sm opacity-90">فواتير مرفوضة</div>
-          </div>
-
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-2">
-              <FaReceipt className="text-2xl" />
-              <div className="text-xl font-bold">{stats.pendingTotal.toLocaleString()} ج.م</div>
-            </div>
-            <div className="text-sm opacity-90">إجمالي المعلقة</div>
-          </div>
         </div>
       </div>
 
@@ -477,7 +424,7 @@ const ExternalSalesInvoices = () => {
                 : 'text-gray-600 hover:bg-gray-50'
             }`}
           >
-            المعلقة ({stats.pending})
+            المعلقة ({pendingInvoices.length})
           </button>
           <button
             onClick={() => setActiveTab('accepted')}
@@ -487,7 +434,7 @@ const ExternalSalesInvoices = () => {
                 : 'text-gray-600 hover:bg-gray-50'
             }`}
           >
-            المقبولة ({stats.accepted})
+            المقبولة ({acceptedInvoices.length})
           </button>
           <button
             onClick={() => setActiveTab('rejected')}
@@ -497,7 +444,7 @@ const ExternalSalesInvoices = () => {
                 : 'text-gray-600 hover:bg-gray-50'
             }`}
           >
-            الأرشيف المرفوض ({stats.rejected})
+            الأرشيف المرفوض ({rejectedInvoices.length})
           </button>
         </div>
 
@@ -511,7 +458,7 @@ const ExternalSalesInvoices = () => {
                   <p className="text-gray-500 text-lg">لا توجد فواتير معلقة حالياً</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-3">
                   {pendingInvoices.map(invoice => (
                     <InvoiceCard key={invoice.id} invoice={invoice} status="pending" />
                   ))}
@@ -528,7 +475,7 @@ const ExternalSalesInvoices = () => {
                   <p className="text-gray-500 text-lg">لا توجد فواتير مقبولة</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-3">
                   {acceptedInvoices.map(invoice => (
                     <InvoiceCard key={invoice.id} invoice={invoice} status="accepted" />
                   ))}
@@ -545,7 +492,7 @@ const ExternalSalesInvoices = () => {
                   <p className="text-gray-500 text-lg">لا توجد فواتير مرفوضة</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-3">
                   {rejectedInvoices.map(invoice => (
                     <InvoiceCard key={invoice.id} invoice={invoice} status="rejected" />
                   ))}
