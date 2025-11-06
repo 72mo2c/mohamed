@@ -217,17 +217,69 @@ const SmartSalesInvoice = () => {
       if (product) {
         const mainQty = item.mainQuantity || 0;
         const subQty = item.subQuantity || 0;
-        const unitsInMain = product.unitsInMain || 0;
+        const { mainQuantity = 0, subQuantity = 0, unitsInMain = 0 } = product;
         
-        // حساب الكمية المطلوبة بالوحدات الفرعية
-        const requiredSubQuantity = mainQty * unitsInMain + subQty;
+        // تطبيق نفس منطق البيانات في DataContext.jsx
+        let newMainQuantity = mainQuantity;
+        let newSubQuantity = subQuantity;
         
-        // حساب الكمية المتاحة بالوحدات الفرعية
-        const totalAvailableSub = (product.mainQuantity || 0) * unitsInMain + (product.subQuantity || 0);
-        
-        if (requiredSubQuantity > totalAvailableSub) {
-          errors[`item_${index}_stock`] = `الكمية المطلوبة من ${product.name} غير متوفرة.\n` +
-            `إجمالي المتوفر: ${totalAvailableSub} قطعة، المطلوب: ${requiredSubQuantity} قطعة`;
+        // تطبيق المنطق الذكي: خصم الكمية الأساسية أولاً
+        if (mainQty > 0) {
+          newMainQuantity = Math.max(0, mainQuantity - mainQty);
+          
+          // تحويل الكمية المباعة من أساسي إلى فرعي
+          const mainToSub = mainQty * unitsInMain;
+          const totalSubRequired = subQty + mainToSub;
+          
+          // خصم الكمية الفرعية
+          if (subQuantity >= totalSubRequired) {
+            // الكمية الفرعية كافية
+            newSubQuantity = subQuantity - totalSubRequired;
+          } else {
+            // الكمية الفرعية غير كافية - خذ من الأساسي
+            const subShortage = totalSubRequired - subQuantity;
+            const additionalMainNeeded = Math.ceil(subShortage / unitsInMain);
+            
+            if (newMainQuantity >= additionalMainNeeded) {
+              // العملية ممكنة
+              newMainQuantity -= additionalMainNeeded;
+              newSubQuantity = subQuantity + (additionalMainNeeded * unitsInMain) - totalSubRequired;
+            } else {
+              // العملية غير ممكنة
+              const availableInMain = mainQuantity * unitsInMain;
+              const totalAvailableSub = availableInMain + subQuantity;
+              const requiredSubQuantity = totalSubRequired;
+              
+              errors[`item_${index}_stock`] = `الكمية المطلوبة من ${product.name} غير متوفرة.\n` +
+                `إجمالي المتوفر: ${totalAvailableSub} قطعة (${Math.floor(totalAvailableSub / unitsInMain)}_box + ${totalAvailableSub % unitsInMain}_piece)\n` +
+                `المطلوب: ${requiredSubQuantity} قطعة (${mainQty}_box + ${subQty}_piece)`;
+            }
+          }
+        } else {
+          // لا يوجد خصم في أساسي، فقط فرعي
+          if (subQuantity >= subQty) {
+            // الكمية الفرعية كافية
+            newSubQuantity = subQuantity - subQty;
+          } else {
+            // كميحة فرعية غير كافية - خذ من الأساسي
+            const subShortage = subQty - subQuantity;
+            const additionalMainNeeded = Math.ceil(subShortage / unitsInMain);
+            
+            if (newMainQuantity >= additionalMainNeeded) {
+              // العملية ممكنة
+              newMainQuantity -= additionalMainNeeded;
+              newSubQuantity = subQuantity + (additionalMainNeeded * unitsInMain) - subQty;
+            } else {
+              // العملية غير ممكنة
+              const availableInMain = mainQuantity * unitsInMain;
+              const totalAvailableSub = availableInMain + subQuantity;
+              const requiredSubQuantity = subQty;
+              
+              errors[`item_${index}_stock`] = `الكمية المطلوبة من ${product.name} غير متوفرة.\n` +
+                `إجمالي المتوفر: ${totalAvailableSub} قطعة (${Math.floor(totalAvailableSub / unitsInMain)}_box + ${totalAvailableSub % unitsInMain}_piece)\n` +
+                `المطلوب: ${requiredSubQuantity} قطعة (${mainQty}_box + ${subQty}_piece)`;
+            }
+          }
         }
       }
     });
