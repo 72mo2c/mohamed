@@ -737,8 +737,8 @@ const NewSalesInvoice = () => {
             )}
           </div>
 
-          {/* نوع الفاتورة والشحن ونوع البيع */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* نوع الفاتورة والشحن ونوع البيع - بحجم مضغوط */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {/* نوع الفاتورة */}
             <div>
               <select
@@ -786,18 +786,6 @@ const NewSalesInvoice = () => {
             </div>
           </div>
 
-          {/* توضيح نوع البيع المحدد */}
-          <div className="mt-2 p-2 bg-gray-50 rounded-lg border">
-            <p className="text-xs text-gray-600">
-              <span className="font-medium">نوع البيع المحدد:</span> 
-              {formData.saleType === 'retail' && <span className="text-orange-600 mr-1">البيع المباشر (تجزئة)</span>}
-              {formData.saleType === 'wholesale' && <span className="text-blue-600 mr-1">الجملة</span>}
-              {formData.saleType === 'bulk' && <span className="text-purple-600 mr-1">جملة الجملة</span>}
-            </p>
-          </div>
-
-
-
           {/* تحذيرات نوع الدفع */}
           {paymentWarning && (
             <div className={`p-4 rounded-lg mb-4 ${
@@ -831,21 +819,21 @@ const NewSalesInvoice = () => {
 
 
 
-          {/* التاريخ والوقت */}
+          {/* التاريخ والوقت - بحجم مضغوط */}
           <div className="grid grid-cols-2 gap-2">
             <input
               type="date"
               name="date"
               value={formData.date}
               onChange={handleChange}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              className="w-full px-1 py-1 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500"
             />
             <input
               type="time"
               name="time"
               value={formData.time}
               onChange={handleChange}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              className="w-full px-1 py-1 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500"
             />
           </div>
         </div>
@@ -914,25 +902,21 @@ const NewSalesInvoice = () => {
 
                     {/* نوع البيع */}
                     <td className="px-2 py-2 text-center">
-                      <div className="flex flex-col items-center">
-                        <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                      <button
+                        onClick={() => updateSaleType(index)}
+                        className={`text-xs px-2 py-1 rounded-full font-semibold hover:opacity-80 transition-opacity ${
                           item.saleType === 'retail' ? 'bg-orange-100 text-orange-700' :
                           item.saleType === 'wholesale' ? 'bg-blue-100 text-blue-700' :
                           item.saleType === 'bulk' ? 'bg-purple-100 text-purple-700' :
                           'bg-gray-100 text-gray-700'
-                        }`}>
-                          {item.saleType === 'retail' && '🛒 مباشر'}
-                          {item.saleType === 'wholesale' && '📦 جملة'}
-                          {item.saleType === 'bulk' && '🚛 جملة كبيرة'}
-                          {!item.saleType && 'غير محدد'}
-                        </span>
-                        <button
-                          onClick={() => updateSaleType(index)}
-                          className="text-xs text-blue-600 hover:text-blue-800 mt-1 underline"
-                        >
-                          تغيير
-                        </button>
-                      </div>
+                        }`}
+                        title="انقر للتغيير"
+                      >
+                        {item.saleType === 'retail' && '🛒 مباشر'}
+                        {item.saleType === 'wholesale' && '📦 جملة'}
+                        {item.saleType === 'bulk' && '🚛 جملة كبيرة'}
+                        {!item.saleType && 'غير محدد'}
+                      </button>
                     </td>
 
                     {/* الكمية الأساسية */}
