@@ -5,7 +5,7 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { useNotification } from '../../context/NotificationContext';
-import { FaUndo, FaEye, FaTrash, FaSearch, FaFilter, FaFileInvoice } from 'react-icons/fa';
+import { FaEye, FaTrash, FaSearch, FaFilter, FaUndo } from 'react-icons/fa';
 
 const SalesReturns = () => {
   const { salesReturns, salesInvoices, customers, products, deleteSalesReturn } = useData();
@@ -68,48 +68,11 @@ const SalesReturns = () => {
     return <span className={`px-2 py-1 rounded-full text-xs font-semibold ${s.class}`}>{s.text}</span>;
   };
 
-  // حساب الإحصائيات
-  const totalReturns = salesReturns.length;
-  const totalAmount = salesReturns.reduce((sum, ret) => sum + (ret.totalAmount || 0), 0);
+
 
   return (
     <div className="max-w-7xl mx-auto p-4">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">مرتجعات المبيعات</h2>
 
-      {/* بطاقات الإحصائيات */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-4 rounded-lg shadow-md">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-sm opacity-90">إجمالي المرتجعات</p>
-              <p className="text-3xl font-bold mt-1">{totalReturns}</p>
-            </div>
-            <FaUndo className="text-4xl opacity-50" />
-          </div>
-        </div>
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-lg shadow-md">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-sm opacity-90">إجمالي المبلغ المرتجع</p>
-              <p className="text-3xl font-bold mt-1">{totalAmount.toFixed(2)}</p>
-              <p className="text-xs opacity-75">جنيه</p>
-            </div>
-            <FaFileInvoice className="text-4xl opacity-50" />
-          </div>
-        </div>
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-lg shadow-md">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-sm opacity-90">متوسط المرتجع</p>
-              <p className="text-3xl font-bold mt-1">
-                {totalReturns > 0 ? (totalAmount / totalReturns).toFixed(2) : '0.00'}
-              </p>
-              <p className="text-xs opacity-75">جنيه</p>
-            </div>
-            <FaSearch className="text-4xl opacity-50" />
-          </div>
-        </div>
-      </div>
 
       {/* شريط البحث والتصفية */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-4">
