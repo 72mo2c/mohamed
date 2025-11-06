@@ -188,6 +188,40 @@ export const checkStockAvailability = (product, requiredQuantity, quantityType =
 };
 
 /**
+ * دالة تحديث المخزون مع المنطق الذكي للمشتريات (إضافة مع التحويل الذكي)
+ * @param {Array} products - قائمة المنتجات
+ * @param {number} productId - معرف المنتج
+ * @param {Object} purchaseData - بيانات الشراء { mainPurchase, subPurchase }
+ * @returns {Array} - قائمة محدثة
+ */
+export const updateStockWithSmartPurchase = (products, productId, purchaseData) => {
+  return products.map(product => {
+    if (product.id === productId) {
+      const { mainQuantity = 0, subQuantity = 0, unitsInMain = 0 } = product;
+      const { mainPurchase = 0, subPurchase = 0 } = purchaseData;
+      
+      let newMainQuantity = mainQuantity + mainPurchase;
+      let newSubQuantity = subQuantity + subPurchase;
+      
+      // المنطق الذكي للمشتريات: تحويل الفرعي إلى أساسي عند الامتلاء
+      if (unitsInMain > 0 && newSubQuantity >= unitsInMain) {
+        const additionalMain = Math.floor(newSubQuantity / unitsInMain);
+        newSubQuantity = newSubQuantity % unitsInMain;
+        newMainQuantity += additionalMain;
+      }
+      
+      return {
+        ...product,
+        mainQuantity: newMainQuantity,
+        subQuantity: newSubQuantity,
+        updatedAt: new Date().toISOString()
+      };
+    }
+    return product;
+  });
+};
+
+/**
  * دالة حساب القيمة الإجمالية للمنتج
  * @param {Object} product - المنتج
  * @returns {number} - القيمة الإجمالية
@@ -222,6 +256,7 @@ export default {
   saveProductsWithUnits,
   loadProductsWithUnits,
   updateStockWithConversion,
+  updateStockWithSmartPurchase,
   checkStockAvailability,
   calculateProductTotalValue,
   exportProductsWithUnits

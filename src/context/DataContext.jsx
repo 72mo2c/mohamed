@@ -3,6 +3,7 @@
 // ======================================
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { updateStockWithSmartPurchase } from '../utils/dataContextUpdates.js';
 
 const DataContext = createContext();
 
@@ -336,29 +337,30 @@ export const DataProvider = ({ children }) => {
     setPurchaseInvoices(updated);
     saveData('bero_purchase_invoices', updated);
     
-    // تحديث كميات المنتجات (فصل الكمية الأساسية والفرعية)
+    // تحديث كميات المنتجات مع المنطق الذكي للمشتريات
     if (invoice.items && Array.isArray(invoice.items)) {
-      const updatedProducts = [...products];
+      let updatedProducts = [...products];
       
       invoice.items.forEach(item => {
-        const productIndex = updatedProducts.findIndex(p => p.id === parseInt(item.productId));
-        if (productIndex !== -1) {
-          // فصل الكميات
-          const mainQty = parseInt(item.quantity) || 0;
-          const subQty = parseInt(item.subQuantity) || 0;
-          
-          // التحقق من الكميات السالبة
-          if (mainQty < 0 || subQty < 0) {
-            throw new Error(`الكمية لا يمكن أن تكون سالبة للمنتج: ${updatedProducts[productIndex].name}`);
-          }
-          
-          // زيادة الكمية الأساسية والفرعية منفردة
-          updatedProducts[productIndex] = {
-            ...updatedProducts[productIndex],
-            mainQuantity: (updatedProducts[productIndex].mainQuantity || 0) + mainQty,
-            subQuantity: (updatedProducts[productIndex].subQuantity || 0) + subQty
-          };
+        // فصل الكميات
+        const mainQty = parseInt(item.quantity) || 0;
+        const subQty = parseInt(item.subQuantity) || 0;
+        
+        // التحقق من الكميات السالبة
+        if (mainQty < 0 || subQty < 0) {
+          const productName = updatedProducts.find(p => p.id === parseInt(item.productId))?.name || 'غير محدد';
+          throw new Error(`الكمية لا يمكن أن تكون سالبة للمنتج: ${productName}`);
         }
+        
+        // استخدام المنطق الذكي للمشتريات
+        updatedProducts = updateStockWithSmartPurchase(
+          updatedProducts, 
+          parseInt(item.productId), 
+          { 
+            mainPurchase: mainQty, 
+            subPurchase: subQty 
+          }
+        );
       });
       
       setProducts(updatedProducts);
@@ -475,30 +477,53 @@ export const DataProvider = ({ children }) => {
     updateSupplierBalance(invoice.supplierId, invoice.total, 'credit');
     // === نهاية الكود الجديد ===
     
-    // إعادة الكميات من المخزون (عكس عملية الشراء) - فصل الكميات
+    // إعادة الكميات من المخزون (عكس عملية الشراء) مع المنطق الذكي
     if (invoice.items && Array.isArray(invoice.items)) {
-      const updatedProducts = [...products];
+      let updatedProducts = [...products];
       
       invoice.items.forEach(item => {
+        // فصل الكميات
+        const mainQty = parseInt(item.quantity) || 0;
+        const subQty = parseInt(item.subQuantity) || 0;
+        
+        // خصم الكمية من المخزون مع المنطق الذكي
         const productIndex = updatedProducts.findIndex(p => p.id === parseInt(item.productId));
         if (productIndex !== -1) {
-          // فصل الكميات
-          const mainQty = parseInt(item.quantity) || 0;
-          const subQty = parseInt(item.subQuantity) || 0;
+          const currentProduct = updatedProducts[productIndex];
+          const unitsInMain = currentProduct.unitsInMain || 0;
           
-          // خصم الكمية من المخزون منفردة (عكس عملية الشراء)
-          const newMainQty = (updatedProducts[productIndex].mainQuantity || 0) - mainQty;
-          const newSubQty = (updatedProducts[productIndex].subQuantity || 0) - subQty;
+          // خصم الكمية الأساسية أولاً
+          let newMainQty = (currentProduct.mainQuantity || 0) - mainQty;
+          let newSubQty = currentProduct.subQuantity || 0;
           
-          // التحقق من عدم حدوث كميات سالبة
+          // إذا احتاجنا لخصم فرعي من كرتونات
+          if (subQty > 0) {
+            if (newSubQty >= subQty) {
+              newSubQty -= subQty;
+            } else {
+              // أخذ من الأساسي
+              const subShortage = subQty - newSubQty;
+              const additionalMainNeeded = Math.ceil(subShortage / unitsInMain);
+              
+              if (newMainQty >= additionalMainNeeded) {
+                newMainQty -= additionalMainNeeded;
+                newSubQty = newSubQty + (additionalMainNeeded * unitsInMain) - subQty;
+              } else {
+                throw new Error(`لا يمكن حذف الفاتورة: سيؤدي ذلك إلى كمية سالبة للمنتج ${currentProduct.name}`);
+              }
+            }
+          }
+          
+          // التحقق النهائي من عدم حدوث كميات سالبة
           if (newMainQty < 0 || newSubQty < 0) {
-            throw new Error(`لا يمكن حذف الفاتورة: سيؤدي ذلك إلى كمية سالبة للمنتج ${updatedProducts[productIndex].name}`);
+            throw new Error(`لا يمكن حذف الفاتورة: سيؤدي ذلك إلى كمية سالبة للمنتج ${currentProduct.name}`);
           }
           
           updatedProducts[productIndex] = {
-            ...updatedProducts[productIndex],
+            ...currentProduct,
             mainQuantity: newMainQty,
-            subQuantity: newSubQty
+            subQuantity: newSubQty,
+            updatedAt: new Date().toISOString()
           };
         }
       });
