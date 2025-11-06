@@ -609,7 +609,6 @@ const NewSalesInvoice = () => {
       time: new Date().toTimeString().slice(0, 5),
       paymentType: 'main',
       agentType: '',
-      invoiceType: 'direct',
       notes: '',
       discountType: 'percentage',
       discountValue: 0
