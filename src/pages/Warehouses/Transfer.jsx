@@ -2,7 +2,7 @@
 // Transfer Between Warehouses - تحويل بين المخازن
 // ======================================
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { useNotification } from '../../context/NotificationContext';
 import Card from '../../components/Common/Card';
@@ -16,6 +16,7 @@ import {
   FaArrowRight,
   FaCheckCircle,
   FaExclamationTriangle,
+  FaHistory,
   FaTimes,
   FaInfoCircle
 } from 'react-icons/fa';
@@ -37,15 +38,13 @@ const Transfer = () => {
   const [lastTransfer, setLastTransfer] = useState(null);
 
   // الحصول على المنتجات المتوفرة في المخزن المصدر
-  const availableProducts = useMemo(() => {
+  const availableProducts = () => {
     if (!formData.fromWarehouseId) return [];
     
     return products.filter(p => 
       p.warehouseId === parseInt(formData.fromWarehouseId)
     );
-  }, [products, formData.fromWarehouseId]);
-
-
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -56,7 +55,7 @@ const Transfer = () => {
 
     // عند اختيار منتج، نحفظ بياناته
     if (name === 'productId' && value) {
-      const product = availableProducts.find(p => p.id === parseInt(value));
+      const product = availableProducts().find(p => p.id === parseInt(value));
       setSelectedProduct(product);
     }
 
@@ -132,7 +131,7 @@ const Transfer = () => {
     label: w.name
   }));
 
-  const productOptions = availableProducts.map(p => ({
+  const productOptions = availableProducts().map(p => ({
     value: p.id,
     label: `${p.name} - ${p.category} (متوفر: ${p.mainQuantity})`
   }));
@@ -238,8 +237,6 @@ const Transfer = () => {
         </div>
       )}
 
-
-
       {/* نموذج التحويل */}
       <Card icon={<FaExchangeAlt />} title="نموذج التحويل">
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -258,7 +255,7 @@ const Transfer = () => {
               {formData.fromWarehouseId && (
                 <p className="text-sm text-gray-500 mt-2">
                   <FaInfoCircle className="inline ml-1" />
-                  المنتجات المتوفرة: {availableProducts.length}
+                  المنتجات المتوفرة: {availableProducts().length}
                 </p>
               )}
             </div>
@@ -288,7 +285,7 @@ const Transfer = () => {
                 required
                 icon={<FaBox />}
               />
-              {availableProducts.length === 0 && (
+              {availableProducts().length === 0 && (
                 <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-2">
                   <FaExclamationTriangle className="text-yellow-600" />
                   <p className="text-sm text-yellow-700">لا توجد منتجات في هذا المخزن</p>
