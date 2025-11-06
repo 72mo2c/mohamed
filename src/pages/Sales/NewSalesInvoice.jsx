@@ -5,7 +5,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useNotification } from '../../context/NotificationContext';
-import { FaSave, FaPrint, FaSearch, FaTrash, FaPercent, FaMoneyBillWave, FaInfoCircle, FaExclamationTriangle, FaUserPlus, FaTimes } from 'react-icons/fa';
+import { FaSave, FaPrint, FaSearch, FaTrash, FaPercent, FaMoneyBillWave, FaInfoCircle, FaExclamationTriangle, FaUserPlus, FaTimes, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { printInvoiceDirectly } from '../../utils/printUtils';
 
 const NewSalesInvoice = () => {
@@ -19,6 +19,9 @@ const NewSalesInvoice = () => {
     { id: 'vehicle2', name: 'فان - ج 5678 د', driver: 'محمد علي', status: 'متاح' },
     { id: 'vehicle3', name: 'شاحنة صغيرة - ه 9012 و', driver: 'علي أحمد', status: 'مشغول' },
   ];
+
+  // حالة فتح/إغلاق قسم الشحن
+  const [isShippingOpen, setIsShippingOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     customerId: '',
@@ -738,50 +741,62 @@ const NewSalesInvoice = () => {
             </select>
           </div>
 
-          {/* قسم الشحن - في مكان أكثر منطقية */}
+          {/* قسم الشحن - قابل للطي */}
           <div className="col-span-1 lg:col-span-2">
-            <div className="bg-white border-2 border-dashed border-orange-200 rounded-lg p-4 hover:border-orange-300 transition-colors">
-              <div className="flex items-center gap-3 mb-4">
-                <input
-                  type="checkbox"
-                  id="shippingRequired"
-                  name="shippingRequired"
-                  checked={formData.shippingRequired}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
-                />
-                <label htmlFor="shippingRequired" className="text-sm font-semibold text-orange-700 flex items-center gap-2">
-                  🚛 يتطلب شحن وتوصيل
-                </label>
+            <div className="bg-white border-2 border-gray-200 rounded-lg">
+              {/* عنوان القسم القابل للطي */}
+              <div
+                onClick={() => setIsShippingOpen(!isShippingOpen)}
+                className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors rounded-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">🚛</span>
+                  <h3 className="text-sm font-semibold text-gray-800">الشحن</h3>
+                  {formData.selectedVehicle && (
+                    <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                      تم اختيار شاحنة
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {isShippingOpen ? (
+                    <FaChevronUp className="text-gray-500 text-sm" />
+                  ) : (
+                    <FaChevronDown className="text-gray-500 text-sm" />
+                  )}
+                </div>
               </div>
 
-              {formData.shippingRequired && (
-                <div className="mt-3">
-                  {/* اختيار الشاحنة */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      🚚 اختر الشاحنة/السيارة
-                    </label>
-                    <select
-                      name="selectedVehicle"
-                      value={formData.selectedVehicle}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    >
-                      <option value="">اختر الشاحنة</option>
-                      {availableVehicles.filter(v => v.id).map(vehicle => (
-                        <option key={vehicle.id} value={vehicle.id}>
-                          {vehicle.name} - {vehicle.driver} ({vehicle.status})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  {/* رسالة توضيحية */}
-                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-700 flex items-center gap-2">
-                      ℹ️ تفاصيل الشحن الكاملة ستُدار في واجهة إدارة الشحن وستُضاف تلقائياً عند طباعة الفاتورة
-                    </p>
+              {/* محتوى القسم القابل للطي */}
+              {isShippingOpen && (
+                <div className="border-t border-gray-200 p-4">
+                  <div className="space-y-4">
+                    {/* اختيار الشاحنة */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        🚚 اختر الشاحنة/السيارة
+                      </label>
+                      <select
+                        name="selectedVehicle"
+                        value={formData.selectedVehicle}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      >
+                        <option value="">اختر الشاحنة</option>
+                        {availableVehicles.filter(v => v.id).map(vehicle => (
+                          <option key={vehicle.id} value={vehicle.id}>
+                            {vehicle.name} - {vehicle.driver} ({vehicle.status})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    {/* رسالة توضيحية */}
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-700 flex items-center gap-2">
+                        ℹ️ تفاصيل الشحن الكاملة ستُدار في واجهة إدارة الشحن وستُضاف تلقائياً عند طباعة الفاتورة
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
