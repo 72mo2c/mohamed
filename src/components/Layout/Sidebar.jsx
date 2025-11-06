@@ -382,14 +382,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     }
   };
 
-  const handleSubItemClick = () => {
-    // إغلاق القائمة الفرعية فوراً عند النقر على عنصر داخلي
-    setActiveMenu(null);
-    setIsHovered(false);
-    if (window.innerWidth < 1024) {
-      closeSidebar();
-    }
-  };
+
 
   // إغلاق القائمة الفرعية عند تغيير المسار
   useEffect(() => {
