@@ -169,19 +169,19 @@ export const updateStockWithConversion = (products, productId, saleData) => {
 
 /**
  * دالة التحقق من توفر كمية مع التحويل الذكي
- * @param {Object} product - المنتج
+ * @param {Object} currentStock - المخزون الحالي {mainQuantity, subQuantity, unitsInMain}
  * @param {number} requiredQuantity - الكمية المطلوبة
  * @param {string} quantityType - نوع الكمية ('main' or 'sub')
  * @returns {boolean} - true إذا كانت متوفرة
  */
-export const checkStockAvailability = (product, requiredQuantity, quantityType = 'sub') => {
-  const { mainQuantity = 0, subQuantity = 0, unitsInMain = 0 } = product;
+export const checkStockAvailability = (currentStock, requiredQuantity, quantityType = 'sub') => {
+  const { mainQuantity = 0, subQuantity = 0, unitsInMain = 0 } = currentStock;
   
   if (quantityType === 'main') {
     // التحقق من الكمية الأساسية
     return mainQuantity >= requiredQuantity;
   } else {
-    // التحقق من الكمية الفرعية (الإجمالية)
+    // التحقق من الكمية الفرعية (الإجمالية) - مع التحويل الذكي
     const totalSubQuantity = mainQuantity * unitsInMain + subQuantity;
     return totalSubQuantity >= requiredQuantity;
   }
