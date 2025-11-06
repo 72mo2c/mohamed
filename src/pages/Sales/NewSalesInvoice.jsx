@@ -1,5 +1,5 @@
 // ======================================
-// New Sales Invoice - فاتورة مبيعات جديدة (مُحدَّث ليشمل الخصم)
+// New Sales Invoice - فاتورة مبيعات جديدة 
 // ======================================
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -431,7 +431,6 @@ const NewSalesInvoice = () => {
           المتوفر: {availableQty}
           <br />
           زائد بـ {requestedQty - availableQty}
-        
         </div>
       );
     }
@@ -833,8 +832,6 @@ const NewSalesInvoice = () => {
                       {getQuantityWarning(index)}
                     </td>
 
-
-
                     {/* الكمية الأساسية */}
                     <td className="px-2 py-2">
                       <input
@@ -862,20 +859,21 @@ const NewSalesInvoice = () => {
                         }`}
                         min="0"
                       />
+                    </td>
 
                     {/* الخصم  */}
-                  <td className="px-2 py-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={item.discount}
-                      onChange={(e) => handleItemChange(index, 'discount', parseFloat(e.target.value) || 0)}
-                      className={`w-full px-2 py-1.5 text-sm text-center border rounded-md focus:ring-2 focus:ring-blue-500 ${
-                        discountErrors[index] ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                      }`}
-                      min="0"
-                    />
-                  </td>
+                    <td className="px-2 py-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={item.discount}
+                        onChange={(e) => handleItemChange(index, 'discount', parseFloat(e.target.value) || 0)}
+                        className={`w-full px-2 py-1.5 text-sm text-center border rounded-md focus:ring-2 focus:ring-blue-500 ${
+                          discountErrors[index] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
+                        min="0"
+                      />
+                    </td>
 
                     {/* الإجمالي */}
                     <td className="px-2 py-2 text-center">
@@ -915,247 +913,187 @@ const NewSalesInvoice = () => {
         <div className="mt-4 pt-4 border-t">
           <div className="grid grid-cols-3 gap-4 items-start">
             {/* ملاحظات */}
-            <div className="col-span-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">ملاحظات</label>
               <textarea
                 name="notes"
                 value={formData.notes}
                 onChange={handleChange}
-                rows="2"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                placeholder="أدخل ملاحظات إضافية..."
+                rows="3"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="ملاحظات إضافية..."
               />
             </div>
 
-            {/* الخصم والمجموع */}
-            <div className="space-y-3">
-              {/* قسم الخصم */}
-              <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <FaPercent className="text-yellow-600" />
-                  <span className="text-sm font-semibold text-gray-700">الخصم</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                  <select
-                    name="discountType"
-                    value={formData.discountType}
-                    onChange={handleChange}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="percentage">نسبة مئوية %</option>
-                    <option value="fixed">مبلغ ثابت</option>
-                  </select>
+            {/* الخصم */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">خصم الفاتورة</label>
+              <div className="flex gap-2">
+                <select
+                  name="discountType"
+                  value={formData.discountType}
+                  onChange={handleChange}
+                  className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="percentage">نسبة مئوية %</option>
+                  <option value="fixed">قيمة ثابتة</option>
+                </select>
+                <div className="flex-1 relative">
                   <input
                     type="number"
                     name="discountValue"
                     value={formData.discountValue}
                     onChange={handleChange}
-                    className="w-full px-2 py-1.5 text-sm text-center border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                     min="0"
                     step={formData.discountType === 'percentage' ? '0.1' : '0.01'}
-                    placeholder={formData.discountType === 'percentage' ? '0.0%' : '0.00'}
                   />
-                </div>
-                {formData.discountValue > 0 && (
-                  <div className="text-xs text-gray-600 text-center">
-                    قيمة الخصم: {calculateDiscountAmount().toFixed(2)} ج.م
-                  </div>
-                )}
-              </div>
-
-              {/* المجموع */}
-              <div className="w-full bg-blue-50 p-3 rounded-lg border border-blue-200">
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-gray-700">المجموع الفرعي:</span>
-                    <span className="text-sm font-medium text-gray-600">{calculateSubTotal().toFixed(2)} ج.م</span>
-                  </div>
-                  
-                  {formData.discountValue > 0 && (
-                    <div className="flex justify-between items-center pt-1 border-t border-blue-200">
-                      <span className="text-sm font-semibold text-gray-700">الخصم:</span>
-                      <span className="text-sm font-medium text-red-600">-{calculateDiscountAmount().toFixed(2)} ج.م</span>
-                    </div>
+                  {formData.discountType === 'percentage' && (
+                    <FaPercent className="absolute left-2 top-2 text-gray-400 text-xs" />
                   )}
-                  
-                  <div className="flex justify-between items-center pt-2 border-t border-blue-200">
-                    <span className="text-sm font-semibold text-gray-700">المجموع الكلي:</span>
-                    <span className="text-lg font-bold text-blue-700">{calculateTotal().toFixed(2)} ج.م</span>
-                  </div>
+                  {formData.discountType === 'fixed' && (
+                    <FaMoneyBillWave className="absolute left-2 top-2 text-gray-400 text-xs" />
+                  )}
                 </div>
-                <div className="text-xs text-gray-500 text-center mt-2">
-                  عدد المنتجات: {items.length}
+              </div>
+              {formData.discountValue > 0 && (
+                <div className="text-sm text-gray-600">
+                  قيمة الخصم: <span className="font-semibold text-red-600">{calculateDiscountAmount().toFixed(2)} ج.م</span>
                 </div>
+              )}
+            </div>
+
+            {/* الإجماليات */}
+            <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">المجموع الفرعي:</span>
+                <span className="text-sm font-semibold text-gray-800">{calculateSubTotal().toFixed(2)} ج.م</span>
+              </div>
+              {formData.discountValue > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">الخصم:</span>
+                  <span className="text-sm font-semibold text-red-600">-{calculateDiscountAmount().toFixed(2)} ج.م</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                <span className="text-lg font-bold text-gray-900">الإجمالي النهائي:</span>
+                <span className="text-lg font-bold text-green-600">{calculateTotal().toFixed(2)} ج.م</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* الأزرار */}
-        <div className="mt-6 pt-4 border-t">
-          <div className="flex justify-center gap-3">
-            <button
-              type="button"
-              onClick={resetForm}
-              className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg transition-colors font-medium"
-              title="إعادة تعيين الفاتورة بالكامل"
-            >
-              <FaTrash /> إعادة تعيين
-            </button>
-            <button
-              type="button"
-              onClick={(e) => handleSubmit(e, false)}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-colors font-medium"
-            >
-              <FaSave /> حفظ الفاتورة
-            </button>
-            <button
-              type="button"
-              onClick={(e) => handleSubmit(e, true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors font-medium"
-            >
-              <FaPrint /> حفظ وطباعة
-            </button>
-          </div>
-        </div>
-
-        {/* اختصارات الكيبورد */}
-        <div className="mt-4 pt-3 border-t text-xs text-gray-500 text-center">
-          <span className="inline-block mx-2">💡 اختصارات: </span>
-          <span className="inline-block mx-2">Ctrl+S = حفظ</span>
-          <span className="inline-block mx-2">Enter = صف جديد</span>
-          <span className="inline-block mx-2">Tab = التنقل</span>
+        {/* أزرار الحفظ والطباعة */}
+        <div className="mt-6 flex justify-center gap-4">
+          <button
+            type="button"
+            onClick={(e) => handleSubmit(e, false)}
+            className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium"
+          >
+            <FaSave />
+            حفظ الفاتورة (Ctrl+S)
+          </button>
+          <button
+            type="button"
+            onClick={(e) => handleSubmit(e, true)}
+            className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 text-sm font-medium"
+          >
+            <FaPrint />
+            حفظ وطباعة
+          </button>
         </div>
       </div>
 
       {/* Modal إضافة العميل السريع */}
       {showQuickCustomerModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-            {/* رأس المودال */}
-            <div className="flex items-center justify-between p-6 border-b">
-              <div className="flex items-center gap-3">
-                <div className="bg-green-100 rounded-full p-2">
-                  <FaUserPlus className="text-green-600 text-lg" />
-                </div>
-                <h2 className="text-xl font-bold text-gray-800">إضافة عميل جديد سريع</h2>
-              </div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="text-lg font-semibold text-gray-800">إضافة عميل جديد</h3>
               <button
                 onClick={closeQuickCustomerModal}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
-                type="button"
               >
-                <FaTimes className="text-xl" />
+                <FaTimes />
               </button>
             </div>
-
-            {/* محتوى المودال */}
-            <div className="p-6">
-              <form onSubmit={(e) => { e.preventDefault(); handleAddQuickCustomer(); }} className="space-y-4">
-                {/* اسم العميل */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    اسم العميل <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={quickCustomerForm.name}
-                    onChange={handleQuickCustomerChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="أدخل اسم العميل"
-                    required
-                  />
-                </div>
-
-                {/* رقم الهاتف */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    رقم الهاتف <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone1"
-                    value={quickCustomerForm.phone1}
-                    onChange={handleQuickCustomerChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="+20 XXX XXX XXXX"
-                    required
-                  />
-                </div>
-
-                {/* العنوان */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    العنوان
-                  </label>
-                  <input
-                    type="text"
-                    name="address"
-                    value={quickCustomerForm.address}
-                    onChange={handleQuickCustomerChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="أدخل العنوان (اختياري)"
-                  />
-                </div>
-
-                {/* نوع الوكيل */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    نوع الوكيل / المندوب
-                  </label>
-                  <select
-                    name="agentType"
-                    value={quickCustomerForm.agentType}
-                    onChange={handleQuickCustomerChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  >
-                    <option value="general">عام</option>
-                    <option value="fatora">فاتورة</option>
-                    <option value="kartona">كرتونة</option>
-                  </select>
-                </div>
-
-                {/* معلومات إضافية */}
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                  <div className="flex items-start gap-2">
-                    <FaInfoCircle className="text-blue-600 text-sm mt-0.5" />
-                    <div className="text-xs text-blue-700">
-                      <p className="font-semibold mb-1">ملاحظة سريعة:</p>
-                      <p>• سيتم إضافة العميل مباشرة لفاتورة المبيعات الحالية</p>
-                      <p>• يمكنك تعديل البيانات لاحقاً من صفحة إدارة العملاء</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* أزرار المودال */}
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={closeQuickCustomerModal}
-                    className="flex-1 px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                    disabled={quickCustomerLoading}
-                  >
-                    إلغاء
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    disabled={quickCustomerLoading || !quickCustomerForm.name.trim() || !quickCustomerForm.phone1.trim()}
-                  >
-                    {quickCustomerLoading ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        جاري الإضافة...
-                      </>
-                    ) : (
-                      <>
-                        <FaUserPlus className="text-sm" />
-                        إضافة العميل
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
+            
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">اسم العميل *</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={quickCustomerForm.name}
+                  onChange={handleQuickCustomerChange}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="أدخل اسم العميل..."
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">رقم الهاتف *</label>
+                <input
+                  type="tel"
+                  name="phone1"
+                  value={quickCustomerForm.phone1}
+                  onChange={handleQuickCustomerChange}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="أدخل رقم الهاتف..."
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">العنوان</label>
+                <input
+                  type="text"
+                  name="address"
+                  value={quickCustomerForm.address}
+                  onChange={handleQuickCustomerChange}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="أدخل العنوان..."
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">نوع العميل</label>
+                <select
+                  name="agentType"
+                  value={quickCustomerForm.agentType}
+                  onChange={handleQuickCustomerChange}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="general">عام</option>
+                  <option value="fatora">فاتورة</option>
+                  <option value="kartona">كرتونة</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 p-4 border-t">
+              <button
+                onClick={closeQuickCustomerModal}
+                className="flex-1 px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={handleAddQuickCustomer}
+                disabled={quickCustomerLoading}
+                className="flex-1 px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              >
+                {quickCustomerLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    جاري الإضافة...
+                  </>
+                ) : (
+                  <>
+                    <FaUserPlus />
+                    إضافة العميل
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
