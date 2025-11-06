@@ -785,21 +785,21 @@ const NewSalesInvoice = () => {
               </select>
             </div>
 
-            {/* التاريخ والوقت - في نهاية السطر بعرض صغير */}
-            <div className="grid grid-cols-2 gap-1">
+            {/* التاريخ والوقت - في نهاية السطر بحجم طبيعي */}
+            <div className="grid grid-cols-2 gap-2">
               <input
                 type="date"
                 name="date"
                 value={formData.date}
                 onChange={handleChange}
-                className="w-full px-1 py-1 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
               />
               <input
                 type="time"
                 name="time"
                 value={formData.time}
                 onChange={handleChange}
-                className="w-full px-1 py-1 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -820,13 +820,13 @@ const NewSalesInvoice = () => {
             </div>
           )}
 
-          {/* الوكيل */}
+          {/* الوكيل - بحجم مضغوط قليلاً */}
           <div>
             <select
               name="agentType"
               value={formData.agentType}
               onChange={handleChange}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
             >
               <option value="">اختر نوع الوكيل / المندوب</option>
               <option value="general">عام</option>
