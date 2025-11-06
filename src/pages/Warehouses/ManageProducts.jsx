@@ -15,8 +15,12 @@ import {
   FaTimes, 
   FaSearch,
   FaFilter,
+  FaDownload,
   FaWarehouse,
   FaBarcode,
+  FaMoneyBillWave,
+  FaTags,
+  FaChartBar,
   FaExclamationTriangle,
   FaTools
 } from 'react-icons/fa';
@@ -53,7 +57,27 @@ const ManageProducts = () => {
   // فحص الصلاحيات
   const canEdit = hasPermission('edit_product');
   const canDelete = hasPermission('delete_product');
+  const canExport = hasPermission('export_data');
   const canViewInventory = hasPermission('view_inventory');
+
+  // الإحصائيات
+  const stats = useMemo(() => {
+    const totalProducts = products.length;
+    const totalValue = products.reduce((sum, p) => {
+      // حساب القيمة الإجمالية مع مراعاة unitsInMain
+      const totalSubQuantity = (p.mainQuantity || 0) * (p.unitsInMain || 0) + (p.subQuantity || 0);
+      return sum + (p.mainPrice * totalSubQuantity);
+    }, 0);
+    const lowStock = products.filter(p => (p.mainQuantity || 0) < 10).length;
+    const categoriesCount = [...new Set(products.map(p => p.category))].length;
+    
+    return {
+      totalProducts,
+      totalValue,
+      lowStock,
+      categoriesCount
+    };
+  }, [products]);
 
   // فلترة المنتجات
   const filteredProducts = useMemo(() => {
@@ -91,11 +115,11 @@ const ManageProducts = () => {
     try {
       const updatedData = {
         ...editFormData,
-        directPrice: parseFloat(editFormData.directPrice) || 0,
-        wholesalePrice: parseFloat(editFormData.wholesalePrice) || 0,
-        wholesalePrice10: parseFloat(editFormData.wholesalePrice10) || 0,
+        mainPrice: parseFloat(editFormData.mainPrice) || 0,
+        subPrice: parseFloat(editFormData.subPrice) || 0,
         mainQuantity: parseInt(editFormData.mainQuantity) || 0,
         subQuantity: parseInt(editFormData.subQuantity) || 0,
+        unitsInMain: parseInt(editFormData.unitsInMain) || 0,
         warehouseId: parseInt(editFormData.warehouseId),
       };
       
@@ -129,7 +153,41 @@ const ManageProducts = () => {
     }
   };
 
+  // تصدير البيانات إلى CSV
+  const exportToCSV = () => {
+    if (!canExport) {
+      showError('ليس لديك صلاحية لتصدير البيانات');
+      return;
+    }
+    
+    const headers = ['الاسم', 'الفئة', 'المخزن', 'الكمية الأساسية', 'السعر الأساسي', 'القيمة الإجمالية', 'الباركود'];
+    
+    const rows = filteredProducts.map(product => {
+      const warehouse = warehouses.find(w => w.id === product.warehouseId);
+      return [
+        product.name,
+        product.category,
+        warehouse?.name || '-',
+        product.mainQuantity,
+        product.mainPrice,
+        product.mainPrice * product.mainQuantity,
+        product.barcode || '-'
+      ];
+    });
 
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    const blob = new Blob([`\ufeff${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `products_${new Date().toLocaleDateString('ar-EG')}.csv`;
+    link.click();
+    
+    showSuccess('تم تصدير البيانات بنجاح');
+  };
 
   // الحصول على اسم المخزن
   const getWarehouseName = (warehouseId) => {
@@ -157,19 +215,97 @@ const ManageProducts = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-4 space-y-4">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-800">إدارة وسجل البضائع</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold text-gray-800">إدارة وسجل البضائع</h2>
+        {canExport && (
+          <button
+            onClick={exportToCSV}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-semibold"
+          >
+            <FaDownload /> تصدير CSV
+          </button>
+        )}
       </div>
 
-
-
-      {/* رسائل تنبيه */}
-      {products.filter(p => p.mainQuantity < 10).length > 0 && (
+      {/* الإحصائيات المحسّنة */}
+      {!canViewInventory ? (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center gap-3">
           <FaExclamationTriangle className="text-yellow-600 text-xl" />
           <div>
             <p className="text-yellow-800 font-semibold">
-              تنبيه: يوجد {products.filter(p => p.mainQuantity < 10).length} منتج بمخزون منخفض
+              ليس لديك صلاحية لعرض إحصائيات المخزون
+            </p>
+            <p className="text-yellow-700 text-sm">يرجى التواصل مع المدير للحصول على الصلاحية</p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-5 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-blue-100 text-sm font-medium">إجمالي المنتجات</p>
+              <h3 className="text-3xl font-bold mt-1">{stats.totalProducts}</h3>
+              <p className="text-blue-200 text-xs mt-1">منتج</p>
+            </div>
+            <FaBox className="text-4xl opacity-80" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-5 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-green-100 text-sm font-medium">قيمة المخزون</p>
+              <h3 className="text-3xl font-bold mt-1">{formatCurrency(stats.totalValue)}</h3>
+              <p className="text-green-200 text-xs mt-1">{settings?.currency || 'EGP'}</p>
+            </div>
+            <FaMoneyBillWave className="text-4xl opacity-80" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-5 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-orange-100 text-sm font-medium">مخزون منخفض</p>
+              <h3 className="text-3xl font-bold mt-1">{stats.lowStock}</h3>
+              <p className="text-orange-200 text-xs mt-1">منتج</p>
+            </div>
+            <FaExclamationTriangle className="text-4xl opacity-80" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-5 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-purple-100 text-sm font-medium">عدد الفئات</p>
+              <h3 className="text-3xl font-bold mt-1">{stats.categoriesCount}</h3>
+              <p className="text-purple-200 text-xs mt-1">فئة</p>
+            </div>
+            <FaTags className="text-4xl opacity-80" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-5 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-red-100 text-sm font-medium">كميات سالبة</p>
+              <h3 className="text-3xl font-bold mt-1">
+                {products.filter(p => (p.mainQuantity || 0) < 0).length}
+              </h3>
+              <p className="text-red-200 text-xs mt-1">منتج</p>
+            </div>
+            <FaExclamationTriangle className="text-4xl opacity-80" />
+          </div>
+        </div>
+      </div>
+      )}
+
+      {/* رسائل تنبيه */}
+      {stats.lowStock > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center gap-3">
+          <FaExclamationTriangle className="text-yellow-600 text-xl" />
+          <div>
+            <p className="text-yellow-800 font-semibold">
+              تنبيه: يوجد {stats.lowStock} منتج بمخزون منخفض
             </p>
             <p className="text-yellow-700 text-sm">يُنصح بمراجعة المخزون وإعادة التزويد</p>
           </div>
@@ -293,9 +429,7 @@ const ManageProducts = () => {
                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">الفئة</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">المخزن</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">الكمية</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">💚 بيع مباشر</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">🧡 جملة</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">💜 جملة الجملة</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">السعر</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">القيمة</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">الباركود</th>
                   <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">الإجراءات</th>
@@ -306,7 +440,7 @@ const ManageProducts = () => {
                   editingId === product.id ? (
                     // صف التعديل
                     <tr key={product.id} className="bg-blue-50 border-b">
-                      <td className="px-3 py-3" colSpan="9">
+                      <td className="px-3 py-3" colSpan="8">
                         <div className="space-y-3">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div>
@@ -362,6 +496,19 @@ const ManageProducts = () => {
                               />
                             </div>
                             <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">العدد في الوحدة الأساسية *</label>
+                              <input
+                                type="number"
+                                name="unitsInMain"
+                                value={editFormData.unitsInMain}
+                                onChange={handleEditChange}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                placeholder="مثال: 12"
+                                min="1"
+                                required
+                              />
+                            </div>
+                            <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">الكمية الفرعية</label>
                               <input
                                 type="number"
@@ -384,47 +531,24 @@ const ManageProducts = () => {
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">بيع مباشر * ({settings?.currency || 'EGP'})</label>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">السعر الأساسي * ({settings?.currency || 'EGP'})</label>
                               <input
                                 type="number"
                                 step="0.01"
-                                name="directPrice"
-                                value={editFormData.directPrice || ''}
+                                name="mainPrice"
+                                value={editFormData.mainPrice}
                                 onChange={handleEditChange}
                                 className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                                 required
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">جملة ({settings?.currency || 'EGP'})</label>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">السعر الفرعي ({settings?.currency || 'EGP'})</label>
                               <input
                                 type="number"
                                 step="0.01"
-                                name="wholesalePrice"
-                                value={editFormData.wholesalePrice || ''}
-                                onChange={handleEditChange}
-                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">جملة الجملة ({settings?.currency || 'EGP'})</label>
-                              <input
-                                type="number"
-                                step="0.01"
-                                name="wholesalePrice10"
-                                value={editFormData.wholesalePrice10 || ''}
-                                onChange={handleEditChange}
-                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                              />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">الباركود</label>
-                              <input
-                                type="text"
-                                name="barcode"
-                                value={editFormData.barcode || ''}
+                                name="subPrice"
+                                value={editFormData.subPrice}
                                 onChange={handleEditChange}
                                 className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                               />
@@ -498,36 +622,35 @@ const ManageProducts = () => {
                       </td>
                       <td className="px-3 py-2">
                         <div>
-                          <p className="font-semibold text-sm">{product.mainQuantity}</p>
-                          {product.subQuantity > 0 && (
-                            <p className="text-xs text-gray-500">+ {product.subQuantity} فرعي</p>
+                          <div>
+                            <p className="font-semibold text-sm">
+                              {product.mainQuantity} {product.unitsInMain ? `كرتونة (${product.unitsInMain} قطع/كرتونة)` : 'وحدة أساسية'}
+                            </p>
+                            {product.subQuantity > 0 && (
+                              <p className="text-xs text-gray-500">+ {product.subQuantity} قطعة فرعية</p>
+                            )}
+                            {product.unitsInMain > 0 && (
+                              <p className="text-xs text-blue-600 font-medium">
+                                = {((product.mainQuantity || 0) * product.unitsInMain + (product.subQuantity || 0))} قطعة إجمالية
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2">
+                        <div>
+                          <p className="font-semibold text-sm">{formatCurrency(product.mainPrice)}</p>
+                          {product.subPrice > 0 && (
+                            <p className="text-xs text-gray-500">{formatCurrency(product.subPrice)}</p>
                           )}
                         </div>
                       </td>
                       <td className="px-3 py-2">
-                        <div>
-                          <p className="font-semibold text-sm text-green-600">{formatCurrency(product.directPrice || 0)}</p>
-                          <p className="text-xs text-gray-500">💚 مباشر</p>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <div>
-                          <p className="font-semibold text-sm text-orange-600">{formatCurrency(product.wholesalePrice || 0)}</p>
-                          <p className="text-xs text-gray-500">🧡 جملة</p>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <div>
-                          <p className="font-semibold text-sm text-purple-600">{formatCurrency(product.wholesalePrice10 || 0)}</p>
-                          <p className="text-xs text-gray-500">💜 جملة الجملة</p>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2">
                         <p className="font-bold text-green-600 text-sm">
-                          {formatCurrency((product.directPrice || 0) * product.mainQuantity)}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          (على أساس بيع مباشر)
+                          {(() => {
+                          const totalSubQuantity = (product.mainQuantity || 0) * (product.unitsInMain || 0) + (product.subQuantity || 0);
+                          return formatCurrency(product.mainPrice * totalSubQuantity);
+                        })()}
                         </p>
                       </td>
                       <td className="px-3 py-2">

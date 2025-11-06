@@ -153,27 +153,6 @@ export const TabProvider = ({ children }) => {
     navigate('/dashboard');
   };
 
-  // فتح تبويب جديد مباشرة بمسار محدد
-  // هذه الدالة تمكن المستخدم من فتح واجهة جديدة مباشرة من الشريط الجانبي
-  // بدلاً من الذهاب إلى لوحة التحكم أولاً ثم النقر على الواجهة
-  const openNewTabWithPath = (path, title = null, icon = null) => {
-    const newTabId = `tab-${Date.now()}`;
-    const pageTitle = title || getPageTitle(path);
-    const pageIcon = icon || getPageIcon(path);
-    
-    const newTab = {
-      id: newTabId,
-      path: path,
-      title: pageTitle,
-      icon: pageIcon,
-      isMain: false
-    };
-
-    setTabs(prev => [...prev, newTab]);
-    setActiveTabId(newTabId);
-    navigate(path);
-  };
-
   // إغلاق تبويب
   const closeTab = (tabId) => {
     // لا نسمح بإغلاق التبويب الرئيسي
@@ -213,7 +192,6 @@ export const TabProvider = ({ children }) => {
     tabs,
     activeTabId,
     openNewTab,
-    openNewTabWithPath,
     closeTab,
     switchTab,
     getActiveTab,

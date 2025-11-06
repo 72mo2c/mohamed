@@ -6,7 +6,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTab } from '../../contexts/TabContext';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { 
   FaHome, 
   FaWarehouse, 
@@ -50,9 +49,7 @@ import {
 
 const Sidebar = ({ isOpen, closeSidebar }) => {
   const location = useLocation();
-  const navigate = useNavigate();
   const { isAdmin } = useAuth();
-  const { openNewTabWithPath, hasMultipleTabs } = useTab();
   const [activeMenu, setActiveMenu] = useState(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [isHovered, setIsHovered] = useState(false);
@@ -293,27 +290,11 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     }] : []),
   ];
 
-  // دالة التنقل الذكي - تختار بين التبويب الحالي أو فتح تبويب جديد
-  const smartNavigation = (path, title = null) => {
-    // إذا لم تكن موجودة أو كان هناك تبويبات متعددة، افتح تبويب جديد
-    if (!hasMultipleTabs || location.pathname !== path) {
-      openNewTabWithPath(path, title);
-    } else {
-      // إذا كان نفس التبويب الحالي، لا تفعل شيء
-      navigate(path);
-    }
-    
-    // إغلاق الشريط الجانبي على الشاشات الصغيرة
-    if (window.innerWidth < 1024) {
-      closeSidebar();
-    }
-  };
-
   const handleMenuClick = (menuId, event, hasSubItems, itemPath) => {
     // إذا كان العنصر لا يحتوي على قائمة فرعية وله مسار مباشر
     if (!hasSubItems && itemPath) {
       setActiveMenu(null);
-      smartNavigation(itemPath);
+      if (window.innerWidth < 1024) closeSidebar();
       return;
     }
 
@@ -367,11 +348,13 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     }
   };
 
-  const handleSubItemClick = (path, title) => {
+  const handleSubItemClick = () => {
     // إغلاق القائمة الفرعية فوراً عند النقر على عنصر داخلي
     setActiveMenu(null);
     setIsHovered(false);
-    smartNavigation(path, title);
+    if (window.innerWidth < 1024) {
+      closeSidebar();
+    }
   };
 
   // إغلاق القائمة الفرعية عند تغيير المسار
@@ -463,38 +446,45 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
                   </div>
                 ) : (
                   // Simple menu item
-                  <button
+                  <NavLink
+                    to={item.path}
                     onClick={() => {
                       setActiveMenu(null);
-                      smartNavigation(item.path, item.title);
+                      if (window.innerWidth < 1024) closeSidebar();
                     }}
-                    className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group relative ${
-                      location.pathname === item.path
-                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-md'
-                        : 'hover:bg-orange-50'
-                    }`}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group relative ${
+                        isActive
+                          ? 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-md'
+                          : 'hover:bg-orange-50'
+                      }`
+                    }
                     title={!isExpanded ? item.title : ''}
                   >
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      location.pathname === item.path
-                        ? 'bg-white/20 text-white' 
-                        : `bg-gradient-to-br ${item.color} text-white shadow-sm`
-                    }`}>
-                      <span className="text-sm">{item.icon}</span>
-                    </div>
-                    {isExpanded && (
-                      <span className={`flex-1 text-xs font-semibold text-right truncate ${
-                        location.pathname === item.path ? 'text-white' : 'text-gray-700'
-                      }`}>
-                        {item.title}
-                      </span>
+                    {({ isActive }) => (
+                      <>
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          isActive 
+                            ? 'bg-white/20 text-white' 
+                            : `bg-gradient-to-br ${item.color} text-white shadow-sm`
+                        }`}>
+                          <span className="text-sm">{item.icon}</span>
+                        </div>
+                        {isExpanded && (
+                          <span className={`flex-1 text-xs font-semibold text-right truncate ${
+                            isActive ? 'text-white' : 'text-gray-700'
+                          }`}>
+                            {item.title}
+                          </span>
+                        )}
+                        
+                        {/* Active indicator for collapsed state */}
+                        {!isExpanded && isActive && (
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-orange-500 rounded-r-full" />
+                        )}
+                      </>
                     )}
-                    
-                    {/* Active indicator for collapsed state */}
-                    {!isExpanded && location.pathname === item.path && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-orange-500 rounded-r-full" />
-                    )}
-                  </button>
+                  </NavLink>
                 )}
               </div>
             ))}
@@ -532,20 +522,23 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
             
             <div className="overflow-visible">
               {menuItems.find(item => item.id === activeMenu)?.subItems?.map((subItem, idx) => (
-                <button
+                <NavLink
                   key={idx}
-                  onClick={() => handleSubItemClick(subItem.path, subItem.title)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all hover:bg-orange-50 hover:text-orange-600 group ${
-                    location.pathname === subItem.path
-                      ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-sm'
-                      : 'text-gray-600'
-                  }`}
+                  to={subItem.path}
+                  onClick={handleSubItemClick}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2.5 transition-all hover:bg-orange-50 hover:text-orange-600 group ${
+                      isActive
+                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-sm'
+                        : 'text-gray-600'
+                    }`
+                  }
                 >
                   <span className="text-sm flex-shrink-0 group-hover:scale-110 transition-transform">
                     {subItem.icon}
                   </span>
                   <span className="truncate font-medium text-xs">{subItem.title}</span>
-                </button>
+                </NavLink>
               ))}
             </div>
             
@@ -555,21 +548,6 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
             />
           </div>
         )}
-      </div>
-      
-      {/* تذكير للمستخدم حول الآلية الجديدة */}
-      <div className="px-3 py-2 border-t border-orange-100/50 mt-2">
-        <div className="bg-blue-50 rounded-lg p-2 text-center">
-          <div className="flex items-center justify-center gap-1 mb-1">
-            <span className="text-blue-600 text-xs font-semibold">تنبيه جديد</span>
-            <span className="text-blue-500 text-xs">⚡</span>
-          </div>
-          <p className="text-blue-700 text-xs leading-relaxed">
-            اضغط على أي واجهة مباشرة من القائمة 
-            <br />
-            <strong>لتفتح في تبويب جديد فوراً!</strong>
-          </p>
-        </div>
       </div>
     </>
   );
