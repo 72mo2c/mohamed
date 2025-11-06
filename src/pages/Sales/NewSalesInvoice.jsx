@@ -705,9 +705,9 @@ const NewSalesInvoice = () => {
       {/* البطاقة الرئيسية */}
       <div className="bg-white rounded-lg shadow-md p-4">
         {/* الصف العلوي: معلومات الفاتورة */}
-        <div className="grid grid-cols-4 gap-3 mb-4 pb-4 border-b">
+        <div className="grid grid-cols-6 gap-4 mb-4 pb-4 border-b">
           {/* العميل */}
-          <div className="relative">
+          <div className="col-span-2 relative">
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <input
@@ -749,103 +749,98 @@ const NewSalesInvoice = () => {
             )}
           </div>
 
-          {/* الأقسام العلوية - صف واحد مع اتساع مناسب */}
-          <div className="space-y-4">
-            {/* الصف الأول: نوع الفاتورة والشاحنة والشرائح */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* نوع الفاتورة */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">نوع الفاتورة</label>
-                <select
-                  name="paymentType"
-                  value={formData.paymentType}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                >
-                  <option value="main">اختر نوع الفاتورة</option>
-                  <option value="cash">نقدي</option>
-                  <option value="deferred">آجل</option>
-                  <option value="partial">جزئي</option>
-                </select>
-              </div>
-
-              {/* الشاحنة */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">الشاحنة</label>
-                <select
-                  name="selectedVehicle"
-                  value={formData.selectedVehicle}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-                >
-                  <option value="">الشاحنة (اختياري)</option>
-                  {availableVehicles.filter(v => v.id).map(vehicle => (
-                    <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.name} - {vehicle.driver} ({vehicle.status})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* نوع البيع - الشرائح السعرية */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">الشرائح</label>
-                <select
-                  name="saleType"
-                  value={formData.saleType}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                >
-                  <option value="retail">البيع المباشر</option>
-                  <option value="wholesale">الجملة</option>
-                  <option value="bulk">جملة الجملة</option>
-                </select>
-              </div>
-            </div>
-
-            {/* الصف الثاني: التاريخ والوقت والوكيل */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* التاريخ */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">التاريخ</label>
-                <input
-                  type="date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                />
-              </div>
-
-              {/* الوقت */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">الوقت</label>
-                <input
-                  type="time"
-                  name="time"
-                  value={formData.time}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                />
-              </div>
-
-              {/* الوكيل */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">الوكيل/المندوب</label>
-                <select
-                  name="agentType"
-                  value={formData.agentType}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-                >
-                  <option value="">اختر الوكيل/المندوب</option>
-                  <option value="general">عام</option>
-                  <option value="fatora">فاتورة</option>
-                  <option value="kartona">كرتونة</option>
-                </select>
-              </div>
-            </div>
+          {/* نوع الفاتورة */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">نوع الفاتورة</label>
+            <select
+              name="paymentType"
+              value={formData.paymentType}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              <option value="main">اختر نوع الفاتورة</option>
+              <option value="cash">نقدي</option>
+              <option value="deferred">آجل</option>
+              <option value="partial">جزئي</option>
+            </select>
           </div>
+
+          {/* الشاحنة */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">الشاحنة</label>
+            <select
+              name="selectedVehicle"
+              value={formData.selectedVehicle}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+            >
+              <option value="">الشاحنة (اختياري)</option>
+              {availableVehicles.filter(v => v.id).map(vehicle => (
+                <option key={vehicle.id} value={vehicle.id}>
+                  {vehicle.name} - {vehicle.driver} ({vehicle.status})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* نوع البيع - الشرائح السعرية */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">الشرائح</label>
+            <select
+              name="saleType"
+              value={formData.saleType}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors"
+            >
+              <option value="retail">البيع المباشر</option>
+              <option value="wholesale">الجملة</option>
+              <option value="bulk">جملة الجملة</option>
+            </select>
+          </div>
+
+          {/* الوكيل/المندوب */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">الوكيل/المندوب</label>
+            <select
+              name="agentType"
+              value={formData.agentType}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+            >
+              <option value="">اختر الوكيل/المندوب</option>
+              <option value="general">عام</option>
+              <option value="fatora">فاتورة</option>
+              <option value="kartona">كرتونة</option>
+            </select>
+          </div>
+        </div>
+
+        {/* الصف الثاني: التاريخ والوقت */}
+        <div className="grid grid-cols-4 gap-4 mb-4 pb-4 border-b">
+          {/* التاريخ */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">التاريخ</label>
+            <input
+              type="date"
+              name="date"
+              value={formData.date}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+          </div>
+
+          {/* الوقت */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">الوقت</label>
+            <input
+              type="time"
+              name="time"
+              value={formData.time}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+          </div>
+        </div>
 
           {/* تحذيرات نوع الدفع */}
           {paymentWarning && (
