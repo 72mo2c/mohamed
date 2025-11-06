@@ -12,7 +12,7 @@ import Card from '../../components/Common/Card';
 import Modal from '../../components/Common/Modal';
 import Input from '../../components/Common/Input';
 import Button from '../../components/Common/Button';
-import { FaCog, FaEdit, FaTrash, FaPlus, FaWarehouse, FaBoxes, FaSearch, FaChartLine, FaLock } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaSearch } from 'react-icons/fa';
 
 const ManageWarehouses = () => {
   const navigate = useNavigate();
@@ -74,18 +74,7 @@ const ManageWarehouses = () => {
     });
   }, [warehouses, searchTerm]);
 
-  // حساب الإحصائيات
-  const stats = useMemo(() => {
-    const total = warehouses?.length || 0;
-    const active = warehouses?.filter(w => w.status === 'active').length || 0;
-    const inactive = total - active;
-    const totalProducts = products?.length || 0;
-    const totalValue = products?.reduce((sum, p) => {
-      return sum + ((p.mainQuantity || 0) * (p.price || 0));
-    }, 0) || 0;
 
-    return { total, active, inactive, totalProducts, totalValue };
-  }, [warehouses, products]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -213,91 +202,7 @@ const ManageWarehouses = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* العنوان */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-            <FaCog className="text-orange-500" />
-            ضبط وإدارة المخازن
-          </h1>
-          <p className="text-gray-600 mt-2">إدارة ومتابعة جميع المخازن في النظام</p>
-        </div>
-        <Button
-          variant="primary"
-          icon={<FaPlus />}
-          onClick={() => navigate('/warehouses/add-warehouse')}
-        >
-          إضافة مخزن جديد
-        </Button>
-      </div>
 
-      {/* بطاقات الإحصائيات */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm opacity-90">إجمالي المخازن</p>
-              <p className="text-3xl font-bold mt-1">{stats.total}</p>
-            </div>
-            <FaWarehouse className="text-4xl opacity-80" />
-          </div>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm opacity-90">مخازن نشطة</p>
-              <p className="text-3xl font-bold mt-1">{stats.active}</p>
-            </div>
-            <FaChartLine className="text-4xl opacity-80" />
-          </div>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm opacity-90">مخازن معطلة</p>
-              <p className="text-3xl font-bold mt-1">{stats.inactive}</p>
-            </div>
-            <FaWarehouse className="text-4xl opacity-80" />
-          </div>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm opacity-90">إجمالي المنتجات</p>
-              <p className="text-3xl font-bold mt-1">{stats.totalProducts}</p>
-            </div>
-            <FaBoxes className="text-4xl opacity-80" />
-          </div>
-        </Card>
-
-        {hasPermission('view_inventory') ? (
-          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">قيمة المخزون</p>
-                <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalValue)}</p>
-              </div>
-              <FaChartLine className="text-4xl opacity-80" />
-            </div>
-          </Card>
-        ) : (
-          <Card className="bg-gradient-to-br from-gray-500 to-gray-600 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">قيمة المخزون</p>
-                <p className="text-lg font-bold mt-1 flex items-center gap-2">
-                  <FaLock className="text-sm" />
-                  مخفي
-                </p>
-              </div>
-              <FaChartLine className="text-4xl opacity-80" />
-            </div>
-          </Card>
-        )}
-      </div>
 
       {/* شريط البحث */}
       <Card className="mb-6">
