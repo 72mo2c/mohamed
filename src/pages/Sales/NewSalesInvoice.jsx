@@ -31,10 +31,7 @@ const NewSalesInvoice = () => {
     discountValue: 0,
     // بيانات الشحن
     shippingRequired: false,
-    selectedVehicle: '',
-    shippingAddress: '',
-    shippingNotes: '',
-    shippingCost: 0
+    selectedVehicle: ''
   });
 
   const [items, setItems] = useState([{
@@ -759,11 +756,11 @@ const NewSalesInvoice = () => {
               </div>
 
               {formData.shippingRequired && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="mt-3">
                   {/* اختيار الشاحنة */}
                   <div className="space-y-2">
-                    <label className="block text-xs font-medium text-gray-700">
-                      🚚 الشاحنة/السيارة
+                    <label className="block text-sm font-medium text-gray-700">
+                      🚚 اختر الشاحنة/السيارة
                     </label>
                     <select
                       name="selectedVehicle"
@@ -774,60 +771,17 @@ const NewSalesInvoice = () => {
                       <option value="">اختر الشاحنة</option>
                       {availableVehicles.filter(v => v.id).map(vehicle => (
                         <option key={vehicle.id} value={vehicle.id}>
-                          {vehicle.name} - {vehicle.driver}
+                          {vehicle.name} - {vehicle.driver} ({vehicle.status})
                         </option>
                       ))}
                     </select>
                   </div>
-
-                  {/* عنوان التوصيل */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-medium text-gray-700">
-                      📍 عنوان التوصيل
-                    </label>
-                    <input
-                      type="text"
-                      name="shippingAddress"
-                      value={formData.shippingAddress}
-                      onChange={handleChange}
-                      placeholder="العنوان التفصيلي..."
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    />
-                  </div>
-
-                  {/* تكلفة الشحن */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-medium text-gray-700">
-                      💰 تكلفة الشحن
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        name="shippingCost"
-                        value={formData.shippingCost}
-                        onChange={handleChange}
-                        placeholder="0.00"
-                        min="0"
-                        step="0.01"
-                        className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                      />
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">ج.م</span>
-                    </div>
-                  </div>
-
-                  {/* ملاحظات الشحن */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-medium text-gray-700">
-                      📝 ملاحظات
-                    </label>
-                    <textarea
-                      name="shippingNotes"
-                      value={formData.shippingNotes}
-                      onChange={handleChange}
-                      placeholder="ملاحظات خاصة بالتوصيل..."
-                      rows={2}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
-                    />
+                  
+                  {/* رسالة توضيحية */}
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-700 flex items-center gap-2">
+                      ℹ️ تفاصيل الشحن الكاملة ستُدار في واجهة إدارة الشحن وستُضاف تلقائياً عند طباعة الفاتورة
+                    </p>
                   </div>
                 </div>
               )}
