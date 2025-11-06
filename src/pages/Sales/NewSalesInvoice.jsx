@@ -18,7 +18,6 @@ const NewSalesInvoice = () => {
     time: new Date().toTimeString().slice(0, 5),
     paymentType: 'main',
     agentType: 'main',
-    invoiceType: 'direct', // بيع مباشر، جملة، جملة الجملة
     notes: '',
     discountType: 'percentage', // 'percentage' or 'fixed'
     discountValue: 0
@@ -27,7 +26,11 @@ const NewSalesInvoice = () => {
   const [items, setItems] = useState([{
     productId: '',
     productName: '',
-    price: 0, // السعر محدد تلقائياً بناءً على نوع الفاتورة
+    customerType: 'direct', // بيع مباشر، جملة، جملة الجملة
+    directPrice: 0,
+    wholesalePrice: 0,
+    wholesalePrice10: 0,
+    price: 0, // السعر الحالي حسب النوع
     quantity: 0,
     subQuantity: 0,
     discount: 0
@@ -138,13 +141,6 @@ const NewSalesInvoice = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [items]);
-
-  // تحديث أسعار المنتجات عند تغيير نوع الفاتورة
-  useEffect(() => {
-    if (formData.invoiceType) {
-      updateAllItemPrices(formData.invoiceType);
-    }
-  }, [formData.invoiceType, products]);
 
   const handleChange = (e) => {
     setFormData({
@@ -258,42 +254,18 @@ const NewSalesInvoice = () => {
     setShowProductSuggestions(newShowSuggestions);
   };
 
-  // دالة التسعير التلقائي بناءً على نوع الفاتورة
-  const getPriceByInvoiceType = (product, invoiceType) => {
-    switch (invoiceType) {
-      case 'direct':
-        return parseFloat(product.directPrice) || 0;
-      case 'wholesale':
-        return parseFloat(product.wholesalePrice) || 0;
-      case 'wholesale10':
-        return parseFloat(product.wholesalePrice10) || 0;
-      default:
-        return parseFloat(product.directPrice) || 0;
-    }
-  };
-
-  // دالة تحديث جميع أسعار المنتجات عند تغيير نوع الفاتورة
-  const updateAllItemPrices = (invoiceType) => {
-    const newItems = items.map(item => {
-      const product = products.find(p => p.id === item.productId);
-      if (product) {
-        return {
-          ...item,
-          price: getPriceByInvoiceType(product, invoiceType)
-        };
-      }
-      return item;
-    });
-    setItems(newItems);
-  };
-
   const selectProduct = (index, product) => {
     const newItems = [...items];
     newItems[index] = {
       ...newItems[index],
       productId: product.id,
       productName: product.name,
-      price: getPriceByInvoiceType(product, formData.invoiceType),
+      customerType: 'direct', // افتراضي: بيع مباشر
+      directPrice: parseFloat(product.directPrice) || 0,
+      wholesalePrice: parseFloat(product.wholesalePrice) || 0,
+      wholesalePrice10: parseFloat(product.wholesalePrice10) || 0,
+      price: parseFloat(product.directPrice) || 0, // السعر الحالي (بيع مباشر)
+      subPrice: 0, // لن نستخدم السعر الفرعي بعد الآن
       quantity: 1, // افتراضي كمية 1
       subQuantity: 0,
       discount: 0
@@ -332,9 +304,29 @@ const NewSalesInvoice = () => {
 
   const handleItemChange = (index, field, value) => {
     const newItems = [...items];
-    newItems[index][field] = value;
-    setItems(newItems);
-  };
+    
+    // تحديث حقل الشريحة وتطبيق السعر تلقائياً
+    if (field === 'customerType') {
+      const item = newItems[index];
+      item.customerType = value;
+      
+      // تطبيق السعر حسب نوع الشريحة
+      switch(value) {
+        case 'direct':
+          item.price = parseFloat(item.directPrice) || 0;
+          break;
+        case 'wholesale':
+          item.price = parseFloat(item.wholesalePrice) || 0;
+          break;
+        case 'wholesale10':
+          item.price = parseFloat(item.wholesalePrice10) || 0;
+          break;
+        default:
+          item.price = parseFloat(item.directPrice) || 0;
+      }
+    } else {
+      newItems[index][field] = value;
+    }
     
     setItems(newItems);
     
@@ -366,6 +358,10 @@ const NewSalesInvoice = () => {
     setItems([...items, { 
       productId: '', 
       productName: '',
+      customerType: 'direct', // بيع مباشر افتراضي
+      directPrice: 0,
+      wholesalePrice: 0,
+      wholesalePrice10: 0,
       price: 0,
       quantity: 0, 
       subQuantity: 0,
@@ -492,9 +488,13 @@ const NewSalesInvoice = () => {
       }
       
       // التحقق من الشريحة المختارة
-      // التحقق من السعر
+      if (item.productId && !item.customerType) {
+        errors[`customerType_${index}`] = 'يجب اختيار شريحة تسعيرية';
+      }
+      
+      // التحقق من السعر المختار
       if (item.productId && item.price <= 0) {
-        errors[`price_${index}`] = 'يجب إدخال سعر صحيح';
+        errors[`price_${index}`] = 'يجب إدخال سعر للشريحة المختارة';
       }
 
       // التحقق من خصم العنصر
@@ -609,7 +609,6 @@ const NewSalesInvoice = () => {
       time: new Date().toTimeString().slice(0, 5),
       paymentType: 'main',
       agentType: '',
-      invoiceType: 'direct',
       notes: '',
       discountType: 'percentage',
       discountValue: 0
@@ -685,34 +684,15 @@ const NewSalesInvoice = () => {
             )}
           </div>
 
-          {/* الشريحة التسعيرية */}
+          {/* نوع الفاتورة */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              الشريحة التسعيرية
-            </label>
-            <select
-              name="invoiceType"
-              value={formData.invoiceType}
-              onChange={handleChange}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="direct">💚 بيع مباشر</option>
-              <option value="wholesale">🧡 جملة</option>
-              <option value="wholesale10">💜 جملة الجملة</option>
-            </select>
-          </div>
-
-          {/* نوع الدفع */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              نوع الدفع
-            </label>
             <select
               name="paymentType"
               value={formData.paymentType}
               onChange={handleChange}
               className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
             >
+              <option value="main">اختر نوع الفاتورة</option>
               <option value="cash">نقدي</option>
               <option value="deferred">آجل</option>
               <option value="partial">جزئي</option>
@@ -778,6 +758,7 @@ const NewSalesInvoice = () => {
               <thead>
                 <tr className="bg-gray-100 border-b">
                   <th className="px-2 py-2 text-right text-xs font-semibold text-gray-700">المنتج</th>
+                  <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-20">الشريحة</th>
                   <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-20">الكمية</th>
                   <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-24">السعر</th>
                   <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-24">الخصم</th>
@@ -830,6 +811,38 @@ const NewSalesInvoice = () => {
                       {getQuantityWarning(index)}
                     </td>
 
+                    {/* الشريحة التسعيرية */}
+                    <td className="px-2 py-2">
+                      <select
+                        value={item.customerType || 'direct'}
+                        onChange={(e) => handleItemChange(index, 'customerType', e.target.value)}
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        disabled={!item.productId}
+                      >
+                        <option value="direct">💚 بيع مباشر</option>
+                        <option value="wholesale">🧡 جملة</option>
+                        <option value="wholesale10">💜 جملة الجملة</option>
+                      </select>
+                      
+                      {/* عرض أسعار الشرائح للمنتج المحدد */}
+                      {item.productId && (
+                        <div className="text-xs text-gray-500 mt-1 space-y-1">
+                          <div className="flex justify-between">
+                            <span>💚:</span>
+                            <span>{item.directPrice?.toFixed(2) || '0.00'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>🧡:</span>
+                            <span>{item.wholesalePrice?.toFixed(2) || '0.00'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>💜:</span>
+                            <span>{item.wholesalePrice10?.toFixed(2) || '0.00'}</span>
+                          </div>
+                        </div>
+                      )}
+                    </td>
+
                     {/* الكمية الأساسية */}
                     <td className="px-2 py-2">
                       <input
@@ -858,12 +871,12 @@ const NewSalesInvoice = () => {
                         min="0"
                       />
                       
-                      {/* عرض نوع الفاتورة الحالي */}
+                      {/* عرض نوع السعر الحالي */}
                       {item.productId && (
                         <div className="text-xs text-gray-500 mt-1">
-                          {formData.invoiceType === 'direct' && '💚 بيع مباشر'}
-                          {formData.invoiceType === 'wholesale' && '🧡 جملة'}
-                          {formData.invoiceType === 'wholesale10' && '💜 جملة الجملة'}
+                          {item.customerType === 'direct' && '💚 بيع مباشر'}
+                          {item.customerType === 'wholesale' && '🧡 جملة'}
+                          {item.customerType === 'wholesale10' && '💜 جملة الجملة'}
                         </div>
                       )}
                     </td>

@@ -18,7 +18,6 @@ const NewSalesInvoice = () => {
     time: new Date().toTimeString().slice(0, 5),
     paymentType: 'main',
     agentType: 'main',
-    invoiceType: 'direct', // بيع مباشر، جملة، جملة الجملة
     notes: '',
     discountType: 'percentage', // 'percentage' or 'fixed'
     discountValue: 0
@@ -27,9 +26,10 @@ const NewSalesInvoice = () => {
   const [items, setItems] = useState([{
     productId: '',
     productName: '',
-    price: 0, // السعر محدد تلقائياً بناءً على نوع الفاتورة
     quantity: 0,
     subQuantity: 0,
+    price: 0,
+    subPrice: 0,
     discount: 0
   }]);
 
@@ -71,9 +71,8 @@ const NewSalesInvoice = () => {
   // حساب الإجمالي قبل خصم العنصر
   const calculateItemTotalWithoutDiscount = (item) => {
     const mainTotal = (item.quantity || 0) * (item.price || 0);
-    // لن نستخدم الكمية الفرعية مع نظام الشرائح الجديد
-    // const subTotal = (item.subQuantity || 0) * (item.subPrice || 0);
-    return mainTotal;
+    const subTotal = (item.subQuantity || 0) * (item.subPrice || 0);
+    return mainTotal + subTotal;
   };
 
   // حساب إجمالي العنصر بعد الخصم
@@ -138,13 +137,6 @@ const NewSalesInvoice = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [items]);
-
-  // تحديث أسعار المنتجات عند تغيير نوع الفاتورة
-  useEffect(() => {
-    if (formData.invoiceType) {
-      updateAllItemPrices(formData.invoiceType);
-    }
-  }, [formData.invoiceType, products]);
 
   const handleChange = (e) => {
     setFormData({
@@ -258,44 +250,14 @@ const NewSalesInvoice = () => {
     setShowProductSuggestions(newShowSuggestions);
   };
 
-  // دالة التسعير التلقائي بناءً على نوع الفاتورة
-  const getPriceByInvoiceType = (product, invoiceType) => {
-    switch (invoiceType) {
-      case 'direct':
-        return parseFloat(product.directPrice) || 0;
-      case 'wholesale':
-        return parseFloat(product.wholesalePrice) || 0;
-      case 'wholesale10':
-        return parseFloat(product.wholesalePrice10) || 0;
-      default:
-        return parseFloat(product.directPrice) || 0;
-    }
-  };
-
-  // دالة تحديث جميع أسعار المنتجات عند تغيير نوع الفاتورة
-  const updateAllItemPrices = (invoiceType) => {
-    const newItems = items.map(item => {
-      const product = products.find(p => p.id === item.productId);
-      if (product) {
-        return {
-          ...item,
-          price: getPriceByInvoiceType(product, invoiceType)
-        };
-      }
-      return item;
-    });
-    setItems(newItems);
-  };
-
   const selectProduct = (index, product) => {
     const newItems = [...items];
     newItems[index] = {
       ...newItems[index],
       productId: product.id,
       productName: product.name,
-      price: getPriceByInvoiceType(product, formData.invoiceType),
-      quantity: 1, // افتراضي كمية 1
-      subQuantity: 0,
+      price: parseFloat(product.mainPrice) || 0, // إصلاح: استخدام 'mainPrice' بدلاً من 'price'
+      subPrice: parseFloat(product.subPrice) || 0,
       discount: 0
     };
     setItems(newItems);
@@ -334,9 +296,6 @@ const NewSalesInvoice = () => {
     const newItems = [...items];
     newItems[index][field] = value;
     setItems(newItems);
-  };
-    
-    setItems(newItems);
     
     // التحقق الفوري من الكميات والأسعار والخصم
     if (field === 'quantity' || field === 'subQuantity') {
@@ -366,9 +325,10 @@ const NewSalesInvoice = () => {
     setItems([...items, { 
       productId: '', 
       productName: '',
-      price: 0,
       quantity: 0, 
       subQuantity: 0,
+      mainPrice: 0,
+      subPrice: 0,
       discount: 0
     }]);
     setProductSearches([...productSearches, '']);
@@ -400,10 +360,13 @@ const NewSalesInvoice = () => {
   // الحصول على المخزون المتاح للمنتج
   const getAvailableQuantity = (productId) => {
     const product = products.find(p => p.id === productId);
-    if (!product) return 0;
+    if (!product) return { mainQuantity: 0, subQuantity: 0, total: 0 };
     
-    // إرجاع الكمية الأساسية فقط (نظام الشرائح لا يستخدم الكمية الفرعية)
-    return product.mainQuantity || 0;
+    return {
+      mainQuantity: product.mainQuantity || 0,
+      subQuantity: product.subQuantity || 0,
+      total: (product.mainQuantity || 0) + (product.subQuantity || 0)
+    };
   };
 
   // عرض تحذير عن الكمية المطلوبة
@@ -411,18 +374,23 @@ const NewSalesInvoice = () => {
     const item = items[index];
     if (!item.productId) return null;
     
-    const requestedQty = parseInt(item.quantity) || 0;
-    const availableQty = getAvailableQuantity(item.productId);
+    const requestedMainQty = parseInt(item.quantity) || 0;
+    const requestedSubQty = parseInt(item.subQuantity) || 0;
     
-    if (requestedQty > availableQty) {
+    const availableQuantity = getAvailableQuantity(item.productId);
+    const availableMainQty = availableQuantity.mainQuantity;
+    const availableSubQty = availableQuantity.subQuantity;
+    
+    // التحقق من كل نوع كمية منفصل
+    if (requestedMainQty > availableMainQty || requestedSubQty > availableSubQty) {
       return (
         <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
-          ⚠️ الكمية المطلوبة: {requestedQty}
+          ⚠️ الكمية المطلوبة: أساسي {requestedMainQty}، فرعي {requestedSubQty}
           <br />
-          المتوفر: {availableQty}
+          المتوفر: أساسي {availableMainQty}، فرعي {availableSubQty}
           <br />
-          زائد بـ {requestedQty - availableQty}
-        
+          {requestedMainQty > availableMainQty && `الأساسي زائد بـ ${requestedMainQty - availableMainQty}`}
+          {requestedSubQty > availableSubQty && `الفرعي زائد بـ ${requestedSubQty - availableSubQty}`}
         </div>
       );
     }
@@ -491,10 +459,11 @@ const NewSalesInvoice = () => {
         newPriceErrors[index] = false;
       }
       
-      // التحقق من الشريحة المختارة
-      // التحقق من السعر
-      if (item.productId && item.price <= 0) {
-        errors[`price_${index}`] = 'يجب إدخال سعر صحيح';
+      // التحقق من السعر الفرعي
+      if (item.subPrice < 0) {
+        errors[`subPrice_${index}`] = 'السعر الفرعي لا يمكن أن يكون سالباً';
+      } else if (item.subPrice === 0 && item.subQuantity > 0) {
+        errors[`subPrice_${index}`] = 'يجب إدخال سعر فرعي عند وجود كمية فرعية';
       }
 
       // التحقق من خصم العنصر
@@ -508,14 +477,21 @@ const NewSalesInvoice = () => {
         newDiscountErrors[index] = false;
       }
 
-      // التحقق من توفر المخزون
+      // التحقق من توفر المخزون (فصل أساسي وفرعي)
       const product = products.find(p => p.id === parseInt(item.productId));
       if (product) {
-        const requestedQty = parseInt(item.quantity) || 0;
-        const availableQty = product.mainQuantity || 0;
+        const requestedMainQty = parseInt(item.quantity) || 0;
+        const requestedSubQty = parseInt(item.subQuantity) || 0;
         
-        if (requestedQty > availableQty) {
-          errors[`stock_${index}`] = `الكمية المطلوبة (${requestedQty}) تتجاوز المتوفر (${availableQty})`;
+        const availableMainQty = product.mainQuantity || 0;
+        const availableSubQty = product.subQuantity || 0;
+        
+        // التحقق من كل نوع كمية منفصل
+        if (requestedMainQty > availableMainQty) {
+          errors[`stock_${index}`] = `الكمية الأساسية المطلوبة (${requestedMainQty}) تتجاوز المتوفر (${availableMainQty})`;
+          newQuantityErrors[index] = true;
+        } else if (requestedSubQty > availableSubQty) {
+          errors[`stock_${index}`] = `الكمية الفرعية المطلوبة (${requestedSubQty}) تتجاوز المتوفر (${availableSubQty})`;
           newQuantityErrors[index] = true;
         } else {
           newQuantityErrors[index] = false;
@@ -684,34 +660,15 @@ const NewSalesInvoice = () => {
             )}
           </div>
 
-          {/* الشريحة التسعيرية */}
+          {/* نوع الفاتورة */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              الشريحة التسعيرية
-            </label>
-            <select
-              name="invoiceType"
-              value={formData.invoiceType}
-              onChange={handleChange}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="direct">💚 بيع مباشر</option>
-              <option value="wholesale">🧡 جملة</option>
-              <option value="wholesale10">💜 جملة الجملة</option>
-            </select>
-          </div>
-
-          {/* نوع الدفع */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              نوع الدفع
-            </label>
             <select
               name="paymentType"
               value={formData.paymentType}
               onChange={handleChange}
               className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
             >
+              <option value="main">اختر نوع الفاتورة</option>
               <option value="cash">نقدي</option>
               <option value="deferred">آجل</option>
               <option value="partial">جزئي</option>
@@ -777,8 +734,10 @@ const NewSalesInvoice = () => {
               <thead>
                 <tr className="bg-gray-100 border-b">
                   <th className="px-2 py-2 text-right text-xs font-semibold text-gray-700">المنتج</th>
-                  <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-20">الكمية</th>
-                  <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-24">السعر</th>
+                  <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-20">كمية أساسية</th>
+                  <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-20">كمية فرعية</th>
+                  <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-24">سعر أساسي</th>
+                  <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-24">سعر فرعي</th>
                   <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-24">الخصم</th>
                   <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-24">الإجمالي</th>
                   <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-16">حذف</th>
@@ -844,7 +803,18 @@ const NewSalesInvoice = () => {
                       />
                     </td>
 
-                    {/* السعر */}
+                    {/* الكمية الفرعية */}
+                    <td className="px-2 py-2">
+                      <input
+                        type="number"
+                        value={item.subQuantity}
+                        onChange={(e) => handleItemChange(index, 'subQuantity', parseInt(e.target.value) || 0)}
+                        className="w-full px-2 py-1.5 text-sm text-center border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        min="0"
+                      />
+                    </td>
+
+                    {/* السعر الأساسي */}
                     <td className="px-2 py-2">
                       <input
                         type="number"
@@ -856,15 +826,18 @@ const NewSalesInvoice = () => {
                         }`}
                         min="0"
                       />
-                      
-                      {/* عرض نوع الفاتورة الحالي */}
-                      {item.productId && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          {formData.invoiceType === 'direct' && '💚 بيع مباشر'}
-                          {formData.invoiceType === 'wholesale' && '🧡 جملة'}
-                          {formData.invoiceType === 'wholesale10' && '💜 جملة الجملة'}
-                        </div>
-                      )}
+                    </td>
+
+                    {/* السعر الفرعي */}
+                    <td className="px-2 py-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={item.subPrice}
+                        onChange={(e) => handleItemChange(index, 'subPrice', parseFloat(e.target.value) || 0)}
+                        className="w-full px-2 py-1.5 text-sm text-center border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        min="0"
+                      />
                     </td>
                     {/* الخصم  */}
                   <td className="px-2 py-2">
