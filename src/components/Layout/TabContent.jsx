@@ -20,6 +20,7 @@ import ManageCategories from '../../pages/Warehouses/ManageCategories';
 import Transfer from '../../pages/Warehouses/Transfer';
 import Inventory from '../../pages/Warehouses/Inventory';
 import ManageWarehouses from '../../pages/Warehouses/ManageWarehouses';
+import ShippingManagement from '../../pages/Warehouses/ShippingManagement';
 
 // Purchases
 import NewPurchaseInvoice from '../../pages/Purchases/NewPurchaseInvoice';
@@ -132,6 +133,7 @@ const getComponentForPath = (path) => {
     '/warehouses/transfer': Transfer,
     '/warehouses/inventory': Inventory,
     '/warehouses/manage': ManageWarehouses,
+    '/warehouses/shipping': ShippingManagement,
     
     // Purchases
     '/purchases/new-invoice': NewPurchaseInvoice,

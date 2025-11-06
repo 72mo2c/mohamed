@@ -188,6 +188,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
         { title: 'تحويل', icon: <FaExchangeAlt />, path: '/warehouses/transfer' },
         { title: 'الجرد', icon: <FaList />, path: '/warehouses/inventory' },
         { title: 'الضبط', icon: <FaCog />, path: '/warehouses/manage' },
+        { title: 'إدارة الشحن', icon: <FaTruck />, path: '/warehouses/shipping' },
       ]
     },
     {

@@ -63,6 +63,7 @@ export const TabProvider = ({ children }) => {
       '/warehouses/transfer': 'تحويل بضاعة',
       '/warehouses/inventory': 'الجرد',
       '/warehouses/manage': 'إدارة المخازن',
+      '/warehouses/shipping': 'إدارة الشحن',
       '/purchases/new-invoice': 'فاتورة مشتريات جديدة',
       '/purchases/invoices': 'سجل فواتير المشتريات',
       '/purchases/manage': 'إدارة فواتير المشتريات',
