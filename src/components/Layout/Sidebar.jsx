@@ -3,7 +3,7 @@
 // ======================================
 
 import React, { useState, useEffect, useRef } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useTab } from '../../contexts/TabContext';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -45,13 +45,78 @@ import {
 const Sidebar = ({ isOpen, closeSidebar }) => {
   const location = useLocation();
   const { isAdmin } = useAuth();
-  const { openPageInNewTab } = useTab();
+  const { openTab, switchTab, tabs } = useTab();
   const [activeMenu, setActiveMenu] = useState(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [isHovered, setIsHovered] = useState(false);
   const sidebarRef = useRef(null);
   const contextMenuRef = useRef(null);
   const hoverTimeoutRef = useRef(null);
+
+  // تحويل الأيقونات إلى رموز للتبويبات
+  const getIconEmoji = (icon) => {
+    const iconMap = {
+      FaHome: '🏠',
+      FaWarehouse: '📦', 
+      FaShoppingCart: '🛒',
+      FaMoneyBillWave: '💰',
+      FaUsers: '👥',
+      FaTruck: '🚚',
+      FaBell: '🔔',
+      FaCog: '⚙️',
+      FaBox: '📦',
+      FaExchangeAlt: '🔄',
+      FaFileInvoice: '📄',
+      FaList: '📋',
+      FaPlus: '➕',
+      FaUserPlus: '👤',
+      FaBuilding: '🏢',
+      FaLink: '🔗',
+      FaWhatsapp: '💬',
+      FaTags: '🏷️',
+      FaChartLine: '📈',
+      FaUndo: '↩️',
+      FaClipboardList: '📋',
+      FaBoxes: '📦',
+      FaChartBar: '📊',
+      FaChartPie: '📊',
+      FaDollarSign: '💵',
+      FaCashRegister: '💰',
+      FaTools: '🛠️',
+      FaExclamationTriangle: '⚠️',
+      FaCalculator: '🧮',
+      FaBookOpen: '📚',
+      FaClock: '🕐',
+      FaCalendarAlt: '📅'
+    };
+    
+    // استخراج اسم المكون من JSX element
+    if (React.isValidElement(icon) && icon.type?.name) {
+      return iconMap[icon.type.name] || '📄';
+    }
+    
+    return '📄';
+  };
+
+  // فتح تبويب من عنصر القائمة
+  const handleMenuItemClick = (item) => {
+    if (item.path) {
+      // للعناصر التي لها مسار مباشر
+      const emoji = getIconEmoji(item.icon);
+      openTab(item.path, item.title, emoji);
+      setActiveMenu(null);
+      if (window.innerWidth < 1024) closeSidebar();
+    }
+  };
+
+  // فتح تبويب من عنصر فرعي
+  const handleSubItemClick = (subItem) => {
+    const emoji = getIconEmoji(subItem.icon);
+    openTab(subItem.path, subItem.title, emoji);
+    setActiveMenu(null);
+    setIsHovered(false);
+    if (window.innerWidth < 1024) closeSidebar();
+  };
 
   // Close submenu when clicking outside or when location changes
   useEffect(() => {
@@ -260,11 +325,10 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     }] : []),
   ];
 
-  const handleMenuClick = (menuId, event, hasSubItems, itemPath) => {
+  const handleMenuClick = (menuId, event, hasSubItems, item) => {
     // إذا كان العنصر لا يحتوي على قائمة فرعية وله مسار مباشر
-    if (!hasSubItems && itemPath) {
-      setActiveMenu(null);
-      if (window.innerWidth < 1024) closeSidebar();
+    if (!hasSubItems && item.path) {
+      handleMenuItemClick(item);
       return;
     }
 
@@ -318,6 +382,15 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     }
   };
 
+  const handleSubItemClick = () => {
+    // إغلاق القائمة الفرعية فوراً عند النقر على عنصر داخلي
+    setActiveMenu(null);
+    setIsHovered(false);
+    if (window.innerWidth < 1024) {
+      closeSidebar();
+    }
+  };
+
   // إغلاق القائمة الفرعية عند تغيير المسار
   useEffect(() => {
     setActiveMenu(null);
@@ -367,7 +440,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
                   // Menu with submenu
                   <div>
                     <button
-                      onClick={(e) => handleMenuClick(item.id, e, true, item.path)}
+                      onClick={(e) => handleMenuClick(item.id, e, true, item)}
                       className={`
                         w-full flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group relative
                         ${(isMenuActive(item) || activeMenu === item.id) 
@@ -406,18 +479,20 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
                     </button>
                   </div>
                 ) : (
-                  // Simple menu item - فتح في تبويب
+                  // Simple menu item
                   <button
-                    onClick={() => openMainItemInTab(item)}
-                    className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group relative ${
-                      location.pathname === item.path
-                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-md'
+                    onClick={() => handleMenuItemClick(item)}
+                    className={`
+                      w-full flex items-center gap-2.5 px-2 py-2 rounded-lg transition-all group relative
+                      ${(isMenuActive(item)) 
+                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-md' 
                         : 'hover:bg-orange-50'
-                    }`}
+                      }
+                    `}
                     title={!isExpanded ? item.title : ''}
                   >
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      location.pathname === item.path
+                      (isMenuActive(item))
                         ? 'bg-white/20 text-white' 
                         : `bg-gradient-to-br ${item.color} text-white shadow-sm`
                     }`}>
@@ -425,14 +500,14 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
                     </div>
                     {isExpanded && (
                       <span className={`flex-1 text-xs font-semibold text-right truncate ${
-                        location.pathname === item.path ? 'text-white' : 'text-gray-700'
+                        (isMenuActive(item)) ? 'text-white' : 'text-gray-700'
                       }`}>
                         {item.title}
                       </span>
                     )}
                     
                     {/* Active indicator for collapsed state */}
-                    {!isExpanded && location.pathname === item.path && (
+                    {!isExpanded && (isMenuActive(item)) && (
                       <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-orange-500 rounded-r-full" />
                     )}
                   </button>
@@ -475,25 +550,10 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
               {menuItems.find(item => item.id === activeMenu)?.subItems?.map((subItem, idx) => (
                 <button
                   key={idx}
-                  onClick={() => {
-                    // تحديد الأيقونة المناسبة
-                    const iconString = subItem.icon?.toString() || '📄';
-                    
-                    // فتح الصفحة في تبويب جديد أو التحويل لتبويب موجود
-                    openPageInNewTab(subItem.path, subItem.title, iconString);
-                    
-                    // إغلاق القائمة وإغلاق الشريط في الأجهزة المحمولة
-                    setActiveMenu(null);
-                    setIsHovered(false);
-                    if (window.innerWidth < 1024) {
-                      closeSidebar();
-                    }
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all hover:bg-orange-50 hover:text-orange-600 group ${
-                    location.pathname === subItem.path
-                      ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-sm'
-                      : 'text-gray-600'
-                  }`}
+                  onClick={() => handleSubItemClick(subItem)}
+                  className={`
+                    w-full flex items-center gap-3 px-3 py-2.5 transition-all hover:bg-orange-50 hover:text-orange-600 group text-right
+                  `}
                 >
                   <span className="text-sm flex-shrink-0 group-hover:scale-110 transition-transform">
                     {subItem.icon}
