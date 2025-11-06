@@ -16,8 +16,6 @@ import {
   FaArrowRight,
   FaCheckCircle,
   FaExclamationTriangle,
-  FaHistory,
-  FaChartLine,
   FaTimes,
   FaInfoCircle
 } from 'react-icons/fa';
@@ -47,33 +45,7 @@ const Transfer = () => {
     );
   }, [products, formData.fromWarehouseId]);
 
-  // إحصائيات التحويلات
-  const stats = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const todayTransfers = transfers.filter(t => {
-      const transferDate = new Date(t.date);
-      transferDate.setHours(0, 0, 0, 0);
-      return transferDate.getTime() === today.getTime();
-    });
 
-    const thisMonth = new Date();
-    thisMonth.setDate(1);
-    thisMonth.setHours(0, 0, 0, 0);
-    
-    const monthTransfers = transfers.filter(t => {
-      const transferDate = new Date(t.date);
-      return transferDate >= thisMonth;
-    });
-
-    return {
-      total: transfers.length,
-      today: todayTransfers.length,
-      thisMonth: monthTransfers.length,
-      totalQuantity: transfers.reduce((sum, t) => sum + t.quantity, 0)
-    };
-  }, [transfers]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -183,9 +155,6 @@ const Transfer = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-800">تحويل بين المخازن</h1>
-      </div>
 
       {/* Modal تأكيد التحويل */}
       {showSuccessModal && lastTransfer && (
@@ -269,48 +238,7 @@ const Transfer = () => {
         </div>
       )}
 
-      {/* الإحصائيات */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm opacity-90">إجمالي التحويلات</p>
-              <h3 className="text-3xl font-bold mt-2">{stats.total}</h3>
-            </div>
-            <FaHistory className="text-4xl opacity-80" />
-          </div>
-        </div>
 
-        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm opacity-90">تحويلات اليوم</p>
-              <h3 className="text-3xl font-bold mt-2">{stats.today}</h3>
-            </div>
-            <FaChartLine className="text-4xl opacity-80" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm opacity-90">تحويلات الشهر</p>
-              <h3 className="text-3xl font-bold mt-2">{stats.thisMonth}</h3>
-            </div>
-            <FaExchangeAlt className="text-4xl opacity-80" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm opacity-90">إجمالي الكميات</p>
-              <h3 className="text-3xl font-bold mt-2">{stats.totalQuantity}</h3>
-            </div>
-            <FaBox className="text-4xl opacity-80" />
-          </div>
-        </div>
-      </div>
 
       {/* نموذج التحويل */}
       <Card icon={<FaExchangeAlt />} title="نموذج التحويل">
