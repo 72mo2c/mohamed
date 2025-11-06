@@ -91,8 +91,9 @@ const ManageProducts = () => {
     try {
       const updatedData = {
         ...editFormData,
-        mainPrice: parseFloat(editFormData.mainPrice) || 0,
-        subPrice: parseFloat(editFormData.subPrice) || 0,
+        directPrice: parseFloat(editFormData.directPrice) || 0,
+        wholesalePrice: parseFloat(editFormData.wholesalePrice) || 0,
+        wholesalePrice10: parseFloat(editFormData.wholesalePrice10) || 0,
         mainQuantity: parseInt(editFormData.mainQuantity) || 0,
         subQuantity: parseInt(editFormData.subQuantity) || 0,
         warehouseId: parseInt(editFormData.warehouseId),
@@ -292,7 +293,9 @@ const ManageProducts = () => {
                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">الفئة</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">المخزن</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">الكمية</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">السعر</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">💚 بيع مباشر</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">🧡 جملة</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">💜 جملة الجملة</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">القيمة</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700">الباركود</th>
                   <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700">الإجراءات</th>
@@ -303,7 +306,7 @@ const ManageProducts = () => {
                   editingId === product.id ? (
                     // صف التعديل
                     <tr key={product.id} className="bg-blue-50 border-b">
-                      <td className="px-3 py-3" colSpan="8">
+                      <td className="px-3 py-3" colSpan="9">
                         <div className="space-y-3">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div>
@@ -381,24 +384,47 @@ const ManageProducts = () => {
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">السعر الأساسي * ({settings?.currency || 'EGP'})</label>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">بيع مباشر * ({settings?.currency || 'EGP'})</label>
                               <input
                                 type="number"
                                 step="0.01"
-                                name="mainPrice"
-                                value={editFormData.mainPrice}
+                                name="directPrice"
+                                value={editFormData.directPrice || ''}
                                 onChange={handleEditChange}
                                 className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                                 required
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">السعر الفرعي ({settings?.currency || 'EGP'})</label>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">جملة ({settings?.currency || 'EGP'})</label>
                               <input
                                 type="number"
                                 step="0.01"
-                                name="subPrice"
-                                value={editFormData.subPrice}
+                                name="wholesalePrice"
+                                value={editFormData.wholesalePrice || ''}
+                                onChange={handleEditChange}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">جملة الجملة ({settings?.currency || 'EGP'})</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                name="wholesalePrice10"
+                                value={editFormData.wholesalePrice10 || ''}
+                                onChange={handleEditChange}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">الباركود</label>
+                              <input
+                                type="text"
+                                name="barcode"
+                                value={editFormData.barcode || ''}
                                 onChange={handleEditChange}
                                 className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                               />
@@ -480,15 +506,28 @@ const ManageProducts = () => {
                       </td>
                       <td className="px-3 py-2">
                         <div>
-                          <p className="font-semibold text-sm">{formatCurrency(product.mainPrice)}</p>
-                          {product.subPrice > 0 && (
-                            <p className="text-xs text-gray-500">{formatCurrency(product.subPrice)}</p>
-                          )}
+                          <p className="font-semibold text-sm text-green-600">{formatCurrency(product.directPrice || 0)}</p>
+                          <p className="text-xs text-gray-500">💚 مباشر</p>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2">
+                        <div>
+                          <p className="font-semibold text-sm text-orange-600">{formatCurrency(product.wholesalePrice || 0)}</p>
+                          <p className="text-xs text-gray-500">🧡 جملة</p>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2">
+                        <div>
+                          <p className="font-semibold text-sm text-purple-600">{formatCurrency(product.wholesalePrice10 || 0)}</p>
+                          <p className="text-xs text-gray-500">💜 جملة الجملة</p>
                         </div>
                       </td>
                       <td className="px-3 py-2">
                         <p className="font-bold text-green-600 text-sm">
-                          {formatCurrency(product.mainPrice * product.mainQuantity)}
+                          {formatCurrency((product.directPrice || 0) * product.mainQuantity)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          (على أساس بيع مباشر)
                         </p>
                       </td>
                       <td className="px-3 py-2">

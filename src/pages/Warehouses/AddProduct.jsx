@@ -16,8 +16,9 @@ const AddProduct = () => {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
-    mainPrice: '',
-    subPrice: '',
+    directPrice: '',
+    wholesalePrice: '',
+    wholesalePrice10: '',
     mainQuantity: '',
     subQuantity: '',
     warehouseId: '',
@@ -41,8 +42,9 @@ const AddProduct = () => {
     try {
       const productData = {
         ...formData,
-        mainPrice: parseFloat(formData.mainPrice) || 0,
-        subPrice: parseFloat(formData.subPrice) || 0,
+        directPrice: parseFloat(formData.directPrice) || 0,
+        wholesalePrice: parseFloat(formData.wholesalePrice) || 0,
+        wholesalePrice10: parseFloat(formData.wholesalePrice10) || 0,
         mainQuantity: parseInt(formData.mainQuantity) || 0,
         subQuantity: parseInt(formData.subQuantity) || 0,
         warehouseId: parseInt(formData.warehouseId),
@@ -65,8 +67,9 @@ const AddProduct = () => {
       setFormData({
         name: '',
         category: '',
-        mainPrice: '',
-        subPrice: '',
+        directPrice: '',
+        wholesalePrice: '',
+        wholesalePrice10: '',
         mainQuantity: '',
         subQuantity: '',
         warehouseId: '',
@@ -116,8 +119,9 @@ const AddProduct = () => {
     setFormData({
       name: '',
       category: '',
-      mainPrice: '',
-      subPrice: '',
+      directPrice: '',
+      wholesalePrice: '',
+      wholesalePrice10: '',
       mainQuantity: '',
       subQuantity: '',
       warehouseId: '',
@@ -201,29 +205,56 @@ const AddProduct = () => {
                 </div>
               </div>
 
-              {/* السعر والكمية */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* الشرائح التسعيرية */}
+              <div className="grid grid-cols-3 gap-3">
                 <div className="bg-green-50 p-4 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <FaDollarSign className="text-green-500" />
-                    <p className="text-sm text-gray-500">السعر الأساسي</p>
+                    <p className="text-sm text-gray-500">بيع مباشر</p>
                   </div>
-                  <p className="text-xl font-bold text-green-600">{addedProduct.mainPrice.toFixed(2)} ج.م</p>
+                  <p className="text-xl font-bold text-green-600">{addedProduct.directPrice?.toFixed(2) || '0.00'} ج.م</p>
                 </div>
-                <div className="bg-indigo-50 p-4 rounded-lg">
+                <div className="bg-orange-50 p-4 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <FaCubes className="text-indigo-500" />
-                    <p className="text-sm text-gray-500">الكمية الأساسية</p>
+                    <FaDollarSign className="text-orange-500" />
+                    <p className="text-sm text-gray-500">جملة</p>
                   </div>
-                  <p className="text-xl font-bold text-indigo-600">{addedProduct.mainQuantity}</p>
+                  <p className="text-xl font-bold text-orange-600">{addedProduct.wholesalePrice?.toFixed(2) || '0.00'} ج.م</p>
+                </div>
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FaDollarSign className="text-purple-500" />
+                    <p className="text-sm text-gray-500">جملة الجملة</p>
+                  </div>
+                  <p className="text-xl font-bold text-purple-600">{addedProduct.wholesalePrice10?.toFixed(2) || '0.00'} ج.م</p>
                 </div>
               </div>
 
+              {/* الكمية */}
+              <div className="bg-indigo-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <FaCubes className="text-indigo-500" />
+                  <p className="text-sm text-gray-500">الكمية الأساسية</p>
+                </div>
+                <p className="text-xl font-bold text-indigo-600">{addedProduct.mainQuantity}</p>
+              </div>
+
               {/* معلومات إضافية */}
-              {addedProduct.barcode && (
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <p className="text-sm text-gray-500">الباركود</p>
-                  <p className="font-mono font-semibold text-gray-800">{addedProduct.barcode}</p>
+              {(addedProduct.barcode || addedProduct.description) && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">معلومات إضافية</h4>
+                  {addedProduct.barcode && (
+                    <div className="mb-2">
+                      <p className="text-xs text-gray-500">الباركود</p>
+                      <p className="font-mono font-semibold text-gray-800">{addedProduct.barcode}</p>
+                    </div>
+                  )}
+                  {addedProduct.description && (
+                    <div>
+                      <p className="text-xs text-gray-500">الوصف</p>
+                      <p className="font-semibold text-gray-800">{addedProduct.description}</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -311,40 +342,73 @@ const AddProduct = () => {
             </div>
           </div>
 
-          {/* الأسعار */}
+          {/* الشرائح التسعيرية */}
           <div className="p-4 border-b">
             <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-              <FaDollarSign className="text-green-500" /> الأسعار
+              <FaDollarSign className="text-green-500" /> الشرائح التسعيرية
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">السعر الأساسي *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  name="mainPrice"
-                  value={formData.mainPrice}
-                  onChange={handleChange}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="0.00"
-                  min="0"
-                  required
-                />
+                <label className="block text-xs font-medium text-gray-700 mb-1">بيع مباشر *</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="directPrice"
+                    value={formData.directPrice}
+                    onChange={handleChange}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="0.00"
+                    min="0"
+                    required
+                  />
+                  <span className="absolute left-2 top-1.5 text-xs text-gray-500">ج.م</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">للمستهلك النهائي</p>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">السعر الفرعي</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  name="subPrice"
-                  value={formData.subPrice}
-                  onChange={handleChange}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="0.00"
-                  min="0"
-                />
+                <label className="block text-xs font-medium text-gray-700 mb-1">جملة</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="wholesalePrice"
+                    value={formData.wholesalePrice}
+                    onChange={handleChange}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="0.00"
+                    min="0"
+                  />
+                  <span className="absolute left-2 top-1.5 text-xs text-gray-500">ج.م</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">للتجار والصغار</p>
               </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">جملة الجملة</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="wholesalePrice10"
+                    value={formData.wholesalePrice10}
+                    onChange={handleChange}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="0.00"
+                    min="0"
+                  />
+                  <span className="absolute left-2 top-1.5 text-xs text-gray-500">ج.م</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">للموزعين الكبار</p>
+              </div>
+            </div>
+            
+            {/* ملاحظة توضيحية */}
+            <div className="mt-3 p-3 bg-blue-50 border-r-4 border-blue-500 rounded">
+              <p className="text-xs text-blue-800">
+                💡 <strong>نصيحة:</strong> يمكن تحديد سعر مختلف لكل شريحة حسب نوع العميل وطريقة البيع
+              </p>
             </div>
           </div>
 
