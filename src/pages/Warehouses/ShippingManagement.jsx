@@ -144,33 +144,55 @@ const ShippingManagement = () => {
     );
 
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-          <h3 className="text-lg font-bold mb-4 text-gray-800">
-            {vehicle ? 'تعديل الشاحنة' : 'إضافة شاحنة جديدة'}
-          </h3>
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg w-full max-w-sm">
+          {/* Header */}
+          <div className="p-4 border-b border-gray-200">
+            <h3 className="text-lg font-bold text-gray-800">
+              {vehicle ? 'تعديل الشاحنة' : 'إضافة شاحنة جديدة'}
+            </h3>
+          </div>
           
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">نوع الشاحنة</label>
-              <select
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500"
-                value={formData.vehicleType}
-                onChange={(e) => setFormData({...formData, vehicleType: e.target.value})}
-              >
-                <option value="">اختر نوع الشاحنة</option>
-                <option value="شاحنة كبيرة">شاحنة كبيرة</option>
-                <option value="شاحنة متوسطة">شاحنة متوسطة</option>
-                <option value="شاحنة صغيرة">شاحنة صغيرة</option>
-                <option value="فان">فان</option>
-              </select>
+          {/* Form */}
+          <div className="p-4 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">نوع الشاحنة</label>
+                <select
+                  className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-orange-500"
+                  value={formData.vehicleType}
+                  onChange={(e) => setFormData({...formData, vehicleType: e.target.value})}
+                >
+                  <option value="">اختر</option>
+                  <option value="شاحنة كبيرة">شاحنة كبيرة</option>
+                  <option value="شاحنة متوسطة">شاحنة متوسطة</option>
+                  <option value="شاحنة صغيرة">شاحنة صغيرة</option>
+                  <option value="فان">فان</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">السعة</label>
+                <select
+                  className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-orange-500"
+                  value={formData.capacity}
+                  onChange={(e) => setFormData({...formData, capacity: e.target.value})}
+                >
+                  <option value="">اختر</option>
+                  <option value="1 طن">1 طن</option>
+                  <option value="2 طن">2 طن</option>
+                  <option value="3 طن">3 طن</option>
+                  <option value="4 طن">4 طن</option>
+                  <option value="5 طن">5 طن</option>
+                </select>
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">رقم الشاحنة</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">رقم الشاحنة</label>
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500"
+                className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-orange-500"
                 value={formData.vehicleNumber}
                 onChange={(e) => setFormData({...formData, vehicleNumber: e.target.value})}
                 placeholder="مثال: أ 1234 ب"
@@ -178,10 +200,10 @@ const ShippingManagement = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">اسم السائق</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">اسم السائق</label>
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500"
+                className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-orange-500"
                 value={formData.driver}
                 onChange={(e) => setFormData({...formData, driver: e.target.value})}
                 placeholder="اسم السائق"
@@ -189,67 +211,54 @@ const ShippingManagement = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">السعة</label>
-              <select
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500"
-                value={formData.capacity}
-                onChange={(e) => setFormData({...formData, capacity: e.target.value})}
-              >
-                <option value="">اختر السعة</option>
-                <option value="1 طن">1 طن</option>
-                <option value="2 طن">2 طن</option>
-                <option value="3 طن">3 طن</option>
-                <option value="4 طن">4 طن</option>
-                <option value="5 طن">5 طن</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">الحالة</label>
-              <select
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500"
-                value={formData.status}
-                onChange={(e) => setFormData({...formData, status: e.target.value})}
-              >
-                <option value="متاح">متاح</option>
-                <option value="مشغول">مشغول</option>
-                <option value="في الطريق">في الطريق</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">الموقع الحالي</label>
-              <input
-                type="text"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500"
-                value={formData.currentLocation}
-                onChange={(e) => setFormData({...formData, currentLocation: e.target.value})}
-                placeholder="الموقع الحالي"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">رقم الهاتف</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">رقم الهاتف</label>
               <input
                 type="tel"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500"
+                className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-orange-500"
                 value={formData.phone}
                 onChange={(e) => setFormData({...formData, phone: e.target.value})}
                 placeholder="01012345678"
               />
             </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">الحالة</label>
+                <select
+                  className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-orange-500"
+                  value={formData.status}
+                  onChange={(e) => setFormData({...formData, status: e.target.value})}
+                >
+                  <option value="متاح">متاح</option>
+                  <option value="مشغول">مشغول</option>
+                  <option value="في الطريق">في الطريق</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">الموقع</label>
+                <input
+                  type="text"
+                  className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-orange-500"
+                  value={formData.currentLocation}
+                  onChange={(e) => setFormData({...formData, currentLocation: e.target.value})}
+                  placeholder="الموقع"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="flex gap-3 mt-6">
+          {/* Actions */}
+          <div className="p-4 border-t border-gray-200 flex gap-2">
             <button
               onClick={() => onSubmit(formData)}
-              className="flex-1 bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors"
+              className="flex-1 bg-orange-600 text-white py-2 px-3 rounded-md hover:bg-orange-700 transition-colors text-sm"
             >
               {vehicle ? 'تحديث' : 'إضافة'}
             </button>
             <button
               onClick={onCancel}
-              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
+              className="flex-1 bg-gray-300 text-gray-700 py-2 px-3 rounded-md hover:bg-gray-400 transition-colors text-sm"
             >
               إلغاء
             </button>
@@ -260,19 +269,7 @@ const ShippingManagement = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">إدارة الشحن</h1>
-            <p className="text-gray-600">إدارة الشاحنات والعمليات الخاصة بالشحن والتوصيل</p>
-          </div>
-          <div className="text-4xl text-orange-600">
-            <FaTruck />
-          </div>
-        </div>
-      </div>
+    <div className="bg-gray-50 min-h-screen">
 
       {/* Tabs */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
@@ -337,52 +334,80 @@ const ShippingManagement = () => {
               </button>
             </div>
 
-            {/* Vehicles Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Vehicles List */}
+            <div className="space-y-3">
               {filteredData.map((vehicle) => (
-                <div key={vehicle.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="text-2xl text-orange-600">
-                      <FaTruck />
+                <div key={vehicle.id} className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
+                  <div className="flex items-center justify-between">
+                    {/* معلومات الشاحنة */}
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="text-orange-600 text-xl">
+                        <FaTruck />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1 text-sm">
+                        <div>
+                          <p className="text-gray-500 text-xs">النوع</p>
+                          <p className="font-medium text-gray-800">{vehicle.vehicleType}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs">رقم الشاحنة</p>
+                          <p className="font-medium text-gray-800">{vehicle.vehicleNumber}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs">السائق</p>
+                          <p className="font-medium text-gray-800">{vehicle.driver}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs">السعة</p>
+                          <p className="font-medium text-gray-800">{vehicle.capacity}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="hidden md:block">
+                        <p className="text-gray-500 text-xs">الموقع</p>
+                        <p className="text-sm text-gray-600 flex items-center gap-1">
+                          <FaMapMarkerAlt className="text-xs" />
+                          {vehicle.currentLocation}
+                        </p>
+                      </div>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(vehicle.status)}`}>
-                      {vehicle.status}
-                    </span>
+
+                    {/* الحالة والأزرار */}
+                    <div className="flex items-center gap-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(vehicle.status)}`}>
+                        {vehicle.status}
+                      </span>
+                      
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => {
+                            setSelectedVehicle(vehicle);
+                            setShowEditModal(true);
+                          }}
+                          className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors text-xs"
+                          title="تعديل"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVehicle(vehicle.id)}
+                          className="bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition-colors text-xs"
+                          title="حذف"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-gray-800">{vehicle.vehicleType}</h3>
-                    <p className="text-sm text-gray-600">رقم الشاحنة: {vehicle.vehicleNumber}</p>
-                    <p className="text-sm text-gray-600">السائق: {vehicle.driver}</p>
-                    <p className="text-sm text-gray-600">السعة: {vehicle.capacity}</p>
-                    <p className="text-sm text-gray-600">هاتف: {vehicle.phone}</p>
-                    
-                    <div className="pt-2 border-t border-gray-100">
-                      <p className="text-sm text-gray-500 flex items-center gap-2">
-                        <FaMapMarkerAlt className="text-xs" />
-                        {vehicle.currentLocation}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 mt-4">
-                    <button
-                      onClick={() => {
-                        setSelectedVehicle(vehicle);
-                        setShowEditModal(true);
-                      }}
-                      className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center justify-center gap-1"
-                    >
-                      <FaEdit />
-                      تعديل
-                    </button>
-                    <button
-                      onClick={() => handleDeleteVehicle(vehicle.id)}
-                      className="flex-1 bg-red-600 text-white py-2 px-3 rounded-lg hover:bg-red-700 transition-colors text-sm flex items-center justify-center gap-1"
-                    >
-                      <FaTrash />
-                      حذف
-                    </button>
+                  {/* الموقع للجوال */}
+                  <div className="md:hidden mt-2 pt-2 border-t border-gray-100">
+                    <p className="text-gray-500 text-xs">الموقع الحالي</p>
+                    <p className="text-sm text-gray-600 flex items-center gap-1">
+                      <FaMapMarkerAlt className="text-xs" />
+                      {vehicle.currentLocation}
+                    </p>
                   </div>
                 </div>
               ))}
