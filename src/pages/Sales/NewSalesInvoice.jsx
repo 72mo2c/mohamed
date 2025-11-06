@@ -32,7 +32,9 @@ const NewSalesInvoice = () => {
     discountType: 'percentage', // 'percentage' or 'fixed'
     discountValue: 0,
     // بيانات الشحن
-    selectedVehicle: ''
+    selectedVehicle: '',
+    // نوع البيع للشرائح السعرية
+    saleType: 'retail' // retail, wholesale, bulk
   });
 
   const [items, setItems] = useState([{
@@ -264,12 +266,17 @@ const NewSalesInvoice = () => {
 
   const selectProduct = (index, product) => {
     const newItems = [...items];
+    
+    // اختيار السعر المناسب من الشريحة المختارة
+    const tierPrice = product.tierPrices?.[formData.saleType] || { basicPrice: 0, subPrice: 0 };
+    
     newItems[index] = {
       ...newItems[index],
       productId: product.id,
       productName: product.name,
-      price: parseFloat(product.mainPrice) || 0, // إصلاح: استخدام 'mainPrice' بدلاً من 'price'
-      subPrice: parseFloat(product.subPrice) || 0,
+      price: parseFloat(tierPrice.basicPrice) || 0, // السعر الأساسي للشريحة
+      subPrice: parseFloat(tierPrice.subPrice) || 0, // السعر الفرعي للشريحة
+      saleType: formData.saleType, // حفظ نوع البيع المختار
       discount: 0
     };
     setItems(newItems);
@@ -286,6 +293,44 @@ const NewSalesInvoice = () => {
     setTimeout(() => {
       quantityInputRefs.current[index]?.focus();
     }, 100);
+  };
+
+  // تحديث نوع البيع للمنتج المحدد
+  const updateSaleType = (index) => {
+    // قائمة منسدلة للاختيار (يمكن تحسينها لاحقاً)
+    const saleTypes = [
+      { value: 'retail', label: '🛒 البيع المباشر', color: 'orange' },
+      { value: 'wholesale', label: '📦 الجملة', color: 'blue' },
+      { value: 'bulk', label: '🚛 جملة الجملة', color: 'purple' }
+    ];
+
+    // إنشاء modal بسيط للاختيار
+    const selectedType = window.prompt(
+      'اختر نوع البيع:\n' + 
+      saleTypes.map(t => `${t.value === 'retail' ? '1' : t.value === 'wholesale' ? '2' : '3'} - ${t.label}`).join('\n') + '\n\n(أدخل 1، 2، أو 3)'
+    );
+
+    let newSaleType = null;
+    if (selectedType === '1') newSaleType = 'retail';
+    else if (selectedType === '2') newSaleType = 'wholesale';
+    else if (selectedType === '3') newSaleType = 'bulk';
+
+    if (newSaleType && items[index].productId) {
+      // العثور على المنتج وتحديث الأسعار
+      const product = products.find(p => p.id === items[index].productId);
+      if (product && product.tierPrices?.[newSaleType]) {
+        const tierPrice = product.tierPrices[newSaleType];
+        const newItems = [...items];
+        newItems[index] = {
+          ...newItems[index],
+          saleType: newSaleType,
+          price: parseFloat(tierPrice.basicPrice) || 0,
+          subPrice: parseFloat(tierPrice.subPrice) || 0
+        };
+        setItems(newItems);
+        showSuccess(`تم تحديث نوع البيع إلى ${saleTypes.find(t => t.value === newSaleType)?.label}`);
+      }
+    }
   };
   
   // إخفاء قائمة المنتجات عند الخروج من الحقل
@@ -569,6 +614,7 @@ const NewSalesInvoice = () => {
         mainPrice: item.price || 0,
         subPrice: item.subPrice || 0,
         discount: item.discount || 0,
+        saleType: item.saleType || 'retail', // نوع البيع
         total: calculateItemTotal(item)
       }));
 
@@ -691,8 +737,8 @@ const NewSalesInvoice = () => {
             )}
           </div>
 
-          {/* نوع الفاتورة والشحن */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* نوع الفاتورة والشحن ونوع البيع */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* نوع الفاتورة */}
             <div>
               <select
@@ -724,6 +770,30 @@ const NewSalesInvoice = () => {
                 ))}
               </select>
             </div>
+
+            {/* نوع البيع - الشرائح السعرية */}
+            <div>
+              <select
+                name="saleType"
+                value={formData.saleType}
+                onChange={handleChange}
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
+              >
+                <option value="retail">🛒 البيع المباشر</option>
+                <option value="wholesale">📦 الجملة</option>
+                <option value="bulk">🚛 جملة الجملة</option>
+              </select>
+            </div>
+          </div>
+
+          {/* توضيح نوع البيع المحدد */}
+          <div className="mt-2 p-2 bg-gray-50 rounded-lg border">
+            <p className="text-xs text-gray-600">
+              <span className="font-medium">نوع البيع المحدد:</span> 
+              {formData.saleType === 'retail' && <span className="text-orange-600 mr-1">البيع المباشر (تجزئة)</span>}
+              {formData.saleType === 'wholesale' && <span className="text-blue-600 mr-1">الجملة</span>}
+              {formData.saleType === 'bulk' && <span className="text-purple-600 mr-1">جملة الجملة</span>}
+            </p>
           </div>
 
 
@@ -787,6 +857,7 @@ const NewSalesInvoice = () => {
               <thead>
                 <tr className="bg-gray-100 border-b">
                   <th className="px-2 py-2 text-right text-xs font-semibold text-gray-700">المنتج</th>
+                  <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-24">نوع البيع</th>
                   <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-20">كمية أساسية</th>
                   <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-20">كمية فرعية</th>
                   <th className="px-2 py-2 text-center text-xs font-semibold text-gray-700 w-24">سعر أساسي</th>
@@ -839,6 +910,29 @@ const NewSalesInvoice = () => {
                       )}
                       {/* رسالة تحذير المخزون */}
                       {getQuantityWarning(index)}
+                    </td>
+
+                    {/* نوع البيع */}
+                    <td className="px-2 py-2 text-center">
+                      <div className="flex flex-col items-center">
+                        <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                          item.saleType === 'retail' ? 'bg-orange-100 text-orange-700' :
+                          item.saleType === 'wholesale' ? 'bg-blue-100 text-blue-700' :
+                          item.saleType === 'bulk' ? 'bg-purple-100 text-purple-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {item.saleType === 'retail' && '🛒 مباشر'}
+                          {item.saleType === 'wholesale' && '📦 جملة'}
+                          {item.saleType === 'bulk' && '🚛 جملة كبيرة'}
+                          {!item.saleType && 'غير محدد'}
+                        </span>
+                        <button
+                          onClick={() => updateSaleType(index)}
+                          className="text-xs text-blue-600 hover:text-blue-800 mt-1 underline"
+                        >
+                          تغيير
+                        </button>
+                      </div>
                     </td>
 
                     {/* الكمية الأساسية */}
