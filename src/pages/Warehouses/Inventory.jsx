@@ -2,9 +2,8 @@
 // Inventory - جرد المخازن (محسّنة)
 // ======================================
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
-import { useNotification } from '../../context/NotificationContext';
 import Card from '../../components/Common/Card';
 import Select from '../../components/Common/Select';
 import Input from '../../components/Common/Input';
@@ -14,9 +13,7 @@ import {
   FaSearch, 
   FaWarehouse, 
   FaFilter,
-  FaDownload,
   FaBox,
-  FaChartBar,
   FaExclamationTriangle,
   FaTimesCircle,
   FaCheckCircle,
@@ -25,7 +22,6 @@ import {
 
 const Inventory = () => {
   const { products, warehouses } = useData();
-  const { showSuccess } = useNotification();
   
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -33,7 +29,7 @@ const Inventory = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   // تصفية المنتجات
-  const filteredProducts = useMemo(() => {
+  const filteredProducts = () => {
     return products.filter(product => {
       const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            product.category.toLowerCase().includes(searchQuery.toLowerCase());
@@ -53,17 +49,7 @@ const Inventory = () => {
 
       return matchesSearch && matchesWarehouse && matchesStatus();
     });
-  }, [products, searchQuery, selectedWarehouse, filterStatus]);
-
-  // إحصائيات المنتجات المفلترة
-  const stats = useMemo(() => {
-    const available = filteredProducts.filter(p => (p.mainQuantity || 0) >= 10).length;
-    const low = filteredProducts.filter(p => (p.mainQuantity || 0) > 0 && (p.mainQuantity || 0) < 10).length;
-    const out = filteredProducts.filter(p => (p.mainQuantity || 0) === 0).length;
-    const totalValue = filteredProducts.reduce((sum, p) => sum + ((p.mainPrice || 0) * (p.mainQuantity || 0)), 0);
-    
-    return { available, low, out, totalValue };
-  }, [filteredProducts]);
+  };
 
   // دالة الحصول على اسم المخزن
   const getWarehouseName = (warehouseId) => {
@@ -77,41 +63,6 @@ const Inventory = () => {
     setSearchQuery('');
     setSelectedWarehouse('');
     setFilterStatus('all');
-  };
-
-  // دالة تصدير CSV
-  const exportToCSV = () => {
-    const headers = ['الاسم', 'الفئة', 'المخزن', 'الكمية الأساسية', 'السعر', 'القيمة الإجمالية', 'الحالة'];
-    
-    const rows = filteredProducts.map(product => {
-      const quantity = product.mainQuantity || 0;
-      let status = 'متاح';
-      if (quantity === 0) status = 'منتهي';
-      else if (quantity < 10) status = 'منخفض';
-      
-      return [
-        product.name,
-        product.category,
-        getWarehouseName(product.warehouseId),
-        quantity,
-        product.mainPrice || 0,
-        (product.mainPrice || 0) * quantity,
-        status
-      ];
-    });
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
-
-    const blob = new Blob([`\ufeff${csvContent}`], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `inventory_${new Date().toLocaleDateString('ar-EG')}.csv`;
-    link.click();
-    
-    showSuccess('تم تصدير الجرد بنجاح');
   };
 
   const warehouseOptions = [
@@ -159,62 +110,6 @@ const Inventory = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-4 space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-gray-800">جرد المخازن</h2>
-        <button
-          onClick={exportToCSV}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-semibold"
-        >
-          <FaDownload /> تصدير CSV
-        </button>
-      </div>
-
-      {/* الإحصائيات */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs opacity-90">إجمالي المنتجات</p>
-              <h3 className="text-2xl font-bold mt-1">{filteredProducts.length}</h3>
-              <p className="text-xs opacity-75 mt-1">من {products.length} منتج</p>
-            </div>
-            <FaBox className="text-3xl opacity-80" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs opacity-90">متاح</p>
-              <h3 className="text-2xl font-bold mt-1">{stats.available}</h3>
-              <p className="text-xs opacity-75 mt-1">أكثر من 10 قطع</p>
-            </div>
-            <FaCheckCircle className="text-3xl opacity-80" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg p-4 text-white shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs opacity-90">منخفض</p>
-              <h3 className="text-2xl font-bold mt-1">{stats.low}</h3>
-              <p className="text-xs opacity-75 mt-1">1-9 قطع</p>
-            </div>
-            <FaExclamationTriangle className="text-3xl opacity-80" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-lg p-4 text-white shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs opacity-90">منتهي</p>
-              <h3 className="text-2xl font-bold mt-1">{stats.out}</h3>
-              <p className="text-xs opacity-75 mt-1">يحتاج إعادة توريد</p>
-            </div>
-            <FaTimesCircle className="text-3xl opacity-80" />
-          </div>
-        </div>
-      </div>
 
       {/* البحث والفلترة */}
       <div className="bg-white rounded-lg shadow-md p-4">
@@ -273,7 +168,7 @@ const Inventory = () => {
           )}
 
           <div className="flex items-center justify-between text-xs text-gray-600">
-            <span>عرض {filteredProducts.length} من {products.length} منتج</span>
+            <span>عرض {filteredProducts().length} من {products.length} منتج</span>
             {hasActiveFilters && (
               <button
                 onClick={resetFilters}
@@ -288,7 +183,7 @@ const Inventory = () => {
 
       {/* جدول الجرد */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        {filteredProducts.length === 0 ? (
+        {filteredProducts().length === 0 ? (
           <div className="text-center py-12 p-4">
             <FaBox className="text-6xl text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 text-lg">
@@ -312,7 +207,7 @@ const Inventory = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredProducts.map((product, index) => {
+                {filteredProducts().map((product, index) => {
                   const quantity = product.mainQuantity || 0;
                   const totalValue = (product.mainPrice || 0) * quantity;
                   
@@ -372,31 +267,6 @@ const Inventory = () => {
         )}
       </div>
 
-      {/* معلومات إضافية */}
-      {filteredProducts.length > 0 && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
-              <p className="text-xs text-gray-600">إجمالي قيمة المخزون</p>
-              <p className="text-xl font-bold text-blue-600">
-                {stats.totalValue.toLocaleString('ar-EG')} ج.م
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-600">متوسط قيمة المنتج</p>
-              <p className="text-xl font-bold text-blue-600">
-                {(stats.totalValue / filteredProducts.length).toFixed(2)} ج.م
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-600">معدل التوفر</p>
-              <p className="text-xl font-bold text-blue-600">
-                {((stats.available / filteredProducts.length) * 100).toFixed(1)}%
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
